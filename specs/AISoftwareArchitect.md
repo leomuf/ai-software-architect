@@ -423,42 +423,53 @@ shared/
         evaluate-architecture-options/
             SKILL.md
             references/
-                abstract-factory.md
-                adapter.md
-                bridge.md
-                builder.md
-                chain-of-responsibility.md
-                command.md
-                composite.md
-                decorator.md
-                facade.md
-                factory-method.md
-                flyweight.md
-                interpreter.md
-                iterator.md
-                mediator.md
-                memento.md
-                observer.md
-                prototype.md
-                proxy.md
-                singleton.md
-                state.md
-                strategy.md
-                template-method.md
-                visitor.md
+                gof-abstract-factory.md
+                gof-adapter.md
+                gof-bridge.md
+                gof-builder.md
+                gof-chain-of-responsibility.md
+                gof-command.md
+                gof-composite.md
+                gof-decorator.md
+                gof-facade.md
+                gof-factory-method.md
+                gof-flyweight.md
+                gof-interpreter.md
+                gof-iterator.md
+                gof-mediator.md
+                gof-memento.md
+                gof-observer.md
+                gof-prototype.md
+                gof-proxy.md
+                gof-singleton.md
+                gof-state.md
+                gof-strategy.md
+                gof-template-method.md
+                gof-visitor.md
                 no-pattern.md
-                modular-monolith.md
-                service-oriented-architecture.md
-                layered-architecture.md
-                clean-architecture.md
-                hexagonal-architecture.md
-                event-driven-architecture.md
+                architecture-modular-monolith.md
+                architecture-service-oriented.md
+                architecture-layered.md
+                architecture-clean.md
+                architecture-hexagonal.md
+                presentation-model-view-controller.md
+                architecture-vertical-slice.md
+                architecture-event-driven.md
                 dependency-inversion.md
-                ports-and-adapters.md
-                repository-pattern.md
-                idempotency.md
-                transactional-outbox.md
-                retry-and-backoff.md
+                dependency-injection.md
+                architecture-ports-and-adapters.md
+                modernization-anti-corruption-layer.md
+                data-repository.md
+                data-unit-of-work.md
+                integration-idempotency.md
+                integration-idempotent-consumer.md
+                integration-transactional-outbox.md
+                integration-saga.md
+                integration-publish-subscribe.md
+                resilience-retry-and-backoff.md
+                resilience-timeout-and-deadline.md
+                resilience-circuit-breaker.md
+                data-cache-aside.md
         create-architecture-decisions/
             SKILL.md
             references/
@@ -525,6 +536,11 @@ agent_skill_contract:
     deeply_nested_reference_chains: forbidden
   validation:
     command: skills-ref validate <skill-directory>
+    project_checks:
+      - direct-resource-paths
+      - flat-architecture-option-references
+      - approved-architecture-option-prefixes
+      - no-duplicate-canonical-resources
 ```
 
 - The skill directory name and frontmatter `name` MUST match and use lowercase letters, digits, and hyphens.
@@ -535,6 +551,8 @@ agent_skill_contract:
 - Reference knowledge belongs to exactly one canonical skill. Other canonical skills MUST invoke that owner rather than duplicate its files. An adapter MAY package the owning skill, but MUST NOT rehome its references into a different skill or maintain an edited platform copy.
 - Skill packages MUST NOT contain auxiliary files such as a skill-level `README.md`, changelog, installation guide, or design diary.
 - Every canonical skill MUST pass the open-standard validator. Adapter packages MUST additionally pass any platform-specific validation.
+
+The `project_checks` entries are AI Software Architect repository rules, not claims about built-in `skills-ref` behavior. A repository validation command MUST run them in addition to the open-standard validator.
 
 ### Progressive Disclosure
 
@@ -555,11 +573,33 @@ progressive_disclosure:
     all_skill_bodies: false
     all_references: false
     all_design_patterns: false
+  reference_routing_categories:
+    - object-design
+    - application-architecture
+    - presentation
+    - dependency-management
+    - data-access
+    - integration-and-messaging
+    - resilience-and-performance
+    - modernization-and-boundaries
+  architecture_option_reference_filename_prefixes:
+    gof: gang-of-four-object-design-pattern
+    architecture: application-or-system-architecture
+    presentation: presentation-architecture
+    dependency: dependency-management
+    data: data-access-or-data-model
+    integration: integration-or-messaging
+    resilience: resilience-or-operational-behavior
+    modernization: migration-or-external-boundary
+    unprefixed_exceptions:
+      - no-pattern.md
 ```
 
-Each `SKILL.md` MUST contain a compact routing table that connects observable task conditions to direct resource paths. For example, interchangeability of runtime behavior may route to `references/strategy.md`, event subscription may route to `references/observer.md`, and unjustified structural complexity may route to `references/no-pattern.md`. The routing table MUST point directly to the reference file rather than through a second index file.
+All references owned by `evaluate-architecture-options` remain direct children of its `references/` directory; category subdirectories are forbidden. Except for the intentionally neutral `no-pattern.md`, every reference in that skill MUST begin with one of the declared prefixes. Prefixes provide human-readable grouping, prevent ambiguous names such as `state.md` or `adapter.md`, and allow deterministic inventory validation without increasing reference depth. Other skills use concise filenames appropriate to their smaller, single-purpose reference sets.
 
-The 23 Gang of Four (GoF) patterns are stored as 23 focused Markdown files under `evaluate-architecture-options/references/`, one file per pattern. They MUST NOT be combined into one monolithic GoF reference and MUST NOT all be loaded for a single analysis. The agent loads only references implicated by the identified forces and credible alternatives.
+Each `SKILL.md` MUST contain a compact routing table grouped by these categories and connecting observable task conditions to direct resource paths. For example, interchangeability of runtime behavior may route to `references/gof-strategy.md`, in-process event subscription may route to `references/gof-observer.md`, distributed event delivery may route to `references/integration-publish-subscribe.md`, server-rendered presentation separation may route to `references/presentation-model-view-controller.md`, repeated remote-call failure may route to `references/resilience-circuit-breaker.md`, and unjustified structural complexity may route to `references/no-pattern.md`. The routing table MUST point directly to the reference file rather than through a second index file.
+
+The 23 Gang of Four (GoF) patterns are stored as 23 focused `gof-*.md` files under `evaluate-architecture-options/references/`, one file per pattern. They MUST NOT be combined into one monolithic GoF reference and MUST NOT all be loaded for a single analysis. The agent loads only references implicated by the identified forces and credible alternatives.
 
 Every design-pattern reference MUST cover a consistent minimum structure:
 
@@ -579,6 +619,20 @@ design_pattern_reference:
 ```
 
 Architecture styles and broader topics use the same focused-file principle. Templates intended for generated output belong in `assets/`; explanatory material belongs in `references/`. Assets are used or copied without being loaded into model context unless their content is explicitly needed.
+
+`presentation-model-view-controller.md` covers MVC as a presentation and application-architecture pattern rather than a GoF pattern. It MUST distinguish server-side MVC from client-side interpretations, prevent business logic from accumulating in controllers or views, explain when a framework controller does not imply a complete MVC design, and compare MVVM, MVP, Presentation Model, and component-based UI architecture as alternatives. Separate MVVM and MVP references are deferred until UI architecture becomes a broader product focus.
+
+The initial non-GoF reference set MUST also cover the following frequently encountered decisions:
+
+- `dependency-injection.md` distinguishes dependency injection from the Dependency Inversion Principle and evaluates constructor, factory, and container-based composition.
+- `data-unit-of-work.md` explains transaction boundaries and its relationship with Repository, including when an ORM already supplies the behavior.
+- `architecture-vertical-slice.md` provides a feature-oriented alternative to organization solely by technical layers.
+- `resilience-timeout-and-deadline.md` and `resilience-circuit-breaker.md` complement retry guidance and prevent unbounded waits or persistent retry pressure.
+- `data-cache-aside.md` evaluates performance benefits alongside invalidation, staleness, consistency, and sensitive-data risks.
+- `integration-publish-subscribe.md` covers distributed messaging and MUST NOT be treated as equivalent to the in-process Observer pattern.
+- `integration-idempotent-consumer.md` covers duplicate-message handling and the receiving side of Transactional Outbox workflows.
+- `integration-saga.md` covers multi-service consistency, choreography, orchestration, and compensating actions.
+- `modernization-anti-corruption-layer.md` protects a domain model from legacy or external representations and compares adapters and façades as implementation mechanisms.
 
 ## Agent and Skill Responsibilities
 
@@ -1302,15 +1356,29 @@ Feature: Agent Skills standard and progressive disclosure
   Scenario: Load only relevant design-pattern knowledge
     Given the identified forces suggest interchangeable runtime behavior
     When "evaluate-architecture-options" is activated
-    Then its SKILL.md may route directly to "references/strategy.md"
+    Then its SKILL.md may route directly to "references/gof-strategy.md"
     And it loads only the pattern references needed for credible alternatives
     And it does not load all 23 GoF pattern files
+
+  Scenario: Route related resilience references without loading the catalog
+    Given the design calls an unreliable remote dependency
+    When "evaluate-architecture-options" evaluates failure handling
+    Then it may load "resilience-retry-and-backoff.md", "resilience-timeout-and-deadline.md", and "resilience-circuit-breaker.md"
+    And it evaluates their interaction and different failure conditions
+    And it does not load unrelated architecture references
+
+  Scenario: Keep planned distributed-system references outside initial knowledge
+    Given the MVP skill package is being built
+    When its canonical references and advertised capabilities are inspected
+    Then post-MVP distributed-system references are not shipped as empty placeholders
+    And the agent does not claim implemented guidance for references that are not packaged
 
   Scenario: Validate a canonical skill package
     Given a directory directly below "shared/skills" is ready for packaging
     When "skills-ref validate" checks that directory
     Then its SKILL.md frontmatter and directory name satisfy the Agent Skills standard
     And every bundled resource is referenced by a direct relative path within the skill root
+    And every "evaluate-architecture-options" reference uses an approved category prefix or the "no-pattern.md" exception
 
   Scenario: Package a canonical skill for a platform adapter
     Given a canonical skill has passed open-standard validation
@@ -1487,14 +1555,16 @@ The first Codex plugin must demonstrate one complete architecture-first loop:
 
 ### Initial knowledge scope
 
-The MVP should cover a deliberately limited but useful set of concepts:
+The MVP should cover a deliberately bounded, progressively disclosed set of concepts:
 
 - modular monolith and service-oriented alternatives;
-- layered, clean, and hexagonal architecture;
-- dependency inversion and ports/adapters;
-- Strategy, Factory Method, Observer, Adapter, Command, and Repository;
-- basic event-driven integration;
-- idempotency, transactional outbox, and retry concerns;
+- layered, clean, hexagonal, Model-View-Controller, and vertical-slice architecture;
+- dependency inversion, dependency injection, ports/adapters, and anti-corruption boundaries;
+- Strategy, Factory Method, Observer, Adapter, Command, Repository, and Unit of Work;
+- event-driven integration, Publish/Subscribe, and Saga coordination;
+- idempotency, Idempotent Consumer, and Transactional Outbox;
+- retry with backoff, timeout and deadline propagation, and Circuit Breaker;
+- Cache-Aside with explicit consistency and sensitive-data trade-offs;
 - explicit recommendation of no pattern when appropriate.
 
 ### Demonstration scenario
@@ -1547,6 +1617,8 @@ verification_modes:
       - diagnostic-redaction
       - agent-skills-structure-validation
       - direct-resource-path-validation
+      - reference-inventory-validation
+      - no-placeholder-capability-validation
   scripted-host-test:
     applies_to:
       - plugin-installation
@@ -1573,9 +1645,8 @@ Model-evaluation fixtures SHOULD use a rubric with evidence citations and MUST a
 
 ## Future Capabilities
 
-- Broader GoF and enterprise pattern knowledge
+- Broader enterprise and domain-specific pattern knowledge
 - Domain-Driven Design and bounded-context analysis
-- Event sourcing and CQRS guidance
 - Cloud-native and distributed-systems knowledge
 - AI agent architecture patterns
 - Framework- and language-specific references
@@ -1586,6 +1657,30 @@ Model-evaluation fixtures SHOULD use a rubric with evidence citations and MUST a
 - UML and diagram generation
 - Technical-debt evidence and trend analysis
 - Additional coding-assistant adapters
+
+### Planned Distributed-Systems Reference Expansion
+
+The following focused references are planned after the MVP and remain owned by `evaluate-architecture-options`:
+
+```yaml
+planned_reference_expansion:
+  phase: post-mvp-distributed-systems
+  owning_skill: evaluate-architecture-options
+  target_directory: references
+  references:
+    - resilience-bulkhead.md
+    - resilience-rate-limiting.md
+    - integration-queue-based-load-leveling.md
+    - integration-competing-consumers.md
+    - integration-api-gateway.md
+    - integration-backends-for-frontends.md
+    - modernization-strangler-fig.md
+    - data-cqrs.md
+    - data-event-sourcing.md
+  loading: progressive-on-demand
+```
+
+These files MUST NOT be created as empty placeholders or represented as initial knowledge. Each reference enters the canonical skill only after its content, routing condition, trade-offs, misuse warnings, credible alternatives, and evaluation fixture are complete. CQRS and Event Sourcing MUST remain separate decisions and MUST NOT be presented as an inseparable pair.
 
 ## Long-Term Vision
 
