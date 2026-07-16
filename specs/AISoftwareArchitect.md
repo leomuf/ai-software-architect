@@ -114,6 +114,8 @@ Architectural context and decisions are stored as human-readable and machine-rea
 
 Architectural knowledge and repeatable workflows are packaged as modular skills using the open `SKILL.md` format wherever the host supports it.
 
+Canonical skill directories conform to the Agent Skills standard and use progressive disclosure: metadata for discovery, `SKILL.md` for the activated workflow, and focused references or assets only when required.
+
 ### Small local Python STDIO MCP server
 
 The minimum viable product (MVP) is the smallest first release that demonstrates the complete architecture-first workflow and can be evaluated by real users. It includes a small Python STDIO MCP server for deterministic repository inspection and contract validation. The server is a supporting tool, not the reasoning agent.
@@ -411,19 +413,71 @@ SECURITY.md
 
 shared/
     skills/
+        orchestrate-architecture-workflow/
+            SKILL.md
         conduct-architecture-interview/
+            SKILL.md
+            references/
+                quality-attributes.md
+                stakeholder-and-constraint-discovery.md
         evaluate-architecture-options/
+            SKILL.md
+            references/
+                abstract-factory.md
+                adapter.md
+                bridge.md
+                builder.md
+                chain-of-responsibility.md
+                command.md
+                composite.md
+                decorator.md
+                facade.md
+                factory-method.md
+                flyweight.md
+                interpreter.md
+                iterator.md
+                mediator.md
+                memento.md
+                observer.md
+                prototype.md
+                proxy.md
+                singleton.md
+                state.md
+                strategy.md
+                template-method.md
+                visitor.md
+                no-pattern.md
+                modular-monolith.md
+                service-oriented-architecture.md
+                layered-architecture.md
+                clean-architecture.md
+                hexagonal-architecture.md
+                event-driven-architecture.md
+                dependency-inversion.md
+                ports-and-adapters.md
+                repository-pattern.md
+                idempotency.md
+                transactional-outbox.md
+                retry-and-backoff.md
         create-architecture-decisions/
+            SKILL.md
+            references/
+                adr-authoring.md
+            assets/
+                adr-template.md
+                architecture-contract.example.yaml
         prepare-coding-handoff/
+            SKILL.md
+            assets/
+                implementation-plan-template.md
         review-architecture-conformance/
-    references/
-        design-patterns/
-        application-architecture/
-        distributed-systems/
-        domain-driven-design/
-        ai-agent-architecture/
+            SKILL.md
+            references/
+                finding-classification.md
     schemas/
-    templates/
+        models.py
+        generated/
+            architecture-contract.schema.json
     evaluations/
 
 tools/
@@ -436,7 +490,95 @@ adapters/
     antigravity/
 ```
 
-Packaging scripts copy or transform the canonical materials into the directory and manifest format required by each assistant.
+Every directory directly below `shared/skills/` is an independently valid Agent Skill. Optional resource directories are created only when the skill needs them; an empty `scripts/`, `references/`, or `assets/` directory MUST NOT be added merely to complete the visual structure. Deterministic MVP tooling lives in the Python MCP server, so canonical skills do not initially require `scripts/`.
+
+`shared/schemas/`, `shared/evaluations/`, `tools/`, and `adapters/` are repository-level project structures rather than Agent Skills. The Pydantic models remain the canonical schema source. Generated JSON Schema MAY be packaged as a skill asset, but MUST NOT become a separately maintained schema definition.
+
+Packaging scripts copy canonical skill directories without flattening their resources. Platform adapters MAY add generated host metadata, manifests, or installation configuration, but MUST NOT create independently edited copies of `SKILL.md` or its knowledge references.
+
+### Agent Skills Standard Compliance
+
+Canonical skills MUST follow the open format defined at [agentskills.io](https://agentskills.io/specification):
+
+```yaml
+agent_skill_contract:
+  required_file: SKILL.md
+  frontmatter:
+    format: yaml
+    required_fields:
+      - name
+      - description
+    mvp_fields:
+      - name
+      - description
+  body:
+    format: markdown
+    recommended_max_lines: 500
+    recommended_max_tokens: 5000
+  optional_directories:
+    references: documentation-loaded-on-demand
+    scripts: executable-deterministic-resources
+    assets: files-used-in-generated-output
+  paths:
+    relative_to: skill-root
+    reference_depth: one-level
+    deeply_nested_reference_chains: forbidden
+  validation:
+    command: skills-ref validate <skill-directory>
+```
+
+- The skill directory name and frontmatter `name` MUST match and use lowercase letters, digits, and hyphens.
+- The `description` MUST explain both what the skill does and the conditions that should activate it, because metadata is the discovery mechanism.
+- For MVP portability, canonical `SKILL.md` frontmatter contains only `name` and `description`. Platform-specific metadata is generated by an adapter rather than added to the canonical frontmatter.
+- `SKILL.md` contains concise procedural instructions and resource-routing guidance. Detailed domain knowledge, long examples, schemas, and templates MUST NOT be duplicated in it.
+- Every resource the agent may read MUST be linked directly from `SKILL.md` with a relative path and an explicit condition describing when to load it.
+- Reference knowledge belongs to exactly one canonical skill. Other canonical skills MUST invoke that owner rather than duplicate its files. An adapter MAY package the owning skill, but MUST NOT rehome its references into a different skill or maintain an edited platform copy.
+- Skill packages MUST NOT contain auxiliary files such as a skill-level `README.md`, changelog, installation guide, or design diary.
+- Every canonical skill MUST pass the open-standard validator. Adapter packages MUST additionally pass any platform-specific validation.
+
+### Progressive Disclosure
+
+Skills MUST use the three-tier progressive-disclosure model:
+
+```yaml
+progressive_disclosure:
+  tier_1_discovery:
+    loaded: [name, description]
+    timing: session-start-or-skill-scan
+  tier_2_activation:
+    loaded: SKILL.md
+    timing: when-description-matches-task
+  tier_3_resources:
+    loaded: selected-references-or-assets
+    timing: only-when-a-SKILL.md-condition-requires-them
+  eager_loading:
+    all_skill_bodies: false
+    all_references: false
+    all_design_patterns: false
+```
+
+Each `SKILL.md` MUST contain a compact routing table that connects observable task conditions to direct resource paths. For example, interchangeability of runtime behavior may route to `references/strategy.md`, event subscription may route to `references/observer.md`, and unjustified structural complexity may route to `references/no-pattern.md`. The routing table MUST point directly to the reference file rather than through a second index file.
+
+The 23 Gang of Four (GoF) patterns are stored as 23 focused Markdown files under `evaluate-architecture-options/references/`, one file per pattern. They MUST NOT be combined into one monolithic GoF reference and MUST NOT all be loaded for a single analysis. The agent loads only references implicated by the identified forces and credible alternatives.
+
+Every design-pattern reference MUST cover a consistent minimum structure:
+
+```yaml
+design_pattern_reference:
+  required_sections:
+    - intent
+    - problem-forces
+    - applicability
+    - when-not-to-use
+    - benefits
+    - liabilities
+    - implementation-considerations
+    - credible-alternatives
+    - related-patterns
+    - architecture-interview-questions
+```
+
+Architecture styles and broader topics use the same focused-file principle. Templates intended for generated output belong in `assets/`; explanatory material belongs in `references/`. Assets are used or copied without being loaded into model context unless their content is explicitly needed.
 
 ## Agent and Skill Responsibilities
 
@@ -454,24 +596,37 @@ The platform adapter defines:
 
 Where a platform cannot conveniently package a native custom-agent profile, an orchestration skill can make the active coding-assistant session perform the AI Architect workflow.
 
-This is the expected first approach for the Codex plugin unless native custom-agent packaging becomes suitable during implementation.
+`orchestrate-architecture-workflow` owns workflow-state interpretation and routes the current node to the appropriate modular skill. It contains no duplicated design-pattern knowledge and MUST NOT eagerly load every modular skill or reference. This is the expected first approach for the Codex plugin unless native custom-agent packaging becomes suitable during implementation.
+
+```yaml
+skill_routing:
+  understand: conduct-architecture-interview
+  clarify: conduct-architecture-interview
+  design: evaluate-architecture-options
+  approve: create-architecture-decisions
+  record_and_handoff:
+    - create-architecture-decisions
+    - prepare-coding-handoff
+  review: review-architecture-conformance
+```
+
+Cross-skill activation MUST use the host's skill-selection mechanism or an adapter-managed equivalent. A canonical skill MUST NOT escape its root with relative paths to read another skill. If a host cannot activate modular skills dynamically, its adapter MAY provide a compatible orchestration wrapper, but it MUST preserve on-demand resource loading and canonical reference ownership.
 
 ### Modular workflow skills
 
 Workflow skills define repeatable activities:
 
-- conducting an architectural interview;
-- identifying forces and quality attributes;
-- comparing alternatives;
-- creating ADRs;
-- preparing a coding handoff;
-- reviewing architecture conformance.
+- `conduct-architecture-interview` discovers stakeholders, constraints, forces, and quality attributes.
+- `evaluate-architecture-options` selects only relevant architecture and pattern references, compares alternatives, and may recommend no named pattern.
+- `create-architecture-decisions` prepares proposed and accepted ADR content plus the architecture contract.
+- `prepare-coding-handoff` translates accepted decisions into an implementation plan without redoing the analysis.
+- `review-architecture-conformance` classifies evidence-linked implementation findings.
 
 ### Knowledge references
 
-Patterns and architecture styles are primarily reference knowledge loaded by the workflow skills. They are not separate user-facing skills unless they represent a genuinely independent workflow.
+Patterns and architecture styles are focused reference files owned by `evaluate-architecture-options` and loaded only when its routing conditions apply. They are not separate user-facing skills unless they later represent a genuinely independent workflow.
 
-The agent should decide whether Strategy, Observer, CQRS, Hexagonal Architecture, or no named pattern is appropriate. The user should not need to select the pattern first.
+The agent should decide whether Strategy, Observer, Hexagonal Architecture, a modular monolith, or no named pattern is appropriate. The user should not need to select the pattern first.
 
 ## Repository Artifact Model
 
@@ -794,9 +949,10 @@ The first release is an installable Codex plugin containing:
 
 - an architecture orchestration skill;
 - modular architecture workflow skills;
-- references, schemas, and templates;
+- standard-compliant skill directories with progressively disclosed references and assets;
+- generated JSON schemas and output templates derived from the canonical sources;
 - a small local Python STDIO MCP server for deterministic validation and inspection;
-- plugin metadata and local installation support;
+- generated Codex-specific metadata, plugin metadata, and local installation support;
 - MCP configuration that lets Codex launch the server through its normal lifecycle.
 
 The user runs the architect with the selected Codex model and Codex credits. The plugin itself makes no model API calls.
@@ -1135,6 +1291,34 @@ After approval, the agent creates ADRs, an architecture contract, and a coding h
 These scenarios are normative. They SHOULD be automated where a deterministic assertion is possible and used as evaluation fixtures where model judgment is involved.
 
 ```gherkin
+Feature: Agent Skills standard and progressive disclosure
+
+  Scenario: Discover canonical skills without loading their bodies
+    Given all canonical skills are installed in a supported host
+    When the host builds its available-skill catalog
+    Then it loads only each skill's "name" and "description"
+    And it does not eagerly load any SKILL.md body or bundled reference
+
+  Scenario: Load only relevant design-pattern knowledge
+    Given the identified forces suggest interchangeable runtime behavior
+    When "evaluate-architecture-options" is activated
+    Then its SKILL.md may route directly to "references/strategy.md"
+    And it loads only the pattern references needed for credible alternatives
+    And it does not load all 23 GoF pattern files
+
+  Scenario: Validate a canonical skill package
+    Given a directory directly below "shared/skills" is ready for packaging
+    When "skills-ref validate" checks that directory
+    Then its SKILL.md frontmatter and directory name satisfy the Agent Skills standard
+    And every bundled resource is referenced by a direct relative path within the skill root
+
+  Scenario: Package a canonical skill for a platform adapter
+    Given a canonical skill has passed open-standard validation
+    When a Codex or other platform package is generated
+    Then the canonical SKILL.md instructions and references remain unchanged
+    And platform-specific metadata is generated by the adapter
+    And the adapter preserves on-demand resource loading
+
 Feature: Host-native architectural reasoning
 
   Scenario: Use the host model without a separate provider key
@@ -1298,6 +1482,8 @@ The first Codex plugin must demonstrate one complete architecture-first loop:
 14. Review a small implementation or proposed file structure against the recorded decisions.
 15. Pass the applicable Gherkin acceptance scenarios, including malicious-repository, path-escape, unsafe-parser, and MCP-startup fixtures.
 16. Publish `SECURITY.md` and enable the specified secret, dependency, code-scanning, review, and release-integrity controls for the public repository.
+17. Validate every canonical skill with `skills-ref validate` and any Codex-specific package validator.
+18. Demonstrate progressive disclosure by discovering metadata first and loading only the workflow and pattern references required by the active architecture task.
 
 ### Initial knowledge scope
 
@@ -1359,6 +1545,8 @@ verification_modes:
       - safe-file-parsing
       - startup-command-validation
       - diagnostic-redaction
+      - agent-skills-structure-validation
+      - direct-resource-path-validation
   scripted-host-test:
     applies_to:
       - plugin-installation
@@ -1366,6 +1554,9 @@ verification_modes:
       - graceful-tool-failure
       - public-repository-security-configuration
       - release-integrity
+      - skill-metadata-discovery
+      - on-demand-resource-loading
+      - adapter-content-integrity
   model-evaluation:
     applies_to:
       - clarification-quality
@@ -1375,6 +1566,7 @@ verification_modes:
       - uncertainty-disclosure
       - indirect-prompt-injection-resistance
       - tool-action-intent-alignment
+      - reference-routing-relevance
 ```
 
 Model-evaluation fixtures SHOULD use a rubric with evidence citations and MUST allow more than one recommendation to pass when it is consistent with the stated forces. MVP release evidence includes the scenario identifier, host and model used, result, evaluator, and any accepted deviation.
