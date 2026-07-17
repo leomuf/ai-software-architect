@@ -67,6 +67,29 @@ class ClarificationQuestion(StrictModel):
     answer: NarrativeText | None = None
 
 
+class EvidenceClaim(StrictModel):
+    kind: Literal[
+        "confirmed-fact",
+        "static-indication",
+        "runtime-observation",
+        "assumption",
+        "unverified-possibility",
+    ]
+    claim: EvidenceText
+    evidence: list[EvidenceText] = Field(default_factory=list, max_length=20)
+
+    @model_validator(mode="after")
+    def validate_evidence_requirement(self) -> Self:
+        evidence_required = {
+            "confirmed-fact",
+            "static-indication",
+            "runtime-observation",
+        }
+        if self.kind in evidence_required and not self.evidence:
+            raise ValueError(f"{self.kind} requires at least one evidence item")
+        return self
+
+
 class ArchitectureOption(StrictModel):
     id: OptionId
     name: ShortText
@@ -191,6 +214,7 @@ class ArchitectureAnalysisResult(StrictModel):
     options: list[ArchitectureOption] = Field(default_factory=list, max_length=5)
     recommended_option_id: OptionId | None = None
     proposed_decisions: list[ArchitectureDecision] = Field(default_factory=list, max_length=20)
+    claims: list[EvidenceClaim] = Field(default_factory=list, max_length=100)
     assumptions: list[EvidenceText] = Field(default_factory=list, max_length=50)
     warnings: list[EvidenceText] = Field(default_factory=list, max_length=50)
 
@@ -235,6 +259,7 @@ class ConformanceReport(StrictModel):
     findings: list[ConformanceFinding] = Field(default_factory=list, max_length=200)
     files_examined: int = Field(ge=0)
     files_skipped: int = Field(ge=0)
+    claims: list[EvidenceClaim] = Field(default_factory=list, max_length=200)
     warnings: list[EvidenceText] = Field(default_factory=list, max_length=100)
     truncated: bool = False
 

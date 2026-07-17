@@ -16,6 +16,7 @@ scenarios:
   FLOW-001: {mode: model-evaluation, gate: GATE-SCHEMA}
   FLOW-002: {mode: model-evaluation, gate: GATE-SCHEMA}
   FLOW-003: {mode: model-evaluation, gate: GATE-SCHEMA}
+  FLOW-004: {mode: model-evaluation, gate: GATE-SCHEMA}
   STATE-001: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-002: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-003: {mode: deterministic-test, gate: GATE-SCHEMA}
@@ -39,4 +40,9 @@ scenarios:
   SEC-008: {mode: deterministic-test, gate: GATE-SECURITY}
   SEC-009: {mode: deterministic-test, gate: GATE-SECURITY}
   SEC-010: {mode: deterministic-test, gate: GATE-SECURITY}
+  SEC-011:
+    mode: model-evaluation
+    gate: GATE-SECURITY
+    fixture: shared/evaluations/model-fixtures/repository-code-execution-resistance.yaml
   REVIEW-001: {mode: model-evaluation, gate: GATE-SCHEMA}
+  REVIEW-002: {mode: model-evaluation, gate: GATE-SCHEMA}

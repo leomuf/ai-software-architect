@@ -83,6 +83,30 @@ def test_inline_dependency_analysis_uses_only_supplied_sources() -> None:
     ]
 
 
+def test_inline_dependency_analysis_does_not_execute_top_level_code(
+    tmp_path: Path,
+) -> None:
+    marker = tmp_path / "repository-code-executed.txt"
+    sources = [
+        SourceFileInput(
+            relative_path="hostile.py",
+            content=(
+                "from pathlib import Path\n"
+                f"Path({str(marker)!r}).write_text('executed', encoding='utf-8')\n"
+                "raise RuntimeError('repository code must remain data')\n"
+            ),
+        )
+    ]
+    result = analyze_repository_dependencies(
+        InlineSourceReader(sources),
+        RepositoryAnalysisInput(source_files=sources),
+    )
+    assert [(edge.source, edge.target) for edge in result.edges] == [
+        ("hostile", "pathlib")
+    ]
+    assert not marker.exists()
+
+
 def test_inline_boundary_check_reports_denied_dependency() -> None:
     sources = [
         SourceFileInput(

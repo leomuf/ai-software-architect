@@ -26,6 +26,7 @@ The first implementation target is an installable [Codex](https://openai.com/cod
 - **Architecture-first reasoning:** discovers constraints, stakeholders, risks, and prioritized quality attributes before implementation.
 - **Focused clarification:** asks a bounded number of questions only when the answers can materially change a decision.
 - **Credible option comparison:** evaluates multiple approaches, their trade-offs, assumptions, uncertainty, and the option of using no named pattern.
+- **Clear, trustworthy findings:** clearly distinguishes verified facts from assumptions and possibilities, and shows the evidence behind important conclusions.
 - **Explicit human approval:** recommendations remain proposals until the user approves or revises them.
 - **Durable architecture artifacts:** creates Architecture Decision Records (ADRs), a machine-readable architecture contract, project context, and an implementation plan inside the repository.
 - **Coding-agent handoff:** gives the implementation task clear component responsibilities, dependency rules, constraints, milestones, and verification steps.

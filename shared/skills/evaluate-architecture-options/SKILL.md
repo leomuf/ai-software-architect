@@ -11,11 +11,21 @@ SPDX-License-Identifier: MIT
 # Evaluate Architecture Options
 
 1. Start from recorded constraints, risks, stakeholders, and ranked quality attributes.
-2. Form at least two credible options when genuine alternatives exist. Include [no pattern](references/no-pattern.md) whenever added structure lacks a demonstrated force.
+2. For an open-ended architecture or pattern-selection request, form three to five credible options within each material decision scope. Never pad the comparison with an option that does not address the same decision; when fewer than three credible alternatives exist, present the smaller set and explain why.
 3. Load only references implicated by the current forces. Do not preload the catalog.
 4. Compare benefits, liabilities, risks, assumptions, reversibility, and measurable fit. Scores support explanation; they do not replace it.
-5. Recommend one option only when the evidence supports it. State uncertainty and identify decisions requiring approval.
-6. Do not equate similarly named patterns across process or deployment boundaries.
+5. Include [no pattern](references/no-pattern.md) whenever added structure lacks a demonstrated force.
+6. Recommend one option only when the evidence supports it. State uncertainty and identify decisions requiring approval.
+7. Keep alternative options separate from complementary supporting patterns. Do not compare an application architecture, a presentation pattern, and an object-design pattern as if they solve the same decision.
+8. Do not equate similarly named patterns across process or deployment boundaries.
+
+## User-facing comparison contract
+
+- Present alternatives before the recommendation. For every option show a `0–100` fit score, concise rationale, main benefit, main liability, and material assumption.
+- Describe the score as an ordinal fit score for this decision, not a probability or calibrated percentage. State the criteria used to score the options.
+- Prefix the first mention of every named option and supporting pattern with its category: `[GoF]`, `[Architecture]`, `[Presentation]`, `[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, or `[No pattern]`.
+- Link the first user-facing pattern name to its canonical public reference under `https://github.com/leomuf/ai-software-architect/blob/main/shared/skills/evaluate-architecture-options/references/`, using the routed reference filename. Use plain text if the host cannot render Markdown links.
+- For supporting patterns, add a one-line role explaining where each applies. Do not assign them competing fit scores unless they are genuine alternatives within the same decision.
 
 ## Direct reference routing
 
@@ -73,4 +83,3 @@ SPDX-License-Identifier: MIT
 - Repeated downstream failure: [Circuit Breaker](references/resilience-circuit-breaker.md)
 - Read-performance cache: [Cache-Aside](references/data-cache-aside.md)
 - Legacy or external model isolation: [Anti-Corruption Layer](references/modernization-anti-corruption-layer.md)
-

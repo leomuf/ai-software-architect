@@ -9,6 +9,7 @@ from ai_architect_schemas import (
     ArchitectureDecision,
     ArtifactSecretScanResult,
     DependencyStatementInput,
+    EvidenceClaim,
     RepositoryAnalysisInput,
     SourceFileInput,
     WorkflowNode,
@@ -80,6 +81,16 @@ def test_workflow_state_requires_node_only_while_active() -> None:
 def test_secret_scan_result_flags_are_consistent() -> None:
     with pytest.raises(ValidationError, match="safe_to_write"):
         ArtifactSecretScanResult(safe_to_write=False, findings=[])
+
+
+def test_evidence_claim_requires_observation_for_asserted_fact() -> None:
+    with pytest.raises(ValidationError, match="requires at least one evidence"):
+        EvidenceClaim(kind="confirmed-fact", claim="The dependency is installed.")
+    assumption = EvidenceClaim(
+        kind="assumption",
+        claim="The application will run on one workstation.",
+    )
+    assert assumption.evidence == []
 
 
 def test_repository_analysis_requires_exactly_one_input_mode() -> None:
