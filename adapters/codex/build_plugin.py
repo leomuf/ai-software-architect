@@ -166,7 +166,7 @@ def assemble(runtime: Path) -> Path:
     shutil.copyfile(ROOT / "THIRD_PARTY_NOTICES.md", OUTPUT / "THIRD_PARTY_NOTICES.md")
     assets = OUTPUT / "assets"
     assets.mkdir()
-    shutil.copyfile(ROOT / "assets" / "AISoftwareArchitect.png", assets / "logo.png")
+    shutil.copyfile(ROOT / "assets" / "codex-plugin-icon.png", assets / "logo.png")
 
     runtime_target = OUTPUT / "runtime" / "windows-x86_64" / RUNTIME_NAME
     runtime_target.parent.mkdir(parents=True)
