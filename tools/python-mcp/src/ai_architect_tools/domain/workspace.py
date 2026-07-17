@@ -7,11 +7,14 @@ from __future__ import annotations
 
 import ctypes
 import os
+import re
 import stat
 from collections.abc import Iterable, Iterator
 from contextlib import closing
 from pathlib import Path, PurePosixPath
-from typing import BinaryIO
+from typing import BinaryIO, Protocol
+
+from ai_architect_schemas import SourceFileInput
 
 MAX_FILES = 500
 MAX_TOTAL_BYTES = 5_000_000
@@ -46,12 +49,25 @@ class WorkspaceAccessError(Exception):
         self.relative_path = relative_path
 
 
+class SourceReader(Protocol):
+    def read_text(self, relative_path: str, allowed_suffixes: set[str]) -> str: ...
+
+    def iter_files(
+        self, relative_roots: list[str], suffixes: set[str]
+    ) -> Iterator[str]: ...
+
+
 def _normalized_relative(path: str) -> PurePosixPath:
-    if not path or "\x00" in path:
+    if not path or any(ord(character) < 32 for character in path):
         raise WorkspaceAccessError("invalid-input", "relative path is empty or invalid")
     normalized = path.replace("\\", "/")
     candidate = PurePosixPath(normalized)
-    if candidate.is_absolute() or candidate.drive or any(part == ".." for part in candidate.parts):
+    if (
+        candidate.is_absolute()
+        or candidate.drive
+        or re.match(r"^[A-Za-z]:/", normalized)
+        or any(part == ".." for part in candidate.parts)
+    ):
         raise WorkspaceAccessError(
             "boundary-violation", "path must remain workspace-relative", path
         )
@@ -66,6 +82,32 @@ def _is_protected(path: PurePosixPath) -> bool:
         path.match(pattern) or PurePosixPath(text).match(pattern)
         for pattern in PROTECTED_PATTERNS
     )
+
+
+def validate_inline_python_path(path: str) -> PurePosixPath:
+    """Validate a host-supplied Python path without touching the filesystem."""
+
+    relative = _normalized_relative(path)
+    relative_text = relative.as_posix()
+    if relative_text == "." or any(part.startswith(".") for part in relative.parts):
+        raise WorkspaceAccessError(
+            "protected-path",
+            "hidden inline source paths are not accepted",
+            path,
+        )
+    if _is_protected(relative):
+        raise WorkspaceAccessError(
+            "protected-path",
+            "protected inline source path is not accepted",
+            relative_text,
+        )
+    if relative.suffix.casefold() != ".py":
+        raise WorkspaceAccessError(
+            "unsupported-format",
+            "inline source file type is not supported",
+            relative_text,
+        )
+    return relative
 
 
 def _is_reparse_point(path: Path) -> bool:
@@ -208,3 +250,63 @@ class WorkspaceReader:
                         pending.append(path)
                     elif entry.is_file(follow_symlinks=False):
                         yield path
+
+
+class InlineSourceReader:
+    """Read only bounded source text already supplied through an MCP input."""
+
+    def __init__(self, source_files: list[SourceFileInput]) -> None:
+        if not source_files:
+            raise WorkspaceAccessError("invalid-input", "source_files must not be empty")
+        files: dict[str, str] = {}
+        total_bytes = 0
+        for source in source_files:
+            relative = validate_inline_python_path(source.relative_path)
+            relative_text = relative.as_posix()
+            if "\x00" in source.content:
+                raise WorkspaceAccessError(
+                    "unsupported-format",
+                    "inline source contains a null byte",
+                    relative_text,
+                )
+            encoded_size = len(source.content.encode("utf-8"))
+            if encoded_size > MAX_SINGLE_FILE_BYTES:
+                raise WorkspaceAccessError(
+                    "budget-exhausted",
+                    "inline source exceeds the single-file budget",
+                    relative_text,
+                )
+            total_bytes += encoded_size
+            if total_bytes > MAX_TOTAL_BYTES:
+                raise WorkspaceAccessError(
+                    "budget-exhausted",
+                    "inline sources exceed the total byte budget",
+                )
+            if relative_text in files:
+                raise WorkspaceAccessError(
+                    "invalid-input",
+                    "inline source paths must be unique",
+                    relative_text,
+                )
+            files[relative_text] = source.content
+        self._files = files
+
+    def read_text(self, relative_path: str, allowed_suffixes: set[str]) -> str:
+        relative = _normalized_relative(relative_path)
+        relative_text = relative.as_posix()
+        if relative.suffix.casefold() not in allowed_suffixes:
+            raise WorkspaceAccessError(
+                "unsupported-format", "file type is not supported", relative_text
+            )
+        try:
+            return self._files[relative_text]
+        except KeyError as exc:
+            raise WorkspaceAccessError(
+                "not-found", "inline source was not supplied", relative_text
+            ) from exc
+
+    def iter_files(self, relative_roots: list[str], suffixes: set[str]) -> Iterator[str]:
+        del relative_roots
+        for relative_path in sorted(self._files):
+            if PurePosixPath(relative_path).suffix.casefold() in suffixes:
+                yield relative_path

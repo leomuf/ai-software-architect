@@ -16,7 +16,7 @@ from ai_architect_schemas import (
 
 from .contracts import load_safe_yaml, validate_architecture_contract
 from .dependencies import analyze_repository_dependencies
-from .workspace import WorkspaceReader
+from .workspace import SourceReader
 
 
 def _matches_component(module: str, component: str) -> bool:
@@ -26,7 +26,7 @@ def _matches_component(module: str, component: str) -> bool:
 
 
 def check_architecture_boundaries(
-    reader: WorkspaceReader, request: BoundaryCheckInput
+    reader: SourceReader | None, request: BoundaryCheckInput
 ) -> ConformanceReport:
     validation = validate_architecture_contract(
         ContractValidationInput(yaml_content=request.contract_yaml)
@@ -54,7 +54,10 @@ def check_architecture_boundaries(
     graph = analyze_repository_dependencies(
         reader,
         RepositoryAnalysisInput(
-            relative_roots=request.relative_roots, languages=request.languages
+            relative_roots=request.relative_roots,
+            source_files=request.source_files,
+            dependency_statements=request.dependency_statements,
+            languages=request.languages,
         ),
     )
     findings: list[ConformanceFinding] = []
@@ -91,5 +94,6 @@ def check_architecture_boundaries(
         findings=findings,
         files_examined=graph.files_examined,
         files_skipped=graph.files_skipped,
+        warnings=graph.warnings,
         truncated=graph.truncated or len(findings) >= 200,
     )

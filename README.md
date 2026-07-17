@@ -34,7 +34,7 @@ The first implementation target is an installable [Codex](https://openai.com/cod
 - **Local-first operation:** requires no managed backend, hosted database, account system, usage metering, or project-data upload service.
 - **Modular Agent Skills:** separates interviewing, option evaluation, decision creation, coding handoff, and conformance review into reusable skills based on the open `SKILL.md` format.
 - **Progressive disclosure:** initially exposes only skill metadata, loads a workflow when activated, and reads only the architecture references relevant to the current decision.
-- **Deterministic local tools:** bundles a small read-only Python STDIO MCP server for Pydantic contract validation, ADR inspection, Python dependency evidence, architecture-boundary checks, and pre-write secret scanning.
+- **Deterministic local tools:** bundles a small read-only Python STDIO MCP server for Pydantic contract validation, ADR inspection, Python dependency evidence, architecture-boundary checks, and pre-write secret scanning. When Codex does not forward MCP roots, it can use compact line-preserving import statements for faster routine scans or bounded full source for higher-assurance analysis.
 - **Portable source of truth:** stores accepted architecture state as reviewable Markdown and YAML rather than in a proprietary service.
 
 ## Architecture and Pattern Knowledge
@@ -122,7 +122,7 @@ The assembled plugin is written to `dist/codex/ai-software-architect/`.
 The project assumes its public controls are known to an attacker and treats repository content as untrusted data.
 
 - The local MCP server is read-only and has no network access, model calls, shell execution, subprocess execution, destructive writes, credentials, or telemetry.
-- Repository-reading tools require one host-confirmed workspace root and fail closed when it cannot be established.
+- MCP filesystem reads require one host-confirmed workspace root and fail closed when it cannot be established. Dependency and boundary analysis can instead parse bounded Python content already read through the host's native workspace permissions: compact static-import statements for fast scans or full source for stronger verification. Neither inline mode opens a path.
 - Paths are canonicalized and checked against traversal, symlink, junction, reparse-point, protected-file, and final-open-handle escapes.
 - Supported files are parsed without executing repository code; YAML aliases, duplicate keys, unsafe object construction, binary files, archives, unknown formats, and oversized input are rejected or safely skipped.
 - File, byte, dependency-edge, timeout, and process-call budgets bound repository analysis.

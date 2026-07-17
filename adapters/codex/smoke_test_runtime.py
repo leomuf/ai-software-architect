@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
 # SPDX-License-Identifier: MIT
 
-"""Launch the packaged STDIO runtime and exercise pathless contract validation."""
+"""Launch the packaged STDIO runtime and exercise pathless deterministic tools."""
 
 from __future__ import annotations
 
@@ -44,8 +44,39 @@ async def smoke_test(executable: Path) -> None:
                 )
                 if result.isError:
                     raise RuntimeError(f"pathless validation failed: {result.content}")
+                dependency_result = await session.call_tool(
+                    "analyze_repository_dependencies",
+                    arguments={
+                        "request": {
+                            "dependency_statements": [
+                                {
+                                    "relative_path": "budget.py",
+                                    "start_line": 9,
+                                    "statement": "import decimal",
+                                }
+                            ],
+                            "languages": ["python"],
+                        }
+                    },
+                )
+                if dependency_result.isError:
+                    raise RuntimeError(
+                        f"inline dependency analysis failed: {dependency_result.content}"
+                    )
+                structured = dependency_result.structuredContent or {}
+                edges = structured.get("result", {}).get("edges", [])
+                if not any(
+                    edge.get("source") == "budget"
+                    and edge.get("target") == "decimal"
+                    and edge.get("evidence") == "budget.py:9"
+                    for edge in edges
+                ):
+                    raise RuntimeError(
+                        f"inline dependency evidence was missing: {dependency_result.content}"
+                    )
                 print(
-                    f"{initialized.serverInfo.name}: {len(names)} tools; validation succeeded"
+                    f"{initialized.serverInfo.name}: {len(names)} tools; "
+                    "pathless validation and fast statement analysis succeeded"
                 )
         errlog.seek(0)
         stderr = errlog.read()

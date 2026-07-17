@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from pathlib import PurePosixPath
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 ADRId = Annotated[str, Field(pattern=r"^ADR-[0-9]{3}$")]
 OptionId = Annotated[str, Field(pattern=r"^OPT-[0-9]{3}$")]
@@ -19,6 +20,12 @@ RelativePathText = Annotated[str, Field(min_length=1, max_length=240)]
 ShortText = Annotated[str, Field(min_length=1, max_length=500)]
 EvidenceText = Annotated[str, Field(min_length=1, max_length=2_000)]
 NarrativeText = Annotated[str, Field(min_length=1, max_length=20_000)]
+MAX_INLINE_SOURCE_FILES = 500
+MAX_INLINE_SOURCE_BYTES = 5_000_000
+MAX_INLINE_SOURCE_FILE_BYTES = 500_000
+MAX_DEPENDENCY_STATEMENTS = 5_000
+MAX_DEPENDENCY_STATEMENT_BYTES = 20_000
+MAX_DEPENDENCY_STATEMENT_TOTAL_BYTES = 500_000
 
 
 def _default_languages() -> list[Literal["python"]]:
@@ -228,6 +235,7 @@ class ConformanceReport(StrictModel):
     findings: list[ConformanceFinding] = Field(default_factory=list, max_length=200)
     files_examined: int = Field(ge=0)
     files_skipped: int = Field(ge=0)
+    warnings: list[EvidenceText] = Field(default_factory=list, max_length=100)
     truncated: bool = False
 
 
@@ -241,11 +249,104 @@ class DecisionListInput(StrictModel):
     )
 
 
+class SourceFileInput(StrictModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False, strict=True)
+
+    relative_path: RelativePathText
+    content: str = Field(max_length=MAX_INLINE_SOURCE_FILE_BYTES)
+
+    @field_validator("relative_path")
+    @classmethod
+    def normalize_relative_path_text(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("relative_path must not be blank")
+        return stripped
+
+
+class DependencyStatementInput(StrictModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False, strict=True)
+
+    relative_path: RelativePathText
+    start_line: int = Field(ge=1, le=10_000_000)
+    statement: str = Field(min_length=1, max_length=MAX_DEPENDENCY_STATEMENT_BYTES)
+
+    @field_validator("relative_path")
+    @classmethod
+    def normalize_relative_path_text(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("relative_path must not be blank")
+        return stripped
+
+    @field_validator("statement")
+    @classmethod
+    def validate_statement_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("statement must not be blank")
+        if "\x00" in value:
+            raise ValueError("statement must not contain a null byte")
+        if len(value.encode("utf-8")) > MAX_DEPENDENCY_STATEMENT_BYTES:
+            raise ValueError("statement exceeds the single-statement byte budget")
+        return value
+
+
 class RepositoryAnalysisInput(StrictModel):
-    relative_roots: list[RelativePathText] = Field(min_length=1, max_length=20)
+    relative_roots: list[RelativePathText] = Field(default_factory=list, max_length=20)
+    source_files: list[SourceFileInput] = Field(
+        default_factory=list, max_length=MAX_INLINE_SOURCE_FILES
+    )
+    dependency_statements: list[DependencyStatementInput] = Field(
+        default_factory=list, max_length=MAX_DEPENDENCY_STATEMENTS
+    )
     languages: list[Literal["python"]] = Field(
         default_factory=_default_languages, min_length=1, max_length=1
     )
+
+    @model_validator(mode="after")
+    def validate_analysis_source(self) -> Self:
+        mode_count = sum(
+            bool(mode)
+            for mode in (
+                self.relative_roots,
+                self.source_files,
+                self.dependency_statements,
+            )
+        )
+        if mode_count != 1:
+            raise ValueError(
+                "provide exactly one of relative_roots, source_files, "
+                "or dependency_statements"
+            )
+        normalized_paths = [
+            PurePosixPath(source.relative_path.replace("\\", "/")).as_posix()
+            for source in self.source_files
+        ]
+        if len(normalized_paths) != len(set(normalized_paths)):
+            raise ValueError("source_files paths must be unique")
+        total_bytes = sum(len(source.content.encode("utf-8")) for source in self.source_files)
+        if total_bytes > MAX_INLINE_SOURCE_BYTES:
+            raise ValueError("source_files exceed the total inline-source byte budget")
+        statement_keys = [
+            (
+                PurePosixPath(item.relative_path.replace("\\", "/")).as_posix(),
+                item.start_line,
+            )
+            for item in self.dependency_statements
+        ]
+        if len(statement_keys) != len(set(statement_keys)):
+            raise ValueError(
+                "dependency_statements path and start_line pairs must be unique"
+            )
+        statement_bytes = sum(
+            len(item.statement.encode("utf-8"))
+            for item in self.dependency_statements
+        )
+        if statement_bytes > MAX_DEPENDENCY_STATEMENT_TOTAL_BYTES:
+            raise ValueError(
+                "dependency_statements exceed the total statement byte budget"
+            )
+        return self
 
 
 class BoundaryCheckInput(RepositoryAnalysisInput):

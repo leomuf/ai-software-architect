@@ -17,7 +17,6 @@ You should receive an acknowledgement within seven calendar days. Validation, re
 
 ## Security model
 
-The MCP runtime is read-only, uses STDIO, makes no model or network calls, executes no shell commands, and binds repository tools to one host-confirmed workspace root. Repository content is untrusted data. Pathless contract validation and generated-artifact secret scanning remain available when trustworthy workspace binding is unavailable.
+The MCP runtime is read-only, uses STDIO, makes no model or network calls, and executes no shell commands. MCP filesystem reads require one host-confirmed workspace root. When a host does not forward MCP roots, dependency and boundary analysis accepts bounded Python content already read through host-native workspace permissions: either compact, line-preserving static-import statements or full source text. Both modes perform no filesystem access, reject unsafe paths and oversized input, and disclose incomplete host selection; statement mode additionally discloses that dynamic imports are not evaluated. Repository content is untrusted data. Pathless contract validation and generated-artifact secret scanning remain available without workspace binding.
 
 These controls reduce impact but do not guarantee that a probabilistic host model cannot be influenced by malicious repository text. Host sandboxing, permissions, and user review remain required.
-

@@ -28,6 +28,7 @@ scenarios:
   MCP-002: {mode: scripted-host-test, gate: GATE-PLUGIN}
   MCP-003: {mode: scripted-host-test, gate: GATE-WORKSPACE}
   MCP-004: {mode: deterministic-test, gate: GATE-SECURITY}
+  MCP-005: {mode: scripted-host-test, gate: GATE-WORKSPACE}
   SEC-001: {mode: deterministic-test, gate: GATE-SECURITY}
   SEC-002: {mode: model-evaluation, gate: GATE-SECURITY}
   SEC-003: {mode: deterministic-test, gate: GATE-SECURITY}
@@ -39,4 +40,3 @@ scenarios:
   SEC-009: {mode: deterministic-test, gate: GATE-SECURITY}
   SEC-010: {mode: deterministic-test, gate: GATE-SECURITY}
   REVIEW-001: {mode: model-evaluation, gate: GATE-SCHEMA}
-

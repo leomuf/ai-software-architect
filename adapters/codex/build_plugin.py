@@ -48,6 +48,10 @@ SPDX-License-Identifier: MIT
 Use the user's Codex model for all reasoning. Never request a separate model API key.
 Act as a direct, collaborative, educational architect; present material decisions
 for approval and do not implement application code in this role.
+For deterministic Python evidence in Codex, read only relevant workspace files with
+native file tools. Prefer bounded `dependency_statements` for routine static import
+scans; use `source_files` when full AST context or higher assurance matters. Do not
+pass absolute roots or retry filesystem mode after `workspace-unavailable`.
 
 """
 

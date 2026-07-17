@@ -14,7 +14,7 @@ The initial implementation target is an installable Codex plugin. The product is
 ```yaml
 specification:
   name: ai-software-architect
-  version: 0.3.8
+  version: 0.5.0
   status: approved-for-mvp-implementation
   last_architecture_and_security_review: 2026-07-17
   release_scope: minimum-viable-product
@@ -35,8 +35,8 @@ implementation_readiness_gates:
   - id: GATE-PLUGIN
     requirement: the assembled Codex plugin passes manifest, package, installation, and clean-uninstall tests
   - id: GATE-WORKSPACE
-    requirement: Codex supplies a trustworthy project workspace binding to repository-scanning MCP tools
-    fail_closed_result: disable repository-scanning MCP tools
+    requirement: filesystem-scanning MCP tools use a trustworthy host root, while hosts without MCP roots use bounded source content or compact static-import statements read through native workspace tools
+    fail_closed_result: disable MCP filesystem reads while retaining bounded filesystem-free analysis
   - id: GATE-RUNTIME
     requirement: each advertised operating-system package starts without network installation or mutable code fetch
   - id: GATE-BUILD-ENV
@@ -291,7 +291,7 @@ workflow:
   nodes:
     understand:
       responsibilities:
-        - establish the workspace root, invocation mode, and safety policy
+        - establish the host evidence mode, trustworthy workspace binding when available, invocation mode, and safety policy
         - load existing context, contract, ADRs, and relevant review state
         - read the request and only the repository context relevant to it
         - classify the request as architecture-related, architecture-adjacent, or off-topic
@@ -839,9 +839,10 @@ Pydantic v2 models are the runtime contract for model-produced structured data, 
 from __future__ import annotations
 
 from enum import StrEnum
+from pathlib import PurePosixPath
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 ADRId = Annotated[str, Field(pattern=r"^ADR-[0-9]{3}$")]
@@ -855,6 +856,12 @@ RelativePathText = Annotated[str, Field(min_length=1, max_length=240)]
 ShortText = Annotated[str, Field(min_length=1, max_length=500)]
 EvidenceText = Annotated[str, Field(min_length=1, max_length=2_000)]
 NarrativeText = Annotated[str, Field(min_length=1, max_length=20_000)]
+MAX_INLINE_SOURCE_FILES = 500
+MAX_INLINE_SOURCE_BYTES = 5_000_000
+MAX_INLINE_SOURCE_FILE_BYTES = 500_000
+MAX_DEPENDENCY_STATEMENTS = 5_000
+MAX_DEPENDENCY_STATEMENT_BYTES = 20_000
+MAX_DEPENDENCY_STATEMENT_TOTAL_BYTES = 500_000
 
 
 class StrictModel(BaseModel):
@@ -1066,6 +1073,7 @@ class ConformanceReport(StrictModel):
     findings: list[ConformanceFinding] = Field(default_factory=list, max_length=200)
     files_examined: int = Field(ge=0)
     files_skipped: int = Field(ge=0)
+    warnings: list[EvidenceText] = Field(default_factory=list, max_length=100)
     truncated: bool = False
 
 
@@ -1079,11 +1087,115 @@ class DecisionListInput(StrictModel):
     )
 
 
+class SourceFileInput(StrictModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=False,
+        strict=True,
+    )
+
+    relative_path: RelativePathText
+    content: str = Field(max_length=MAX_INLINE_SOURCE_FILE_BYTES)
+
+    @field_validator("relative_path")
+    @classmethod
+    def normalize_relative_path_text(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("relative_path must not be blank")
+        return stripped
+
+
+class DependencyStatementInput(StrictModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=False,
+        strict=True,
+    )
+
+    relative_path: RelativePathText
+    start_line: int = Field(ge=1, le=10_000_000)
+    statement: str = Field(
+        min_length=1,
+        max_length=MAX_DEPENDENCY_STATEMENT_BYTES,
+    )
+
+    @field_validator("relative_path")
+    @classmethod
+    def normalize_relative_path_text(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("relative_path must not be blank")
+        return stripped
+
+    @field_validator("statement")
+    @classmethod
+    def validate_statement_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("statement must not be blank")
+        if "\x00" in value:
+            raise ValueError("statement must not contain a null byte")
+        if len(value.encode("utf-8")) > MAX_DEPENDENCY_STATEMENT_BYTES:
+            raise ValueError("statement exceeds the single-statement byte budget")
+        return value
+
+
 class RepositoryAnalysisInput(StrictModel):
-    relative_roots: list[RelativePathText] = Field(min_length=1, max_length=20)
+    relative_roots: list[RelativePathText] = Field(default_factory=list, max_length=20)
+    source_files: list[SourceFileInput] = Field(
+        default_factory=list, max_length=MAX_INLINE_SOURCE_FILES
+    )
+    dependency_statements: list[DependencyStatementInput] = Field(
+        default_factory=list, max_length=MAX_DEPENDENCY_STATEMENTS
+    )
     languages: list[Literal["python"]] = Field(
         default_factory=lambda: ["python"], min_length=1, max_length=1
     )
+
+    @model_validator(mode="after")
+    def validate_analysis_source(self) -> Self:
+        mode_count = sum(
+            bool(mode)
+            for mode in (
+                self.relative_roots,
+                self.source_files,
+                self.dependency_statements,
+            )
+        )
+        if mode_count != 1:
+            raise ValueError(
+                "provide exactly one of relative_roots, source_files, "
+                "or dependency_statements"
+            )
+        normalized_paths = [
+            PurePosixPath(source.relative_path.replace("\\", "/")).as_posix()
+            for source in self.source_files
+        ]
+        if len(normalized_paths) != len(set(normalized_paths)):
+            raise ValueError("source_files paths must be unique")
+        total_bytes = sum(len(source.content.encode("utf-8")) for source in self.source_files)
+        if total_bytes > MAX_INLINE_SOURCE_BYTES:
+            raise ValueError("source_files exceed the total inline-source byte budget")
+        statement_keys = [
+            (
+                PurePosixPath(item.relative_path.replace("\\", "/")).as_posix(),
+                item.start_line,
+            )
+            for item in self.dependency_statements
+        ]
+        if len(statement_keys) != len(set(statement_keys)):
+            raise ValueError(
+                "dependency_statements path and start_line pairs must be unique"
+            )
+        statement_bytes = sum(
+            len(item.statement.encode("utf-8"))
+            for item in self.dependency_statements
+        )
+        if statement_bytes > MAX_DEPENDENCY_STATEMENT_TOTAL_BYTES:
+            raise ValueError(
+                "dependency_statements exceed the total statement byte budget"
+            )
+        return self
 
 
 class BoundaryCheckInput(RepositoryAnalysisInput):
@@ -1208,7 +1320,7 @@ class WorkflowState(StrictModel):
 
 - `EvidenceText` is a reusable, required string type limited to 2,000 characters. It bounds rationales, risks, validation messages, recommendations, and evidence so model or tool output cannot grow without limit. Its name describes the intended content; it does not prove that a statement is supported. Evidence quality is checked separately by the workflow and domain rules.
 - `@model_validator(mode="after")` enforces relationships between fields after their individual types and constraints are valid. Examples include requiring an accepted ADR to select one of its considered options, requiring terminal workflow states to have no current node, and keeping result flags consistent with their error or finding lists.
-- MCP input models such as `ContractValidationInput`, `RepositoryAnalysisInput`, `BoundaryCheckInput`, and `ArtifactSecretScanInput` define the exact accepted request shape for each tool. They reject unknown fields, wrong types, excessive content, and unbounded collections before domain logic runs. Path safety and workspace authorization remain separate domain checks.
+- MCP input models such as `ContractValidationInput`, `SourceFileInput`, `DependencyStatementInput`, `RepositoryAnalysisInput`, `BoundaryCheckInput`, and `ArtifactSecretScanInput` define the exact accepted request shape for each tool. They reject unknown fields, wrong types, excessive content, duplicate normalized paths or line locations, and unbounded collections before domain logic runs. `RepositoryAnalysisInput` accepts exactly one evidence mode: `relative_roots` for a verified MCP workspace, `source_files` for bounded exact content already read through host-native workspace tools, or `dependency_statements` for compact, line-preserving static-import evidence. Path safety and workspace authorization remain separate domain checks.
 - MCP result models provide the same guarantee in the opposite direction: every tool returns a bounded, predictable structure that the host can validate and interpret without guessing.
 
 `fit_score` is an ordinal comparison aid within one analysis, not a probability, certainty claim, or cross-project metric. The analysis MUST state its scoring criteria, support every score with `fit_rationale`, expose uncertainty, and MUST NOT choose an option solely because it has the highest number.
@@ -1390,6 +1502,7 @@ tools/
                 dependencies.py
                 boundaries.py
                 decisions.py
+                workspace.py
             mcp_server.py
             cli.py
         tests/
@@ -1403,6 +1516,7 @@ The package structure separates deterministic domain logic from transport and sh
   - `dependencies.py` extracts and analyzes dependencies between modules.
   - `boundaries.py` compares dependencies and repository structure with declared architectural boundaries.
   - `decisions.py` reads, validates, and links Architecture Decision Records (ADRs).
+  - `workspace.py` provides the common source-reader boundary: one implementation performs guarded reads under a verified host root, while the other exposes only bounded Python text already supplied inline and never opens a path.
 - The internal `ai_architect_schemas` package under `shared/schemas/` contains the canonical Pydantic models for tool inputs, outputs, contracts, findings, and validation errors. Its `pyproject.toml` defines the independently installable workspace package and its Pydantic dependency. The `src/` layout separates importable code from packaging and generated files. `ai_architect_schemas/` is the import namespace, `__init__.py` exposes its supported public models, and `models.py` owns their authoritative definitions. `ai_architect_tools` declares this package as a local build dependency and imports it directly; it MUST NOT define a second schema module.
 - `mcp_server.py` exposes the domain functions as STDIO MCP tools without adding reasoning logic.
 - `cli.py` exposes the same domain functions for local testing, scripting, and diagnostics without an MCP host.
@@ -1442,6 +1556,8 @@ mcp_server:
     mvp_languages:
       - python
     python_parser: standard-library-ast-without-execution
+    fast_mode: host-selected-static-import-statements
+    strong_mode: verified-workspace-or-full-source-ast
     unsupported_language_action: skip-and-report
   tools:
     - name: validate_architecture_contract
@@ -1466,21 +1582,27 @@ mcp_server:
       output: ArtifactSecretScanResult
 ```
 
-The Build Week release targets Windows x86-64 and bundles a self-contained executable built in CI from the reviewed Python source and locked dependencies. At this specification review, the [official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) documents v1 as the stable line and v2 as a pre-release transition; the MVP therefore locks an exact stable v1 release below v2. Moving to v2 requires a separate dependency ADR after stable availability plus protocol, structured-output, lifecycle, packaging, and security regression tests. The installed plugin MUST NOT create a virtual environment, invoke `pip`, fetch a package, or require a system Python installation on first run. Later operating-system and architecture packages require the same clean-machine lifecycle and security tests before they are advertised. The `.mcp.json` command MUST point only to the executable inside the installed, immutable plugin package using path semantics verified against the current Codex plugin runtime; it MUST NOT point into the analyzed repository or depend on shell or environment expansion.
+The Build Week release targets Windows x86-64 and bundles a self-contained executable built in CI from the reviewed Python source and locked dependencies. At this specification review, the [official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) documents v1 as the stable line and v2 as a pre-release transition; the MVP therefore locks an exact stable v1 release below v2. Moving to v2 requires a separate dependency ADR after stable availability plus protocol, structured-output, lifecycle, packaging, and security regression tests. The installed plugin MUST NOT create a virtual environment, invoke `pip`, fetch a package, or require a system Python installation on first run. Later operating-system and architecture packages require the same clean-machine lifecycle and security tests before they are advertised. The `.mcp.json` command MUST point only to the executable inside the installed, immutable plugin package using path semantics verified against the current Codex plugin runtime; it MUST set `cwd` to `"."` so Codex resolves the executable from the installed plugin root rather than the analyzed repository, and it MUST NOT point into the analyzed repository or depend on shell or environment expansion.
 
-Codex's documented plugin lifecycle launches a bundled MCP server, but it does not by itself prove that the child process receives the active project root as a trustworthy value. `GATE-WORKSPACE` therefore requires an integration test before repository-reading tools are enabled. The preferred binding is a host-confirmed local `file:` root obtained through the MCP client roots capability when Codex demonstrably supports it; a documented host startup working directory or argument MAY be used only if it has equivalent active-project semantics. The selected root is canonicalized and fixed for the process lifetime. A roots-change notification disables repository-reading tools until an explicit safe rebind or process restart; it never silently switches projects. A path proposed by the model, repository content, or an individual tool argument is never a trust anchor. If no trustworthy binding is available, `list_architecture_decisions`, `analyze_repository_dependencies`, and `check_architecture_boundaries` MUST be disabled or return `workspace-unavailable` without reading a file. `validate_architecture_contract` and `scan_generated_artifact` remain available in pathless modes that accept bounded content already read or generated through approved host-native tools.
+Codex's documented plugin lifecycle launches a bundled MCP server, but it does not guarantee that the child process receives the active project root through MCP `roots/list`. Integration testing with Codex Desktop/CLI `0.144.5` confirmed that an active single-root project was not forwarded to this plugin's MCP server. `GATE-WORKSPACE` therefore governs only MCP filesystem access: the preferred binding remains one host-confirmed local `file:` root when a host demonstrably supports it, and a documented host startup working directory or argument MAY be used only if it has equivalent active-project semantics. The selected root is canonicalized and fixed for the process lifetime. A roots-change notification disables filesystem mode until an explicit safe rebind or process restart; it never silently switches projects. A path proposed by the model, repository content, or an individual tool argument is never a trust anchor.
+
+When no trustworthy MCP root is available, `list_architecture_decisions` continues to return `workspace-unavailable` without reading a file. `analyze_repository_dependencies` and `check_architecture_boundaries` MUST retain two filesystem-free modes. Full-source mode accepts bounded `SourceFileInput` records containing workspace-relative paths and exact source text already read through host-native workspace tools. Fast statement mode accepts bounded `DependencyStatementInput` records containing a workspace-relative Python path, the original starting line, and exactly one syntactically complete static `import` or `from ... import ...` statement. The server MUST parse both modes with Python's AST without execution and preserve original line evidence.
+
+Fast statement mode is intended for routine dependency orientation where smaller tool payloads reduce host-model latency and token use. It MUST warn that the host selected the statements and that omitted or dynamic imports were not evaluated. It MUST NOT support arbitrary executable statements, multiple statements per record, or claim repository completeness. Full-source or verified-workspace mode MUST be used when dynamic-import detection, full syntax context, security-sensitive boundary verification, or release-gating assurance matters.
+
+Both filesystem-free modes MUST reject absolute, traversal, hidden, protected, duplicate, non-Python, null-containing, oversized, or mixed-mode inputs before parsing. They MUST never open a path, infer a repository root, or echo supplied content. Every result MUST disclose limitations caused by host selection. `validate_architecture_contract` and `scan_generated_artifact` remain pathless.
 
 At MCP initialization, the server MUST return concise `instructions` that state its read-only purpose, lack of network/model/shell access, workspace-boundary rule, untrusted-content treatment, and budgets. The security-critical guidance MUST be self-contained within the first 512 characters because Codex may use that prefix when deciding whether and how to call the server. A deterministic test MUST assert the prefix content and length.
 
-MCP tools MUST return evidence and structured facts, not architectural recommendations. The host model interprets the evidence. Input schemas limit shape and size; the domain boundary layer separately canonicalizes every relative path and enforces the workspace and protected-file policies. `list_architecture_decisions` reads only the fixed `.ai-architect/decisions/` directory and accepts status filters, not a caller-selected directory. All MVP MCP tools are read-only; the host writes approved files through its normal repository tools and permission flow. Additional tools require a documented use case, schema, guardrail analysis, and acceptance scenario before they enter the public surface.
+MCP tools MUST return evidence and structured facts, not architectural recommendations. The host model interprets the evidence. Input schemas limit shape and size; the domain boundary layer separately canonicalizes every relative path and enforces workspace, inline-source, and protected-file policies. `list_architecture_decisions` reads only the fixed `.ai-architect/decisions/` directory and accepts status filters, not a caller-selected directory. All MVP MCP tools are read-only; the host writes approved files through its normal repository tools and permission flow. Additional tools require a documented use case, schema, guardrail analysis, and acceptance scenario before they enter the public surface.
 
 The AI Architect itself is programming-language independent: its workflow, architecture knowledge, ADRs, contracts, and host-native reasoning can be used for Python, Java, C#, TypeScript, Go, Rust, and other languages. Only the MVP's deterministic MCP dependency extractor is initially Python-specific. For other languages, the host model MAY inspect code with approved native tools, but it MUST disclose that the dependency graph was not deterministically verified by this MCP tool.
 
-The deterministic dependency extractor uses Python's standard-library Abstract Syntax Tree (AST) parser. An AST represents source code as structured syntax nodes, allowing the tool to identify `import` and `from ... import ...` statements and derive module dependencies without importing or executing repository code. This is safer and more accurate than regular-expression scanning because comments and string literals are not mistaken for imports, while multiline and aliased imports remain valid syntax the parser understands.
+The deterministic dependency extractor uses Python's standard-library Abstract Syntax Tree (AST) parser. An AST represents source code as structured syntax nodes, allowing the tool to identify `import` and `from ... import ...` statements and derive module dependencies without importing or executing repository code. This is safer and more accurate than regular-expression scanning because comments and string literals are not mistaken for imports, while multiline and aliased imports remain valid syntax the parser understands. Fast statement mode uses the same AST parser but receives only host-selected static-import statements and their original starting lines; it reduces payload size, not the need to disclose incomplete selection.
 
 AST analysis is static and therefore intentionally limited. It may not resolve dependencies created through dynamic imports, reflection, runtime dependency injection, generated code, or framework configuration. The MCP result MUST report such limitations and MUST NOT present the dependency graph as complete when relevant constructs are unsupported or skipped. Other programming languages MAY still be analyzed by the host model using approved native tools. Each additional deterministic language parser requires an accepted parser design, malicious-syntax fixtures, dependency-resolution semantics, budget tests, and an updated capability matrix before release.
 
-The server MUST never write logs to standard output because that would corrupt the STDIO protocol. MCP error data MUST validate against `ToolError` and use stable, sanitized codes for invalid input, missing files, unavailable workspace binding, boundary violations, protected paths, budget exhaustion, unsafe content, and unsupported file formats. When available, the workspace root is fixed at startup and MUST NOT be accepted from individual tool inputs. A server failure MUST degrade gracefully: the agent MAY continue reasoning with native host tools, but MUST disclose that deterministic validation was unavailable.
+The server MUST never write logs to standard output because that would corrupt the STDIO protocol. MCP error data MUST validate against `ToolError` and use stable, sanitized codes for invalid input, missing files, unavailable workspace binding, boundary violations, protected paths, budget exhaustion, unsafe content, and unsupported file formats. When available, the workspace root is fixed at startup and MUST NOT be accepted from individual tool inputs. Inline mode accepts source content, never a root, and performs no filesystem access. A server failure MUST degrade gracefully: the agent MAY continue reasoning with native host tools, but MUST disclose that deterministic validation was unavailable.
 
 ## Security, Privacy, and Guardrails
 
@@ -1571,6 +1693,34 @@ guardrails:
     subprocess_execution: false
     dynamic_code_loading: false
     startup_command_interpolation: false
+    inline_source_mode:
+      read_executor: host-native-workspace-tools
+      mcp_filesystem_access: none
+      supported_language: python
+      evidence_modes:
+        full_source:
+          accepted_fields:
+            - workspace-relative-path
+            - exact-source-text
+          use_for:
+            - dynamic-import-detection
+            - full-ast-context
+            - higher-assurance-boundary-verification
+        fast_statement:
+          accepted_fields:
+            - workspace-relative-path
+            - original-start-line
+            - one-static-import-statement
+          max_statements: 5000
+          max_total_bytes: 500000
+          max_single_statement_bytes: 20000
+          reject_non_import_or_multiple_statements: true
+          disclose_dynamic_and_omitted_import_limitations: true
+      mutually_exclusive_evidence_modes: true
+      reject_absolute_traversal_hidden_protected_or_duplicate_paths: true
+      reject_unknown_formats_and_null_bytes: true
+      echo_source_content: false
+      disclose_incomplete_host_selection: true
     parsing:
       yaml_loader: safe-only
       arbitrary_object_construction: false
@@ -1629,6 +1779,8 @@ A strike is a local safety-response metric, not an authorization mechanism or us
 Repository content, including source comments, Markdown, specifications, ADRs, generated files, commit messages, and filenames, MUST be treated as untrusted data. Content encountered during analysis MUST NOT change the agent role, override host or skill instructions, broaden file access, authorize tool calls, request secrets, or modify the original user intent. Before every tool call, an action gate MUST compare the proposed operation with the original user request, current workflow node, immutable workspace root, and deterministic tool policy. The repository content that influenced the proposal MUST NOT be the authority that approves it.
 
 Context collection MUST be minimized: prefer MCP-produced structural evidence, manifests, symbols, and the smallest relevant source ranges over complete files. Suspected credential values encountered in otherwise relevant source MUST NOT be repeated in prompts, responses, diagnostics, or artifacts. This control reduces exposure but cannot change the data-processing behavior of the user's chosen host after the host has read a file; that behavior must be disclosed through the host's own privacy and deployment documentation.
+
+Inline source analysis is a bounded local exception to the preference for structural evidence because the MCP parser needs source text to derive that evidence when Codex does not forward a root. The host MUST select only relevant Python files within its active workspace, preserve workspace-relative paths, exclude hidden and protected files, and avoid unrelated source. The MCP process MUST return only dependency facts, counts, sanitized warnings, and workspace-relative evidence locations; it MUST NOT return supplied source text.
 
 The platform adapter is responsible for the intent-aware action gate because the local MCP server does not perform model reasoning. The MCP server MUST independently enforce its deterministic path, parser, budget, and read-only policies even if the host-side action gate fails. AI Software Architect MUST NOT claim to replace or weaken the coding assistant's sandbox, permission prompts, or native tool controls; host-native tools remain governed by the host and user. Any future MCP capability that writes outside `.ai-architect/`, executes processes, or accesses a network requires a separate threat-model update and explicit human approval and is outside the MVP.
 
@@ -1959,10 +2111,13 @@ Feature: Local deterministic MCP tools
   @MCP-003
   Scenario: No trustworthy workspace binding is available
     Given Codex has not supplied a documented and verified active-project binding
-    When the MCP server initializes
-    Then repository-reading tools are disabled or return "workspace-unavailable"
+    When the agent requests deterministic Python dependency evidence
+    Then MCP filesystem reads remain disabled or return "workspace-unavailable"
     And no tool accepts a model-proposed workspace root
-    But pathless architecture-contract validation remains available
+    But the agent may read relevant Python files through host-native workspace tools
+    And call the same analysis tool with bounded workspace-relative "dependency_statements" for a routine static dependency scan
+    And the MCP server parses only that supplied content without opening a path
+    And the result discloses that host selection may be incomplete and dynamic imports were not evaluated
 
   @MCP-004
   Scenario: MCP initialization publishes bounded safety instructions
@@ -1970,6 +2125,17 @@ Feature: Local deterministic MCP tools
     When it returns its initialization response
     Then the first 512 instruction characters state the critical read-only constraints and budgets
     And a deterministic test verifies that prefix
+
+  @MCP-005
+  Scenario: Stronger inline dependency verification is required
+    Given Codex has not supplied a trustworthy workspace binding
+    And dynamic imports, full AST context, or a release-gating boundary conclusion matters
+    When the agent requests deterministic Python dependency evidence
+    Then it reads only relevant approved Python files through host-native workspace tools
+    And calls the analysis tool with bounded workspace-relative "source_files"
+    And omits "relative_roots" and "dependency_statements"
+    And the MCP server parses the supplied source without opening a path
+    And the result discloses that host file selection may be incomplete
 
 Feature: Security and scope guardrails
 
@@ -2086,7 +2252,7 @@ The first Codex plugin must demonstrate one complete architecture-first loop:
 17. Validate every canonical skill with `skills-ref validate` and any Codex-specific package validator.
 18. Demonstrate progressive disclosure by discovering metadata first and loading only the workflow and pattern references required by the active architecture task.
 19. Generate the Codex Composite and provenance map reproducibly from canonical modular skills; fail the build when generated output is stale.
-20. Prove a trustworthy Codex workspace binding before enabling repository-reading MCP tools, or demonstrate the specified fail-closed mode.
+20. Prove a trustworthy host workspace binding before enabling MCP filesystem reads, and demonstrate bounded inline-source analysis when Codex does not forward MCP roots.
 21. Enforce accepted-decision, reference-integrity, workflow-state, and cross-artifact semantic validation in addition to Pydantic shape validation.
 22. Preserve concurrent user edits and recover safely from a partial multi-file persistence failure.
 23. Block generated artifacts containing likely secrets and verify that `.ai-architect/.runtime/` cannot be committed.

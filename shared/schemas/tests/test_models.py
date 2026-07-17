@@ -8,6 +8,9 @@ from ai_architect_schemas import (
     ArchitectureContract,
     ArchitectureDecision,
     ArtifactSecretScanResult,
+    DependencyStatementInput,
+    RepositoryAnalysisInput,
+    SourceFileInput,
     WorkflowNode,
     WorkflowState,
     WorkflowStatus,
@@ -77,3 +80,73 @@ def test_workflow_state_requires_node_only_while_active() -> None:
 def test_secret_scan_result_flags_are_consistent() -> None:
     with pytest.raises(ValidationError, match="safe_to_write"):
         ArtifactSecretScanResult(safe_to_write=False, findings=[])
+
+
+def test_repository_analysis_requires_exactly_one_input_mode() -> None:
+    with pytest.raises(ValidationError, match="exactly one"):
+        RepositoryAnalysisInput()
+    with pytest.raises(ValidationError, match="exactly one"):
+        RepositoryAnalysisInput(
+            relative_roots=["."],
+            source_files=[SourceFileInput(relative_path="app.py", content="import json\n")],
+        )
+    with pytest.raises(ValidationError, match="exactly one"):
+        RepositoryAnalysisInput(
+            source_files=[SourceFileInput(relative_path="app.py", content="import json\n")],
+            dependency_statements=[
+                DependencyStatementInput(
+                    relative_path="app.py",
+                    start_line=1,
+                    statement="import json",
+                )
+            ],
+        )
+
+
+def test_inline_source_contract_preserves_content_and_rejects_duplicate_paths() -> None:
+    source = SourceFileInput(relative_path=" app.py ", content="  import json\n")
+    assert source.relative_path == "app.py"
+    assert source.content == "  import json\n"
+    with pytest.raises(ValidationError, match="unique"):
+        RepositoryAnalysisInput(
+            source_files=[
+                SourceFileInput(relative_path="pkg\\module.py", content="import json\n"),
+                SourceFileInput(relative_path="pkg/module.py", content="import pathlib\n"),
+            ]
+        )
+
+
+def test_dependency_statement_contract_preserves_text_and_rejects_duplicate_lines() -> None:
+    statement = DependencyStatementInput(
+        relative_path=" app.py ",
+        start_line=7,
+        statement="import json as data\n",
+    )
+    assert statement.relative_path == "app.py"
+    assert statement.statement == "import json as data\n"
+    with pytest.raises(ValidationError, match="unique"):
+        RepositoryAnalysisInput(
+            dependency_statements=[
+                statement,
+                DependencyStatementInput(
+                    relative_path="app.py",
+                    start_line=7,
+                    statement="import pathlib",
+                ),
+            ]
+        )
+
+
+def test_dependency_statement_rejects_blank_null_and_mixed_code() -> None:
+    with pytest.raises(ValidationError, match="blank"):
+        DependencyStatementInput(
+            relative_path="app.py",
+            start_line=1,
+            statement="   ",
+        )
+    with pytest.raises(ValidationError, match="null"):
+        DependencyStatementInput(
+            relative_path="app.py",
+            start_line=1,
+            statement="import os\x00",
+        )

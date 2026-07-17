@@ -51,6 +51,7 @@ def test_codex_plugin_is_reproducible_and_complete(tmp_path: Path) -> None:
     server = mcp_config["mcpServers"]["ai-software-architect-tools"]
     assert server["command"] == "./runtime/windows-x86_64/ai-architect-mcp.exe"
     assert server["args"] == []
+    assert server["cwd"] == "."
     assert (second / server["command"].removeprefix("./")).is_file()
 
     provenance = json.loads((second / "provenance.json").read_text("utf-8"))
@@ -58,4 +59,3 @@ def test_codex_plugin_is_reproducible_and_complete(tmp_path: Path) -> None:
     assert len(provenance["source_to_output"]) == 60
     for relative, expected_hash in provenance["output_sha256"].items():
         assert hashlib.sha256((second / relative).read_bytes()).hexdigest() == expected_hash
-

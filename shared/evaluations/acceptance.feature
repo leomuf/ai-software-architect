@@ -193,10 +193,13 @@ Feature: Local deterministic MCP tools
   @MCP-003
   Scenario: No trustworthy workspace binding is available
     Given Codex has not supplied a documented and verified active-project binding
-    When the MCP server initializes
-    Then repository-reading tools are disabled or return "workspace-unavailable"
+    When the agent requests deterministic Python dependency evidence
+    Then MCP filesystem reads remain disabled or return "workspace-unavailable"
     And no tool accepts a model-proposed workspace root
-    But pathless architecture-contract validation remains available
+    But the agent may read relevant Python files through host-native workspace tools
+    And call the same analysis tool with bounded workspace-relative "dependency_statements" for a routine static dependency scan
+    And the MCP server parses only that supplied content without opening a path
+    And the result discloses that host selection may be incomplete and dynamic imports were not evaluated
 
   @MCP-004
   Scenario: MCP initialization publishes bounded safety instructions
@@ -204,6 +207,17 @@ Feature: Local deterministic MCP tools
     When it returns its initialization response
     Then the first 512 instruction characters state the critical read-only constraints and budgets
     And a deterministic test verifies that prefix
+
+  @MCP-005
+  Scenario: Stronger inline dependency verification is required
+    Given Codex has not supplied a trustworthy workspace binding
+    And dynamic imports, full AST context, or a release-gating boundary conclusion matters
+    When the agent requests deterministic Python dependency evidence
+    Then it reads only relevant approved Python files through host-native workspace tools
+    And calls the analysis tool with bounded workspace-relative "source_files"
+    And omits "relative_roots" and "dependency_statements"
+    And the MCP server parses the supplied source without opening a path
+    And the result discloses that host file selection may be incomplete
 
 Feature: Security and scope guardrails
 

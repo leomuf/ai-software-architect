@@ -44,8 +44,14 @@ def validate(root: Path) -> None:
         raise ValueError("implicit invocation must remain disabled")
     mcp = json.loads((root / ".mcp.json").read_text("utf-8"))
     server = mcp["mcpServers"]["ai-software-architect-tools"]
-    if set(server) != {"command", "args"} or server["args"] != []:
-        raise ValueError("MCP startup must be a fixed executable and argument array")
+    if (
+        set(server) != {"command", "args", "cwd"}
+        or server["args"] != []
+        or server["cwd"] != "."
+    ):
+        raise ValueError(
+            "MCP startup must use a fixed executable from the plugin-root working directory"
+        )
     executable = root / server["command"].removeprefix("./")
     if not executable.is_file() or executable.suffix.casefold() != ".exe":
         raise ValueError("bundled MCP executable is missing")
