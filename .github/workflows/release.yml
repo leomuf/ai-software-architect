@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+name: Release artifact
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13.12"
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.11.3"
+          enable-cache: false
+      - run: uv sync --locked --all-packages
+      - run: uv run python tools/generate_third_party_notices.py
+      - run: uv run python adapters/codex/build_plugin.py --build-runtime
+      - run: uv run python adapters/codex/validate_plugin.py dist/codex/ai-software-architect
+      - shell: pwsh
+        run: tar.exe -a -c -f ai-software-architect-windows-x86_64.zip -C dist/codex ai-software-architect
+      - shell: pwsh
+        run: (Get-FileHash ai-software-architect-windows-x86_64.zip -Algorithm SHA256).Hash + "  ai-software-architect-windows-x86_64.zip" | Set-Content SHA256SUMS.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ai-software-architect-windows-x86_64
+          path: |
+            ai-software-architect-windows-x86_64.zip
+            SHA256SUMS.txt
+          if-no-files-found: error

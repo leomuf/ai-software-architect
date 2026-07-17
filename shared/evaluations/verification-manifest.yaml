@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+scenarios:
+  SKILL-001: {mode: scripted-host-test, gate: GATE-SKILL}
+  SKILL-002: {mode: model-evaluation, gate: GATE-SKILL}
+  SKILL-003: {mode: model-evaluation, gate: GATE-SKILL}
+  SKILL-004: {mode: deterministic-test, gate: GATE-SKILL}
+  SKILL-005: {mode: deterministic-test, gate: GATE-SKILL}
+  SKILL-006: {mode: scripted-host-test, gate: GATE-SKILL}
+  PLUGIN-001: {mode: deterministic-test, gate: GATE-PLUGIN}
+  PLUGIN-002: {mode: deterministic-test, gate: GATE-PLUGIN}
+  HOST-001: {mode: model-evaluation, gate: GATE-PLUGIN}
+  HOST-002: {mode: model-evaluation, gate: GATE-PLUGIN}
+  FLOW-001: {mode: model-evaluation, gate: GATE-SCHEMA}
+  FLOW-002: {mode: model-evaluation, gate: GATE-SCHEMA}
+  FLOW-003: {mode: model-evaluation, gate: GATE-SCHEMA}
+  STATE-001: {mode: deterministic-test, gate: GATE-SCHEMA}
+  STATE-002: {mode: deterministic-test, gate: GATE-SCHEMA}
+  STATE-003: {mode: deterministic-test, gate: GATE-SCHEMA}
+  STATE-004: {mode: deterministic-test, gate: GATE-SCHEMA}
+  STATE-005: {mode: deterministic-test, gate: GATE-SCHEMA}
+  STATE-006: {mode: deterministic-test, gate: GATE-SCHEMA}
+  BUILD-001: {mode: deterministic-test, gate: GATE-BUILD-ENV}
+  BUILD-002: {mode: scripted-host-test, gate: GATE-RUNTIME}
+  MCP-001: {mode: scripted-host-test, gate: GATE-PLUGIN}
+  MCP-002: {mode: scripted-host-test, gate: GATE-PLUGIN}
+  MCP-003: {mode: scripted-host-test, gate: GATE-WORKSPACE}
+  MCP-004: {mode: deterministic-test, gate: GATE-SECURITY}
+  SEC-001: {mode: deterministic-test, gate: GATE-SECURITY}
+  SEC-002: {mode: model-evaluation, gate: GATE-SECURITY}
+  SEC-003: {mode: deterministic-test, gate: GATE-SECURITY}
+  SEC-004: {mode: deterministic-test, gate: GATE-SECURITY}
+  SEC-005: {mode: deterministic-test, gate: GATE-SECURITY}
+  SEC-006: {mode: deterministic-test, gate: GATE-SECURITY}
+  SEC-007: {mode: model-evaluation, gate: GATE-SECURITY}
+  SEC-008: {mode: deterministic-test, gate: GATE-SECURITY}
+  SEC-009: {mode: deterministic-test, gate: GATE-SECURITY}
+  SEC-010: {mode: deterministic-test, gate: GATE-SECURITY}
+  REVIEW-001: {mode: model-evaluation, gate: GATE-SCHEMA}
+

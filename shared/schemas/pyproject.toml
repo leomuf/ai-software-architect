@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+
+[project]
+name = "ai-architect-schemas"
+version = "0.1.0"
+description = "Canonical Pydantic contracts for AI Software Architect."
+requires-python = ">=3.11,<3.14"
+dependencies = ["pydantic>=2.12,<3"]
+license = "MIT"
+

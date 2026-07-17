@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+# Remove this source-template notice from generated user artifacts.
+
+schema_version: 1.0.0
+revision: 1
+scope: notification-subsystem
+architecture_style: modular-monolith-with-ports-and-adapters
+quality_attributes: []
+components:
+  - id: domain
+    responsibility: Own notification policy
+    owns_data: []
+    public_interfaces: []
+external_boundaries: []
+dependency_rules: []
+required_practices: []
+prohibited_practices: []
+decision_ids: []
+unresolved_questions: []
+

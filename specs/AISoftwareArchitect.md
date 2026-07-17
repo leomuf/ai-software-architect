@@ -14,7 +14,7 @@ The initial implementation target is an installable Codex plugin. The product is
 ```yaml
 specification:
   name: ai-software-architect
-  version: 0.3.7
+  version: 0.3.8
   status: approved-for-mvp-implementation
   last_architecture_and_security_review: 2026-07-17
   release_scope: minimum-viable-product
@@ -1163,6 +1163,7 @@ class DependencyGraphEvidence(StrictModel):
     edges: list[DependencyEdge] = Field(default_factory=list, max_length=5_000)
     files_examined: int = Field(ge=0)
     files_skipped: int = Field(ge=0)
+    warnings: list[EvidenceText] = Field(default_factory=list, max_length=100)
     truncated: bool = False
 
 

@@ -1,0 +1,322 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de); SPDX-License-Identifier: MIT",
+  "$defs": {
+    "ClarificationQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "answer": {
+          "anyOf": [
+            {
+              "maxLength": 20000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Answer"
+        },
+        "critical": {
+          "default": false,
+          "title": "Critical",
+          "type": "boolean"
+        },
+        "decision_impact": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Decision Impact",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^Q-[0-9]{3}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "question",
+        "decision_impact"
+      ],
+      "title": "ClarificationQuestion",
+      "type": "object"
+    },
+    "Component": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "owns_data": {
+          "items": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Owns Data",
+          "type": "array"
+        },
+        "public_interfaces": {
+          "items": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Public Interfaces",
+          "type": "array"
+        },
+        "responsibility": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Responsibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "responsibility"
+      ],
+      "title": "Component",
+      "type": "object"
+    },
+    "DependencyRule": {
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "enum": [
+            "allow",
+            "deny",
+            "allow-via-interface"
+          ],
+          "title": "Policy",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "source": {
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "title": "Target",
+          "type": "string"
+        },
+        "via_interface": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Via Interface"
+        }
+      },
+      "required": [
+        "source",
+        "target",
+        "policy",
+        "rationale"
+      ],
+      "title": "DependencyRule",
+      "type": "object"
+    },
+    "ExternalBoundary": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "responsibility": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Responsibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "responsibility"
+      ],
+      "title": "ExternalBoundary",
+      "type": "object"
+    },
+    "QualityAttribute": {
+      "additionalProperties": false,
+      "properties": {
+        "measurable_signal": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Measurable Signal"
+        },
+        "name": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "priority": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "priority",
+        "rationale"
+      ],
+      "title": "QualityAttribute",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "architecture_style": {
+      "anyOf": [
+        {
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Architecture Style"
+    },
+    "components": {
+      "items": {
+        "$ref": "#/$defs/Component"
+      },
+      "maxItems": 200,
+      "title": "Components",
+      "type": "array"
+    },
+    "decision_ids": {
+      "items": {
+        "pattern": "^ADR-[0-9]{3}$",
+        "type": "string"
+      },
+      "maxItems": 200,
+      "title": "Decision Ids",
+      "type": "array"
+    },
+    "dependency_rules": {
+      "items": {
+        "$ref": "#/$defs/DependencyRule"
+      },
+      "maxItems": 500,
+      "title": "Dependency Rules",
+      "type": "array"
+    },
+    "external_boundaries": {
+      "items": {
+        "$ref": "#/$defs/ExternalBoundary"
+      },
+      "maxItems": 100,
+      "title": "External Boundaries",
+      "type": "array"
+    },
+    "prohibited_practices": {
+      "items": {
+        "maxLength": 500,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 200,
+      "title": "Prohibited Practices",
+      "type": "array"
+    },
+    "quality_attributes": {
+      "items": {
+        "$ref": "#/$defs/QualityAttribute"
+      },
+      "maxItems": 20,
+      "title": "Quality Attributes",
+      "type": "array"
+    },
+    "required_practices": {
+      "items": {
+        "maxLength": 500,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 200,
+      "title": "Required Practices",
+      "type": "array"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "schema_version": {
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Scope",
+      "type": "string"
+    },
+    "unresolved_questions": {
+      "items": {
+        "$ref": "#/$defs/ClarificationQuestion"
+      },
+      "maxItems": 50,
+      "title": "Unresolved Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "revision",
+    "scope"
+  ],
+  "title": "ArchitectureContract",
+  "type": "object"
+}

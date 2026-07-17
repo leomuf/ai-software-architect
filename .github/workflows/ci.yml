@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-package:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13.12"
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.11.3"
+          enable-cache: false
+      - run: uv lock --check
+      - run: uv sync --locked --all-packages
+      - run: uv run python shared/schemas/generate_schema.py
+      - run: uv run python shared/evaluations/generate_acceptance.py
+      - run: uv run python tools/generate_third_party_notices.py
+      - run: git diff --exit-code
+      - run: uv run ruff check shared/schemas tools/python-mcp adapters tests
+      - run: uv run mypy
+      - run: uv run pytest -q
+      - run: uv run python adapters/codex/build_plugin.py --build-runtime
+      - run: uv run python adapters/codex/validate_plugin.py dist/codex/ai-software-architect
+      - run: uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/windows-x86_64/ai-architect-mcp.exe
+

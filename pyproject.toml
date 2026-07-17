@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+[project]
+name = "ai-software-architect-workspace"
+version = "0.1.0"
+description = "Host-native architecture workflows and deterministic local tools for coding assistants."
+requires-python = ">=3.11,<3.14"
+license = "MIT"
+
+[dependency-groups]
+dev = [
+  "mypy>=1.18,<2",
+  "pyinstaller>=6.16,<7",
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=1.2,<2",
+  "pytest-cov>=7,<8",
+  "ruff>=0.14,<1",
+  "types-pyyaml>=6.0,<7",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+  "shared/schemas",
+  "tools/python-mcp",
+]
+
+[tool.uv.sources]
+ai-architect-schemas = { workspace = true }
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers -ra"
+pythonpath = ["."]
+testpaths = ["shared/schemas/tests", "tools/python-mcp/tests", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "RUF"]
+ignore = ["S101"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["ai_architect_schemas", "ai_architect_tools"]

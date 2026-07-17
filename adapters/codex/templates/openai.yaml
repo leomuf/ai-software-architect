@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+interface:
+  display_name: "AI Software Architect"
+  short_description: "Architecture decisions before implementation"
+  default_prompt: "Use $ai-software-architect to design and approve the architecture before implementation."
+
+policy:
+  allow_implicit_invocation: false
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "ai-software-architect-tools"
+      description: "Read-only local contract and repository evidence tools"
+      transport: "stdio"
+
