@@ -9,8 +9,9 @@ The initial implementation target is an installable Codex plugin. The product is
 ```yaml
 specification:
   name: ai-software-architect
-  version: 0.2.0
-  status: implementation-ready
+  version: 0.3.6
+  status: approved-for-mvp-implementation
+  last_architecture_and_security_review: 2026-07-17
   release_scope: minimum-viable-product
   primary_host: codex
   license: MIT
@@ -18,6 +19,27 @@ specification:
   persistence_model: repository-files
   local_tool_transport: stdio
   managed_backend_required: false
+```
+
+Implementation may begin only after the following readiness gates are represented as executable checks or recorded, time-boxed capability decisions. A failed gate blocks the affected release capability; it MUST NOT be bypassed by weakening a security boundary.
+
+```yaml
+implementation_readiness_gates:
+  - id: GATE-SKILL
+    requirement: every canonical skill and generated Codex skill passes its applicable validators
+  - id: GATE-PLUGIN
+    requirement: the assembled Codex plugin passes manifest, package, installation, and clean-uninstall tests
+  - id: GATE-WORKSPACE
+    requirement: Codex supplies a trustworthy project workspace binding to repository-scanning MCP tools
+    fail_closed_result: disable repository-scanning MCP tools
+  - id: GATE-RUNTIME
+    requirement: each advertised operating-system package starts without network installation or mutable code fetch
+  - id: GATE-BUILD-ENV
+    requirement: the pinned uv workspace reproduces from the committed current lockfile and does not leak into release artifacts
+  - id: GATE-SCHEMA
+    requirement: structural and cross-artifact semantic validation suites pass
+  - id: GATE-SECURITY
+    requirement: threat-model acceptance fixtures and release supply-chain checks pass
 ```
 
 ## Specification Conventions
@@ -30,6 +52,7 @@ This specification is intended to be both human-readable and suitable as input t
 - Gherkin scenarios define observable behavior and verifiable acceptance criteria, especially for conditional "if ... then ..." rules.
 - The terms **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are normative.
 - If narrative examples conflict with a Pydantic contract or Gherkin acceptance criterion, the Pydantic contract and acceptance criterion take precedence.
+- A conflict between a Pydantic contract and a Gherkin acceptance criterion is a specification defect and MUST fail the documentation/conformance build until resolved.
 - Implementations MAY add host-specific fields, but MUST preserve the semantics of shared fields and artifacts.
 
 ## Vision
@@ -389,7 +412,7 @@ At runtime:
 User's coding assistant
         |
         +-- platform-specific agent profile or orchestration skill
-        +-- shared modular skills
+        +-- shared modular skills or a generated host Composite
         +-- native repository and shell tools
         +-- local Python STDIO MCP server
         |
@@ -405,11 +428,20 @@ Planned source organization:
 
 ```text
 SECURITY.md
+LICENSE
+NOTICE
+THIRD_PARTY_NOTICES.md
+.gitignore                         # excludes /.venv/, /dist/, and local build caches
+.python-version
+pyproject.toml                     # uv workspace and development dependency groups
+uv.lock                            # single committed workspace lockfile
 .github/
     CODEOWNERS
     dependabot.yml
     workflows/
+        ci.yml
         security.yml
+        release.yml
 
 shared/
     skills/
@@ -486,26 +518,60 @@ shared/
             references/
                 finding-classification.md
     schemas/
-        models.py
+        pyproject.toml
+        src/
+            ai_architect_schemas/
+                __init__.py
+                models.py
         generated/
             architecture-contract.schema.json
     evaluations/
+        acceptance.feature          # generated from this specification
+        verification-manifest.yaml
+        fixtures/
 
 tools/
     python-mcp/
 
 adapters/
     codex/
+        build_plugin.py
+        templates/
+            plugin.json
+            mcp.json
+            openai.yaml
     github-copilot/
     claude-code/
     antigravity/
+
+tests/
+    conformance/
+    packaging/
+    security/
+
+dist/                               # generated and gitignored
+    codex/
+        ai-software-architect/
+            .codex-plugin/
+                plugin.json
+            .mcp.json
+            provenance.json
+            skills/
+                ai-software-architect/
+                    SKILL.md
+                    agents/
+                        openai.yaml
+                    references/
+                    assets/
+            runtime/
+                <supported-platform>/
 ```
 
 Every directory directly below `shared/skills/` is an independently valid Agent Skill. Optional resource directories are created only when the skill needs them; an empty `scripts/`, `references/`, or `assets/` directory MUST NOT be added merely to complete the visual structure. Deterministic MVP tooling lives in the Python MCP server, so canonical skills do not initially require `scripts/`.
 
-`shared/schemas/`, `shared/evaluations/`, `tools/`, and `adapters/` are repository-level project structures rather than Agent Skills. The Pydantic models remain the canonical schema source. Generated JSON Schema MAY be packaged as a skill asset, but MUST NOT become a separately maintained schema definition.
+`shared/schemas/`, `shared/evaluations/`, `tools/`, and `adapters/` are repository-level project structures rather than Agent Skills. The Pydantic models remain the canonical schema source. Generated JSON Schema MAY be packaged as a skill asset, but MUST NOT become a separately maintained schema definition. The Gherkin block in this specification is the behavioral source; `acceptance.feature` is generated from it, and `verification-manifest.yaml` maps every stable scenario tag to its primary verification mode, test or fixture path, and release-gate status. A stale or unmapped generated evaluation artifact fails the conformance build.
 
-Packaging scripts copy canonical skill directories without flattening their resources. Platform adapters MAY add generated host metadata, manifests, or installation configuration, but MUST NOT create independently edited copies of `SKILL.md` or its knowledge references.
+Canonical source files MUST NOT have independently edited platform copies. An adapter MAY either package canonical skills unchanged or deterministically assemble a host-compatible derivative when the host lacks reliable skill composition. Generated derivatives MUST be disposable build outputs, preserve on-demand loading, include a source-to-output provenance map with content hashes, and be reproducible byte-for-byte apart from explicitly declared build metadata. Build output under `dist/` MUST be excluded from version control.
 
 ### Agent Skills Standard Compliance
 
@@ -548,7 +614,7 @@ agent_skill_contract:
 - For MVP portability, canonical `SKILL.md` frontmatter contains only `name` and `description`. Platform-specific metadata is generated by an adapter rather than added to the canonical frontmatter.
 - `SKILL.md` contains concise procedural instructions and resource-routing guidance. Detailed domain knowledge, long examples, schemas, and templates MUST NOT be duplicated in it.
 - Every resource the agent may read MUST be linked directly from `SKILL.md` with a relative path and an explicit condition describing when to load it.
-- Reference knowledge belongs to exactly one canonical skill. Other canonical skills MUST invoke that owner rather than duplicate its files. An adapter MAY package the owning skill, but MUST NOT rehome its references into a different skill or maintain an edited platform copy.
+- Reference knowledge belongs to exactly one canonical skill. Other canonical skills MUST route to that owner rather than duplicate its files. A generated host derivative MAY rehome references only as a deterministic packaging operation; the provenance map MUST identify the canonical owner, and no generated file may become an authoring source.
 - Skill packages MUST NOT contain auxiliary files such as a skill-level `README.md`, changelog, installation guide, or design diary.
 - Every canonical skill MUST pass the open-standard validator. Adapter packages MUST additionally pass any platform-specific validation.
 
@@ -632,7 +698,7 @@ The initial non-GoF reference set MUST also cover the following frequently encou
 - `integration-publish-subscribe.md` covers distributed messaging and MUST NOT be treated as equivalent to the in-process Observer pattern.
 - `integration-idempotent-consumer.md` covers duplicate-message handling and the receiving side of Transactional Outbox workflows.
 - `integration-saga.md` covers multi-service consistency, choreography, orchestration, and compensating actions.
-- `modernization-anti-corruption-layer.md` protects a domain model from legacy or external representations and compares adapters and façades as implementation mechanisms.
+- `modernization-anti-corruption-layer.md` protects a domain model from legacy or external representations and compares adapters and facades as implementation mechanisms.
 
 ## Agent and Skill Responsibilities
 
@@ -650,7 +716,7 @@ The platform adapter defines:
 
 Where a platform cannot conveniently package a native custom-agent profile, an orchestration skill can make the active coding-assistant session perform the AI Architect workflow.
 
-`orchestrate-architecture-workflow` owns workflow-state interpretation and routes the current node to the appropriate modular skill. It contains no duplicated design-pattern knowledge and MUST NOT eagerly load every modular skill or reference. This is the expected first approach for the Codex plugin unless native custom-agent packaging becomes suitable during implementation.
+`orchestrate-architecture-workflow` owns workflow-state interpretation and routes the current node to the appropriate modular responsibility. It contains no duplicated design-pattern knowledge and MUST NOT eagerly load every workflow body or reference.
 
 ```yaml
 skill_routing:
@@ -664,7 +730,11 @@ skill_routing:
   review: review-architecture-conformance
 ```
 
-Cross-skill activation MUST use the host's skill-selection mechanism or an adapter-managed equivalent. A canonical skill MUST NOT escape its root with relative paths to read another skill. If a host cannot activate modular skills dynamically, its adapter MAY provide a compatible orchestration wrapper, but it MUST preserve on-demand resource loading and canonical reference ownership.
+Cross-skill activation MAY use a documented host mechanism only when an integration test proves that mechanism is reliable. Correctness MUST NOT depend on one skill being able to programmatically activate a sibling skill unless the host explicitly supports that contract. A canonical skill MUST NOT escape its root with relative paths to read another skill.
+
+For the Codex MVP, the adapter MUST generate one explicit user-facing skill named `ai-software-architect`. Its `SKILL.md` combines the concise orchestration and five modular workflow procedures, while canonical references and assets are copied into its own flat, directly routed resource directories. This generated Composite is necessary because Codex skill discovery and invocation do not constitute a guaranteed skill-to-skill composition API. The Composite MUST remain within the Agent Skills guidance for concise instructions, MUST load references only when a routing condition requires them, and MUST be regenerated rather than edited. Canonical modular skills remain independently valid for reuse by hosts that support modular composition.
+
+The generated Codex `agents/openai.yaml` MUST set `policy.allow_implicit_invocation: false` for the MVP. Users explicitly invoke the architect skill, preventing ordinary coding requests from silently entering an architecture workflow. That file MAY declare the bundled MCP dependency and UI metadata but MUST NOT duplicate security policy or domain knowledge.
 
 ### Modular workflow skills
 
@@ -688,6 +758,7 @@ The default project state is stored under `.ai-architect/`:
 
 ```text
 .ai-architect/
+    .gitignore                     # contains exactly .runtime/
     project-context.md
     architecture-contract.yaml
     .runtime/                       # local checkpoint; gitignored
@@ -736,6 +807,8 @@ Each material decision records:
 - validation criteria;
 - superseded decisions.
 
+Each `ADR-NNN-*.md` file MUST begin with safe-YAML frontmatter that validates as `ArchitectureDecisionArtifact`. The filename ID MUST match the decision ID; its optional title slug is adapter-generated, limited to lowercase ASCII letters, digits, and single hyphens, and never used as an authority or unsanitized path component. The frontmatter is the machine-readable authority. The Markdown body is a deterministic human-readable rendering of the same decision fields and MAY contain separately labeled user commentary. A renderer/validator MUST regenerate the canonical body and reject a file when duplicated generated content has drifted; it MUST NOT guess structure from arbitrary headings. Manual changes therefore remain possible but must update and validate the authoritative frontmatter. YAML object tags, aliases, duplicate keys, excessive nesting, and unknown fields are rejected.
+
 ### `implementation-plan.md`
 
 Translates accepted decisions into a coding-agent-ready sequence of milestones, constraints, verification steps, and explicit non-goals.
@@ -743,6 +816,14 @@ Translates accepted decisions into a coding-agent-ready sequence of milestones, 
 ### Architecture reviews
 
 Reviews contain evidence-linked findings rather than an unexplained score. Each finding identifies the relevant decision or constraint and distinguishes confirmed violations from uncertain observations.
+
+### Safe artifact update protocol
+
+Repository artifacts are user-owned, reviewable project state. Before modifying them, the host adapter MUST read the current files and retain their content hashes, prepare and validate the complete candidate set, show the user the material decisions or diff, and obtain the approval required by the workflow. Immediately before each write it MUST verify that the on-disk hash still matches the version analyzed. A mismatch is a concurrent-edit conflict: stop, preserve both versions, reload the user's change, and request reconciliation rather than overwriting it.
+
+For a multi-file decision update, the adapter MUST generate `run_id` as a lowercase UUIDv4 independent of repository content, stage candidates under `.ai-architect/.runtime/staging/<run-id>/`, validate the staged set including links, then commit in this order: new ADRs, updated contract, project context, and implementation plan. It MUST use atomic replacement where the host and filesystem support it. If any commit step fails, it MUST restore every already-replaced file from the staging backup and report incomplete persistence; it MUST NOT claim success. Staging and backup files MUST be removed after successful commit or completed rollback and protected with user-only permissions where the operating system supports them. Re-running the same approved update MUST be idempotent and MUST NOT create duplicate ADR identifiers.
+
+The contract `revision` is incremented for every accepted contract change and is checked together with the content hash. `.ai-architect/.gitignore` MUST contain `.runtime/`, and release tests MUST verify that checkpoints, staging files, and backups cannot be committed. The MCP server remains read-only and does not participate in artifact writes.
 
 ## Core Data Schema and Structured Outputs
 
@@ -752,9 +833,22 @@ Pydantic v2 models are the runtime contract for model-produced structured data, 
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+ADRId = Annotated[str, Field(pattern=r"^ADR-[0-9]{3}$")]
+OptionId = Annotated[str, Field(pattern=r"^OPT-[0-9]{3}$")]
+ComponentId = Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]*$")]
+RunId = Annotated[
+    str,
+    Field(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"),
+]
+RelativePathText = Annotated[str, Field(min_length=1, max_length=240)]
+ShortText = Annotated[str, Field(min_length=1, max_length=500)]
+EvidenceText = Annotated[str, Field(min_length=1, max_length=2_000)]
+NarrativeText = Annotated[str, Field(min_length=1, max_length=20_000)]
 
 
 class StrictModel(BaseModel):
@@ -782,73 +876,125 @@ class WorkflowStatus(StrEnum):
 
 
 class QualityAttribute(StrictModel):
-    name: str = Field(min_length=1)
+    name: ShortText
     priority: int = Field(ge=1, le=5)
-    rationale: str = Field(min_length=1)
-    measurable_signal: str | None = None
+    rationale: EvidenceText
+    measurable_signal: EvidenceText | None = None
 
 
 class ClarificationQuestion(StrictModel):
     id: str = Field(pattern=r"^Q-[0-9]{3}$")
-    question: str = Field(min_length=1)
-    decision_impact: str = Field(min_length=1)
+    question: EvidenceText
+    decision_impact: EvidenceText
     critical: bool = False
-    answer: str | None = None
+    answer: NarrativeText | None = None
 
 
 class ArchitectureOption(StrictModel):
-    id: str = Field(pattern=r"^OPT-[0-9]{3}$")
-    name: str = Field(min_length=1)
-    summary: str = Field(min_length=1)
-    benefits: list[str] = Field(default_factory=list)
-    drawbacks: list[str] = Field(default_factory=list)
-    risks: list[str] = Field(default_factory=list)
+    id: OptionId
+    name: ShortText
+    summary: EvidenceText
+    benefits: list[EvidenceText] = Field(default_factory=list, max_length=20)
+    drawbacks: list[EvidenceText] = Field(default_factory=list, max_length=20)
+    risks: list[EvidenceText] = Field(default_factory=list, max_length=20)
     fit_score: int = Field(ge=0, le=100)
-    fit_rationale: str = Field(min_length=1)
+    fit_rationale: EvidenceText
 
 
 class ArchitectureDecision(StrictModel):
-    id: str = Field(pattern=r"^ADR-[0-9]{3}$")
-    title: str = Field(min_length=1)
+    id: ADRId
+    title: ShortText
     status: Literal["proposed", "accepted", "rejected", "superseded"]
-    context: str = Field(min_length=1)
-    drivers: list[str] = Field(min_length=1)
-    considered_option_ids: list[str] = Field(min_length=1)
-    selected_option_id: str | None = None
-    decision: str = Field(min_length=1)
-    positive_consequences: list[str] = Field(default_factory=list)
-    negative_consequences: list[str] = Field(default_factory=list)
-    assumptions: list[str] = Field(default_factory=list)
-    validation_criteria: list[str] = Field(min_length=1)
-    supersedes: list[str] = Field(default_factory=list)
+    context: NarrativeText
+    drivers: list[EvidenceText] = Field(min_length=1, max_length=30)
+    considered_option_ids: list[OptionId] = Field(min_length=1, max_length=5)
+    selected_option_id: OptionId | None = None
+    decision: NarrativeText
+    positive_consequences: list[EvidenceText] = Field(default_factory=list, max_length=30)
+    negative_consequences: list[EvidenceText] = Field(default_factory=list, max_length=30)
+    assumptions: list[EvidenceText] = Field(default_factory=list, max_length=30)
+    validation_criteria: list[EvidenceText] = Field(min_length=1, max_length=30)
+    supersedes: list[ADRId] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def validate_option_selection(self) -> Self:
+        if len(self.considered_option_ids) != len(set(self.considered_option_ids)):
+            raise ValueError("considered_option_ids must be unique")
+        if self.selected_option_id not in {None, *self.considered_option_ids}:
+            raise ValueError("selected_option_id must reference a considered option")
+        if self.status == "accepted" and self.selected_option_id is None:
+            raise ValueError("accepted decisions require selected_option_id")
+        if self.id in self.supersedes:
+            raise ValueError("a decision cannot supersede itself")
+        return self
+
+
+class ArchitectureDecisionArtifact(StrictModel):
+    schema_version: str = Field(pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")
+    revision: int = Field(ge=1)
+    decision: ArchitectureDecision
 
 
 class Component(StrictModel):
-    id: str = Field(pattern=r"^[a-z][a-z0-9-]*$")
-    responsibility: str = Field(min_length=1)
-    owns_data: list[str] = Field(default_factory=list)
-    public_interfaces: list[str] = Field(default_factory=list)
+    id: ComponentId
+    responsibility: EvidenceText
+    owns_data: list[ShortText] = Field(default_factory=list, max_length=100)
+    public_interfaces: list[ShortText] = Field(default_factory=list, max_length=100)
+
+
+class ExternalBoundary(StrictModel):
+    id: ComponentId
+    responsibility: EvidenceText
 
 
 class DependencyRule(StrictModel):
-    source: str = Field(min_length=1)
-    target: str = Field(min_length=1)
+    source: ComponentId
+    target: ComponentId
     policy: Literal["allow", "deny", "allow-via-interface"]
-    rationale: str = Field(min_length=1)
+    via_interface: ShortText | None = None
+    rationale: EvidenceText
+
+    @model_validator(mode="after")
+    def validate_interface_policy(self) -> Self:
+        if (self.policy == "allow-via-interface") != (self.via_interface is not None):
+            raise ValueError("via_interface is required only for allow-via-interface")
+        return self
 
 
 class ArchitectureContract(StrictModel):
     schema_version: str = Field(pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")
-    scope: str = Field(min_length=1)
-    architecture_style: str | None = None
-    quality_attributes: list[QualityAttribute] = Field(default_factory=list)
-    components: list[Component] = Field(default_factory=list)
-    dependency_rules: list[DependencyRule] = Field(default_factory=list)
-    integration_boundaries: list[str] = Field(default_factory=list)
-    required_practices: list[str] = Field(default_factory=list)
-    prohibited_practices: list[str] = Field(default_factory=list)
-    decision_ids: list[str] = Field(default_factory=list)
-    unresolved_questions: list[ClarificationQuestion] = Field(default_factory=list)
+    revision: int = Field(ge=1)
+    scope: ShortText
+    architecture_style: ShortText | None = None
+    quality_attributes: list[QualityAttribute] = Field(default_factory=list, max_length=20)
+    components: list[Component] = Field(default_factory=list, max_length=200)
+    external_boundaries: list[ExternalBoundary] = Field(default_factory=list, max_length=100)
+    dependency_rules: list[DependencyRule] = Field(default_factory=list, max_length=500)
+    required_practices: list[ShortText] = Field(default_factory=list, max_length=200)
+    prohibited_practices: list[ShortText] = Field(default_factory=list, max_length=200)
+    decision_ids: list[ADRId] = Field(default_factory=list, max_length=200)
+    unresolved_questions: list[ClarificationQuestion] = Field(default_factory=list, max_length=50)
+
+    @model_validator(mode="after")
+    def validate_contract_references(self) -> Self:
+        component_ids = [item.id for item in self.components]
+        external_ids = [item.id for item in self.external_boundaries]
+        node_ids = component_ids + external_ids
+        if len(node_ids) != len(set(node_ids)):
+            raise ValueError("component and external-boundary ids must be unique")
+        if len(self.decision_ids) != len(set(self.decision_ids)):
+            raise ValueError("decision_ids must be unique")
+        quality_names = [item.name.casefold() for item in self.quality_attributes]
+        if len(quality_names) != len(set(quality_names)):
+            raise ValueError("quality-attribute names must be unique")
+        question_ids = [item.id for item in self.unresolved_questions]
+        if len(question_ids) != len(set(question_ids)):
+            raise ValueError("unresolved question ids must be unique")
+        known_nodes = set(node_ids)
+        for rule in self.dependency_rules:
+            if rule.source not in known_nodes or rule.target not in known_nodes:
+                raise ValueError("dependency rules must reference declared nodes")
+        return self
 
 
 class ArchitectureAnalysisResult(StrictModel):
@@ -861,15 +1007,39 @@ class ArchitectureAnalysisResult(StrictModel):
         "out_of_scope",
     ]
     current_node: WorkflowNode | None
-    problem_summary: str = Field(min_length=1)
-    questions: list[ClarificationQuestion] = Field(default_factory=list)
-    forces: list[str] = Field(default_factory=list)
-    quality_attributes: list[QualityAttribute] = Field(default_factory=list)
-    options: list[ArchitectureOption] = Field(default_factory=list)
-    recommended_option_id: str | None = None
-    proposed_decisions: list[ArchitectureDecision] = Field(default_factory=list)
-    assumptions: list[str] = Field(default_factory=list)
-    warnings: list[str] = Field(default_factory=list)
+    problem_summary: NarrativeText
+    questions: list[ClarificationQuestion] = Field(default_factory=list, max_length=5)
+    forces: list[EvidenceText] = Field(default_factory=list, max_length=50)
+    quality_attributes: list[QualityAttribute] = Field(default_factory=list, max_length=20)
+    options: list[ArchitectureOption] = Field(default_factory=list, max_length=5)
+    recommended_option_id: OptionId | None = None
+    proposed_decisions: list[ArchitectureDecision] = Field(default_factory=list, max_length=20)
+    assumptions: list[EvidenceText] = Field(default_factory=list, max_length=50)
+    warnings: list[EvidenceText] = Field(default_factory=list, max_length=50)
+
+    @model_validator(mode="after")
+    def validate_analysis_references(self) -> Self:
+        option_ids = [item.id for item in self.options]
+        if len(option_ids) != len(set(option_ids)):
+            raise ValueError("option ids must be unique")
+        known_options = set(option_ids)
+        if self.recommended_option_id not in {None, *known_options}:
+            raise ValueError("recommended_option_id must reference an option")
+        if self.status in {"ready_for_approval", "approved"}:
+            if self.recommended_option_id is None:
+                raise ValueError("approval states require a recommended option")
+        if self.status == "needs_clarification" and not self.questions:
+            raise ValueError("needs_clarification requires at least one question")
+        question_ids = [item.id for item in self.questions]
+        if len(question_ids) != len(set(question_ids)):
+            raise ValueError("question ids must be unique")
+        for decision in self.proposed_decisions:
+            if not set(decision.considered_option_ids) <= known_options:
+                raise ValueError("decision references an unknown option")
+        terminal = {"complete", "blocked", "out_of_scope"}
+        if (self.status in terminal) != (self.current_node is None):
+            raise ValueError("terminal status and current_node are inconsistent")
+        return self
 
 
 class ConformanceFinding(StrictModel):
@@ -879,25 +1049,77 @@ class ConformanceFinding(StrictModel):
     ]
     severity: Literal["info", "low", "medium", "high", "critical"]
     confidence: Literal["low", "medium", "high"]
-    decision_id: str | None = None
-    rule: str = Field(min_length=1)
-    evidence: list[str] = Field(min_length=1)
-    recommendation: str = Field(min_length=1)
+    decision_id: ADRId | None = None
+    rule: EvidenceText
+    evidence: list[EvidenceText] = Field(min_length=1, max_length=50)
+    recommendation: EvidenceText
 
 
 class ConformanceReport(StrictModel):
-    scope: str = Field(min_length=1)
-    findings: list[ConformanceFinding] = Field(default_factory=list)
+    scope: ShortText
+    findings: list[ConformanceFinding] = Field(default_factory=list, max_length=200)
     files_examined: int = Field(ge=0)
     files_skipped: int = Field(ge=0)
     truncated: bool = False
 
 
+class ContractValidationInput(StrictModel):
+    yaml_content: str = Field(min_length=1, max_length=500_000)
+
+
+class DecisionListInput(StrictModel):
+    statuses: list[Literal["proposed", "accepted", "rejected", "superseded"]] = (
+        Field(default_factory=list, max_length=4)
+    )
+
+
+class RepositoryAnalysisInput(StrictModel):
+    relative_roots: list[RelativePathText] = Field(min_length=1, max_length=20)
+    languages: list[Literal["python"]] = Field(
+        default_factory=lambda: ["python"], min_length=1, max_length=1
+    )
+
+
+class BoundaryCheckInput(RepositoryAnalysisInput):
+    contract_yaml: str = Field(min_length=1, max_length=500_000)
+
+
+class ArtifactSecretScanInput(StrictModel):
+    content: str = Field(min_length=1, max_length=500_000)
+    artifact_kind: Literal["adr", "contract", "context", "implementation-plan"]
+
+
+class SecretFinding(StrictModel):
+    category: Literal["private-key", "credential", "token"]
+    line: int = Field(ge=1)
+
+
+class ArtifactSecretScanResult(StrictModel):
+    safe_to_write: bool
+    findings: list[SecretFinding] = Field(default_factory=list, max_length=100)
+    truncated: bool = False
+
+    @model_validator(mode="after")
+    def validate_safety_result(self) -> Self:
+        if self.safe_to_write == bool(self.findings):
+            raise ValueError("safe_to_write must be false exactly when findings exist")
+        return self
+
+
 class ContractValidationResult(StrictModel):
     valid: bool
     schema_version: str | None = None
-    errors: list[str] = Field(default_factory=list)
-    warnings: list[str] = Field(default_factory=list)
+    errors: list[EvidenceText] = Field(default_factory=list, max_length=100)
+    warnings: list[EvidenceText] = Field(default_factory=list, max_length=100)
+    truncated: bool = False
+
+    @model_validator(mode="after")
+    def validate_result(self) -> Self:
+        if self.valid == bool(self.errors):
+            raise ValueError("valid must be false exactly when errors exist")
+        if self.truncated and self.valid:
+            raise ValueError("a truncated validation result cannot be valid")
+        return self
 
 
 class ToolError(StrictModel):
@@ -909,26 +1131,30 @@ class ToolError(StrictModel):
         "budget-exhausted",
         "unsupported-format",
         "unsafe-content",
+        "workspace-unavailable",
         "internal-error",
     ]
-    message: str = Field(min_length=1)
-    relative_path: str | None = None
+    message: EvidenceText
+    relative_path: RelativePathText | None = None
     retryable: bool = False
 
 
 class DecisionListResult(StrictModel):
-    decisions: list[ArchitectureDecision] = Field(default_factory=list)
-    invalid_files: list[str] = Field(default_factory=list)
+    decisions: list[ArchitectureDecision] = Field(default_factory=list, max_length=200)
+    invalid_files: list[RelativePathText] = Field(default_factory=list, max_length=200)
+    files_examined: int = Field(ge=0)
+    files_skipped: int = Field(ge=0)
+    truncated: bool = False
 
 
 class DependencyEdge(StrictModel):
-    source: str = Field(min_length=1)
-    target: str = Field(min_length=1)
-    evidence: str = Field(min_length=1)
+    source: ShortText
+    target: ShortText
+    evidence: EvidenceText
 
 
 class DependencyGraphEvidence(StrictModel):
-    edges: list[DependencyEdge] = Field(default_factory=list)
+    edges: list[DependencyEdge] = Field(default_factory=list, max_length=5_000)
     files_examined: int = Field(ge=0)
     files_skipped: int = Field(ge=0)
     truncated: bool = False
@@ -944,28 +1170,51 @@ class StrikeEvent(StrictModel):
         "destructive-write-attempt",
         "repeated-off-topic-bypass",
     ]
-    denied_operation: str = Field(min_length=1)
+    denied_operation: EvidenceText
     resulting_count: int = Field(ge=1, le=3)
 
 
 class WorkflowState(StrictModel):
-    run_id: str = Field(min_length=1)
+    run_id: RunId
     status: WorkflowStatus
     current_node: WorkflowNode | None
     clarification_round: int = Field(ge=0, le=3)
-    approved_decision_ids: list[str] = Field(default_factory=list)
-    pending_decision_ids: list[str] = Field(default_factory=list)
+    approved_decision_ids: list[ADRId] = Field(default_factory=list, max_length=200)
+    pending_decision_ids: list[ADRId] = Field(default_factory=list, max_length=200)
     strikes: list[StrikeEvent] = Field(default_factory=list, max_length=3)
+
+    @model_validator(mode="after")
+    def validate_state(self) -> Self:
+        if (self.status == WorkflowStatus.ACTIVE) != (self.current_node is not None):
+            raise ValueError("active status and current_node are inconsistent")
+        if set(self.approved_decision_ids) & set(self.pending_decision_ids):
+            raise ValueError("decision ids cannot be both approved and pending")
+        expected_counts = list(range(1, len(self.strikes) + 1))
+        if [event.resulting_count for event in self.strikes] != expected_counts:
+            raise ValueError("strike resulting_count values must be sequential")
+        return self
 ```
 
 `StrictModel` is the shared Pydantic base for all canonical contracts. It MUST reject unknown fields, strip surrounding whitespace from strings, and apply strict type validation without implicit coercion. For example, YAML `priority: "5"` is invalid for an integer field; it MUST be written as `priority: 5`. This prevents misspelled keys and type drift from silently entering durable artifacts or crossing MCP boundaries.
 
+### Schema reading guide
+
+- `EvidenceText` is a reusable, required string type limited to 2,000 characters. It bounds rationales, risks, validation messages, recommendations, and evidence so model or tool output cannot grow without limit. Its name describes the intended content; it does not prove that a statement is supported. Evidence quality is checked separately by the workflow and domain rules.
+- `@model_validator(mode="after")` enforces relationships between fields after their individual types and constraints are valid. Examples include requiring an accepted ADR to select one of its considered options, requiring terminal workflow states to have no current node, and keeping result flags consistent with their error or finding lists.
+- MCP input models such as `ContractValidationInput`, `RepositoryAnalysisInput`, `BoundaryCheckInput`, and `ArtifactSecretScanInput` define the exact accepted request shape for each tool. They reject unknown fields, wrong types, excessive content, and unbounded collections before domain logic runs. Path safety and workspace authorization remain separate domain checks.
+- MCP result models provide the same guarantee in the opposite direction: every tool returns a bounded, predictable structure that the host can validate and interpret without guessing.
+
+`fit_score` is an ordinal comparison aid within one analysis, not a probability, certainty claim, or cross-project metric. The analysis MUST state its scoring criteria, support every score with `fit_rationale`, expose uncertainty, and MUST NOT choose an option solely because it has the highest number.
+
+Structural Pydantic validation is necessary but not sufficient. Domain validation MUST also verify that every contract `decision_id` resolves to exactly one valid ADR file, each ADR filename identifier matches its frontmatter identifier, accepted ADRs are the only decisions linked as active contract decisions, supersession links exist and contain no cycles, generated ADR bodies match their authoritative frontmatter, evidence paths are workspace-relative, and generated JSON Schema matches the canonical models. These cross-file checks belong in `domain/contracts.py` and `domain/decisions.py` and MUST run before persistence and conformance review.
+
 Structured model output MUST be validated before it is written to an artifact. A validation failure MUST route back to one bounded repair attempt; a second failure MUST stop the write, preserve the previous valid artifact, and report the errors to the user. Accepted ADRs MUST have a selected option and MUST be linked from the architecture contract.
 
-The default serialized contract shape is:
+The following YAML is an example of the machine-readable architecture contract generated after the user approves the architecture. Coding assistants use it as a concise implementation constraint, while validation and conformance tools use it to check whether the implementation still follows the accepted decisions.
 
 ```yaml
 schema_version: 1.0.0
+revision: 1
 scope: notification-subsystem
 architecture_style: modular-monolith-with-ports-and-adapters
 quality_attributes:
@@ -980,13 +1229,23 @@ components:
       - notification-request
     public_interfaces:
       - NotificationService
+      - EmailProviderPort
+  - id: email-provider-adapter
+    responsibility: Translate the provider port to the external email API.
+    owns_data: []
+    public_interfaces: []
+external_boundaries:
+  - id: external-email-provider
+    responsibility: Deliver email outside the application's trust boundary.
 dependency_rules:
   - source: notification-domain
     target: email-provider-adapter
     policy: deny
     rationale: Domain logic depends on a provider port, not a vendor SDK.
-integration_boundaries:
-  - External providers are accessed only through outbound adapters.
+  - source: email-provider-adapter
+    target: external-email-provider
+    policy: allow
+    rationale: Only the outbound adapter may call the external provider.
 required_practices:
   - idempotent-delivery-command
 prohibited_practices:
@@ -995,15 +1254,29 @@ decision_ids: []
 unresolved_questions: []
 ```
 
+For human readers, the principal fields mean:
+
+- `schema_version` identifies the version of the contract format and changes when the schema itself evolves.
+- `revision` identifies the revision of this project's contract content and increases with each accepted contract change.
+- `scope` names the system, subsystem, or feature governed by the contract.
+- `architecture_style` records the approved high-level structure; the example uses a modular monolith with ports and adapters.
+- `quality_attributes` records prioritized qualities such as reliability, security, or maintainability and explains how they can be observed.
+- `components` and `external_boundaries` describe responsibilities, owned data, public interfaces, and systems outside the application boundary.
+- `dependency_rules` defines which architectural dependencies are allowed, denied, or permitted only through an interface.
+- `required_practices` and `prohibited_practices` turn accepted architectural decisions into explicit implementation constraints.
+- `decision_ids` links the contract to its accepted Architecture Decision Records (ADRs).
+- `unresolved_questions` keeps material open questions visible rather than hiding them as assumptions.
+
+`schema_version` versions the contract format; `revision` counts accepted changes to one contract instance. Readers MUST reject unsupported major schema versions and MUST NOT silently discard unknown data. Schema upgrades require pure, fixture-tested migration functions, a dry-run diff, validation of the migrated artifact set, and the same approval and conflict checks as any other write. No migration may overwrite the only valid copy or perform a lossy downgrade.
+
 ## Platform Strategy
 
 ### Codex: first implementation target
 
 The first release is an installable Codex plugin containing:
 
-- an architecture orchestration skill;
-- modular architecture workflow skills;
-- standard-compliant skill directories with progressively disclosed references and assets;
+- one generated, explicitly invoked architecture Composite skill;
+- standard-compliant, progressively disclosed references and assets derived from the modular canonical skills;
 - generated JSON schemas and output templates derived from the canonical sources;
 - a small local Python STDIO MCP server for deterministic validation and inspection;
 - generated Codex-specific metadata, plugin metadata, and local installation support;
@@ -1011,9 +1284,15 @@ The first release is an installable Codex plugin containing:
 
 The user runs the architect with the selected Codex model and Codex credits. The plugin itself makes no model API calls.
 
+The assembled package MUST follow Codex's documented plugin layout: `.codex-plugin/plugin.json` is the required entry point and the only file inside `.codex-plugin/`; `skills/`, `.mcp.json`, `assets/`, and the bundled runtime remain at the plugin root. The manifest name and folder name MUST both be `ai-software-architect`, the version MUST be strict SemVer, and the manifest MUST include real `description`, `author`, `repository`, `license`, `skills`, `mcpServers`, and required `interface` values. `mcpServers` MUST be present only when `.mcp.json` exists. MVP packages MUST NOT declare an app or hook because neither capability is required.
+
+The adapter build MUST fail on unresolved placeholders, missing referenced files, unknown manifest fields, stale generated output, provenance-hash mismatch, or a platform runtime that is absent from the advertised support matrix. It MUST run the current Codex plugin validator in addition to repository tests. A repository-local marketplace entry MAY be generated for development, but it is test configuration rather than canonical product source. A published marketplace entry or installation instruction MUST resolve to a reviewed immutable release tag, commit, or verified release artifact rather than a moving branch. Installation MUST NOT silently edit a user's global or project Codex configuration.
+
+Codex behavior and packaging MUST be checked against the current official [plugin](https://learn.chatgpt.com/docs/build-plugins), [skill](https://learn.chatgpt.com/docs/build-skills), and [MCP](https://learn.chatgpt.com/docs/mcp) documentation during implementation and before release because host extension contracts can evolve.
+
 ### Claude Code
 
-A later Claude Code plugin can bundle:
+A later Claude Code plugin can bundle, subject to validation against the current [Claude Code plugin contract](https://code.claude.com/docs/en/plugins-reference):
 
 - a native custom-agent profile;
 - the shared `SKILL.md` skills;
@@ -1022,12 +1301,14 @@ A later Claude Code plugin can bundle:
 
 ### GitHub Copilot
 
-A later Copilot plugin can bundle:
+A later Copilot adapter MUST target an explicitly named surface such as Copilot CLI, coding agent, or a supported IDE; it MUST NOT assume one packaging contract covers every Copilot surface. Depending on that surface, it can provide:
 
 - a native custom-agent profile;
 - the shared skills;
 - repository instructions where needed;
 - optional hooks or MCP configuration.
+
+The adapter MUST verify the current official [Agent Skills](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills) and [custom-agent](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-custom-agents) contracts and mark preview-only capabilities as such.
 
 ### Google Antigravity
 
@@ -1038,15 +1319,57 @@ The initial Antigravity adapter can provide:
 - shared templates and schemas;
 - optional local MCP tools.
 
-Native Antigravity SDK integration is a possible later enhancement, not a first-version requirement.
+Native Antigravity SDK integration is a possible later enhancement, not a first-version requirement. Initial packaging MUST be proven against Google's current documented [Antigravity Skill scopes and progressive-disclosure behavior](https://codelabs.developers.google.com/getting-started-google-antigravity).
 
 ### Other coding assistants
 
-Other adapters may use native agent profiles, Agent Skills, rules, commands, extensions, or MCP depending on the host. Support is added only after the platform's extension model has been validated.
+Other adapters may use native agent profiles, Agent Skills, rules, commands, extensions, or MCP depending on the host. Every release MUST publish a capability matrix naming the tested host surface, minimum host version, skill invocation mode, local MCP lifecycle, workspace-binding method, permission behavior, supported operating systems, and known limitations. Support is added only after that exact platform extension model has been validated.
+
+## Python Development and Build Environment
+
+The repository uses [uv](https://docs.astral.sh/uv/) as its Python project, dependency, virtual-environment, and command runner for local development and CI. The root `pyproject.toml` defines one uv workspace containing `shared/schemas/` and `tools/python-mcp/`; both members retain their own package metadata while sharing one root `uv.lock` and one root `.venv`. Python commands documented by the project MUST run through `uv run` so contributors and CI use the locked environment consistently.
+
+```yaml
+python_environment:
+  development:
+    manager: uv
+    workspace_root: .
+    workspace_members:
+      - shared/schemas
+      - tools/python-mcp
+    python_version_file: .python-version
+    virtual_environment: .venv
+    local_sync_command: uv sync --all-packages
+    command_runner: uv run
+  dependency_changes:
+    authoritative_metadata: pyproject.toml
+    lock_command: uv lock
+    lock_file: uv.lock
+    lock_file_committed: true
+    review_required: true
+  ci_and_release:
+    uv_version: exact-reviewed-pin
+    uv_install_source: verified-and-checksummed
+    lock_check_command: uv lock --check
+    sync_command: uv sync --locked --all-packages
+    stale_or_missing_lock_action: fail
+    uvx_or_mutable_tool_run: deny
+  installed_plugin_runtime:
+    requires_uv: false
+    requires_virtual_environment: false
+    requires_system_python: false
+    first_run_dependency_install: false
+```
+
+`.python-version` records the tested Python version for development and CI and is changed only through review. `.venv/` MUST be ignored and MUST NOT be copied into a plugin or release archive. The committed lockfile is the complete workspace resolution; member-specific lockfiles and hand-maintained `requirements.txt` files are forbidden unless an accepted ADR establishes a documented interoperability need. Dependency updates use `uv add`, `uv remove`, `uv lock --upgrade`, or `uv lock --upgrade-package <name>` intentionally and include the resulting lockfile diff in review.
+
+CI and release jobs MUST install an explicitly pinned uv version through a verified source, run `uv lock --check`, and use `uv sync --locked --all-packages`. Repository automation MUST NOT depend on `uvx`, an unversioned `uv tool run`, or any command that resolves and executes mutable packages outside `uv.lock`. Build tools, test tools, linters, type checkers, and the executable packager belong in locked dependency groups and run through `uv run`.
+
+This development environment does not alter the installed-product contract. uv and `.venv` exist only while developing, testing, and building from source. The released Codex plugin still contains the self-contained executable and never invokes uv, pip, a virtual environment, or a system Python interpreter on the user's machine.
 
 ## Python STDIO MCP Server
 
-The MVP MCP server provides a small, deterministic tool surface. It MUST target Python 3.11 or later, use the official Python MCP SDK where feasible, and use Pydantic v2 for validation. The host launches the configured STDIO process when the plugin's MCP tools are needed and owns its shutdown; the project MUST NOT install a persistent background daemon or listen on a network port.
+The MVP MCP server provides a small, deterministic tool surface. It MUST target Python 3.11 or later, use a supported official Python MCP SDK and Pydantic v2, and pin both through the reproducible lock file. A different SDK requires an accepted ADR documenting the incompatibility and security review. The host launches the configured STDIO process when the plugin's MCP tools are needed and owns its shutdown; the project MUST NOT install a persistent background daemon or listen on a network port.
 
 The server and CLI call the same side-effect-light domain functions:
 
@@ -1060,7 +1383,6 @@ tools/
                 dependencies.py
                 boundaries.py
                 decisions.py
-            schemas.py
             mcp_server.py
             cli.py
         tests/
@@ -1074,7 +1396,7 @@ The package structure separates deterministic domain logic from transport and sh
   - `dependencies.py` extracts and analyzes dependencies between modules.
   - `boundaries.py` compares dependencies and repository structure with declared architectural boundaries.
   - `decisions.py` reads, validates, and links Architecture Decision Records (ADRs).
-- `schemas.py` contains the shared Pydantic models for tool inputs, outputs, contracts, findings, and validation errors.
+- The internal `ai_architect_schemas` package under `shared/schemas/` contains the canonical Pydantic models for tool inputs, outputs, contracts, findings, and validation errors. Its `pyproject.toml` defines the independently installable workspace package and its Pydantic dependency. The `src/` layout separates importable code from packaging and generated files. `ai_architect_schemas/` is the import namespace, `__init__.py` exposes its supported public models, and `models.py` owns their authoritative definitions. `ai_architect_tools` declares this package as a local build dependency and imports it directly; it MUST NOT define a second schema module.
 - `mcp_server.py` exposes the domain functions as STDIO MCP tools without adding reasoning logic.
 - `cli.py` exposes the same domain functions for local testing, scripting, and diagnostics without an MCP host.
 - `tests/` verifies the schemas and domain functions independently of the MCP transport.
@@ -1086,6 +1408,12 @@ mcp_server:
   name: ai-software-architect-tools
   language: python
   minimum_python: "3.11"
+  sdk:
+    implementation: official-modelcontextprotocol-python-sdk
+    mvp_release_line: stable-v1
+    version_constraint: ">=1,<2"
+    prereleases: deny
+    exact_resolution: lock-file
   transport: stdio
   lifecycle: host-managed-child-process
   startup:
@@ -1093,28 +1421,59 @@ mcp_server:
     shell: false
     environment_interpolation: false
     mutable_remote_fetch: false
-    workspace_root: immutable-startup-argument
+    workspace_root: verified-host-binding-or-unavailable
+  release_runtime:
+    mvp_platform: windows-x86_64
+    form: self-contained-versioned-executable
+    requires_system_python: false
+    first_run_network_install: false
+    source: locked-reviewed-ci-build
   network_access: false
   model_calls: false
   telemetry: false
+  dependency_analysis:
+    mvp_languages:
+      - python
+    python_parser: standard-library-ast-without-execution
+    unsupported_language_action: skip-and-report
   tools:
     - name: validate_architecture_contract
       access: read-only
+      input: ContractValidationInput
       output: ContractValidationResult
     - name: list_architecture_decisions
       access: read-only
+      input: DecisionListInput
       output: DecisionListResult
     - name: analyze_repository_dependencies
       access: read-only
+      input: RepositoryAnalysisInput
       output: DependencyGraphEvidence
     - name: check_architecture_boundaries
       access: read-only
+      input: BoundaryCheckInput
       output: ConformanceReport
+    - name: scan_generated_artifact
+      access: read-only
+      input: ArtifactSecretScanInput
+      output: ArtifactSecretScanResult
 ```
 
-MCP tools MUST return evidence and structured facts, not architectural recommendations. The host model interprets the evidence. All MVP MCP tools are read-only; the host writes approved files through its normal repository tools and permission flow. Additional tools require a documented use case, schema, guardrail analysis, and acceptance scenario before they enter the public surface.
+The Build Week release targets Windows x86-64 and bundles a self-contained executable built in CI from the reviewed Python source and locked dependencies. At this specification review, the [official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) documents v1 as the stable line and v2 as a pre-release transition; the MVP therefore locks an exact stable v1 release below v2. Moving to v2 requires a separate dependency ADR after stable availability plus protocol, structured-output, lifecycle, packaging, and security regression tests. The installed plugin MUST NOT create a virtual environment, invoke `pip`, fetch a package, or require a system Python installation on first run. Later operating-system and architecture packages require the same clean-machine lifecycle and security tests before they are advertised. The `.mcp.json` command MUST point only to the executable inside the installed, immutable plugin package using path semantics verified against the current Codex plugin runtime; it MUST NOT point into the analyzed repository or depend on shell or environment expansion.
 
-The server MUST never write logs to standard output because that would corrupt the STDIO protocol. MCP error data MUST validate against `ToolError` and use stable, sanitized codes for invalid input, missing files, boundary violations, protected paths, budget exhaustion, unsafe content, and unsupported file formats. The workspace root is fixed when the server starts and MUST NOT be accepted from individual tool inputs. A server failure MUST degrade gracefully: the agent MAY continue reasoning with native host tools, but MUST disclose that deterministic validation was unavailable.
+Codex's documented plugin lifecycle launches a bundled MCP server, but it does not by itself prove that the child process receives the active project root as a trustworthy value. `GATE-WORKSPACE` therefore requires an integration test before repository-reading tools are enabled. The preferred binding is a host-confirmed local `file:` root obtained through the MCP client roots capability when Codex demonstrably supports it; a documented host startup working directory or argument MAY be used only if it has equivalent active-project semantics. The selected root is canonicalized and fixed for the process lifetime. A roots-change notification disables repository-reading tools until an explicit safe rebind or process restart; it never silently switches projects. A path proposed by the model, repository content, or an individual tool argument is never a trust anchor. If no trustworthy binding is available, `list_architecture_decisions`, `analyze_repository_dependencies`, and `check_architecture_boundaries` MUST be disabled or return `workspace-unavailable` without reading a file. `validate_architecture_contract` and `scan_generated_artifact` remain available in pathless modes that accept bounded content already read or generated through approved host-native tools.
+
+At MCP initialization, the server MUST return concise `instructions` that state its read-only purpose, lack of network/model/shell access, workspace-boundary rule, untrusted-content treatment, and budgets. The security-critical guidance MUST be self-contained within the first 512 characters because Codex may use that prefix when deciding whether and how to call the server. A deterministic test MUST assert the prefix content and length.
+
+MCP tools MUST return evidence and structured facts, not architectural recommendations. The host model interprets the evidence. Input schemas limit shape and size; the domain boundary layer separately canonicalizes every relative path and enforces the workspace and protected-file policies. `list_architecture_decisions` reads only the fixed `.ai-architect/decisions/` directory and accepts status filters, not a caller-selected directory. All MVP MCP tools are read-only; the host writes approved files through its normal repository tools and permission flow. Additional tools require a documented use case, schema, guardrail analysis, and acceptance scenario before they enter the public surface.
+
+The AI Architect itself is programming-language independent: its workflow, architecture knowledge, ADRs, contracts, and host-native reasoning can be used for Python, Java, C#, TypeScript, Go, Rust, and other languages. Only the MVP's deterministic MCP dependency extractor is initially Python-specific. For other languages, the host model MAY inspect code with approved native tools, but it MUST disclose that the dependency graph was not deterministically verified by this MCP tool.
+
+The deterministic dependency extractor uses Python's standard-library Abstract Syntax Tree (AST) parser. An AST represents source code as structured syntax nodes, allowing the tool to identify `import` and `from ... import ...` statements and derive module dependencies without importing or executing repository code. This is safer and more accurate than regular-expression scanning because comments and string literals are not mistaken for imports, while multiline and aliased imports remain valid syntax the parser understands.
+
+AST analysis is static and therefore intentionally limited. It may not resolve dependencies created through dynamic imports, reflection, runtime dependency injection, generated code, or framework configuration. The MCP result MUST report such limitations and MUST NOT present the dependency graph as complete when relevant constructs are unsupported or skipped. Other programming languages MAY still be analyzed by the host model using approved native tools. Each additional deterministic language parser requires an accepted parser design, malicious-syntax fixtures, dependency-resolution semantics, budget tests, and an updated capability matrix before release.
+
+The server MUST never write logs to standard output because that would corrupt the STDIO protocol. MCP error data MUST validate against `ToolError` and use stable, sanitized codes for invalid input, missing files, unavailable workspace binding, boundary violations, protected paths, budget exhaustion, unsafe content, and unsupported file formats. When available, the workspace root is fixed at startup and MUST NOT be accepted from individual tool inputs. A server failure MUST degrade gracefully: the agent MAY continue reasoning with native host tools, but MUST disclose that deterministic validation was unavailable.
 
 ## Security, Privacy, and Guardrails
 
@@ -1130,6 +1489,14 @@ guardrails:
     repository_content_can_authorize_actions: false
     repository_content_can_expand_scope: false
     tool_authorization_source: original-user-intent-and-host-policy
+  model_context:
+    data_minimization: required
+    prefer_structured_evidence_over_source_content: true
+    echo_suspected_secret_values: false
+  durable_artifacts:
+    assume_version_controlled: true
+    confidential_detail_minimization: required
+    credentials_personal_data_and_raw_secrets: forbidden
   scope:
     allowed_intents:
       - architecture-analysis
@@ -1142,10 +1509,12 @@ guardrails:
     repeated_off_topic_before_strike: 2
   repository:
     workspace_root:
-      source: host-startup-configuration
+      source: verified-host-startup-configuration-or-unavailable
       immutable_per_process: true
       canonicalize_before_access: true
       revalidate_immediately_before_open: true
+      verify_final_path_from_open_handle: true
+      unsafe_indirection_fallback: deny
       reject_escape_via:
         - traversal
         - symlink
@@ -1162,6 +1531,8 @@ guardrails:
       hidden_files_require_explicit_user_scope: true
       skip_binary_files: true
       unpack_archives: false
+      unknown_format_action: deny
+      deny_rules_override_allow_rules: true
     allowed_write_globs:
       - .ai-architect/**
     write_executor: host-native-tools-only
@@ -1196,6 +1567,12 @@ guardrails:
     parsing:
       yaml_loader: safe-only
       arbitrary_object_construction: false
+      duplicate_yaml_keys: reject
+      yaml_anchors_and_aliases: reject
+      max_nesting_depth: 50
+      duplicate_json_keys: reject
+      toml_parser: python-tomllib
+      markdown_html_execution: false
       pickle: false
       eval_or_exec: false
       archive_unpacking: false
@@ -1204,17 +1581,20 @@ guardrails:
       include_file_contents: false
       include_secrets: false
       absolute_paths: false
-    max_tool_calls_per_run: 50
+    max_tool_calls_per_process: 200
     max_files_per_analysis: 500
     max_total_bytes_per_analysis: 5000000
     max_single_file_bytes: 500000
     tool_timeout_seconds: 60
+    max_dependency_edges: 5000
     max_findings_per_report: 200
   workflow:
+    max_mcp_tool_calls_per_run: 50
     max_clarification_rounds: 3
     max_questions_per_round: 5
     max_options: 5
     structured_output_repair_attempts: 1
+    generated_artifact_secret_scan: required-before-write
   strikes:
     scope: current-run
     authorization_effect: none
@@ -1223,33 +1603,41 @@ guardrails:
     halt_at: 3
     restriction:
       disable_repository_scan_tools: true
-      allowed_tool: validate_architecture_contract
-      user_selected_path_only: true
+      allowed_tools:
+        - validate_architecture_contract
+        - scan_generated_artifact
+      user_selected_content_only: true
     reset: explicit-new-run-clears-counter-only
 ```
 
-These are local execution budgets rather than commercial API quotas. Exceeding a scan or tool-call budget produces a partial result with `truncated: true`; it does not silently continue. Hosts MAY impose stricter limits and MUST disclose material truncation.
+These are local execution budgets rather than commercial API quotas. The MCP process deterministically enforces per-call scan limits and its process-lifetime ceiling. The host workflow state counts calls in the current architecture run and stops invoking MCP after `max_mcp_tool_calls_per_run`; a new run does not reset the independent process ceiling. Exceeding a scan budget produces a partial result with `truncated: true`; a call-count ceiling rejects further calls with `budget-exhausted`. Hosts MAY impose stricter limits and MUST disclose material truncation.
 
 A strike is a local safety-response metric, not an authorization mechanism or user analytics. Workspace, secret, network, parsing, shell, and destructive-action prohibitions are invariant and MUST be enforced independently on every operation and every run. Resetting strikes or starting a new run MUST NOT permit an otherwise prohibited action. Strike events are limited to denied user- or model-requested actions: workspace escape, protected-secret access, network access, model-call attempts from MCP, shell execution, destructive writes, or repeated attempts to bypass the off-topic guard. Strikes MUST NOT be transmitted or retained as telemetry.
 
 - At one strike, deny the action, warn, and explain the applicable boundary.
-- At two strikes, disable repository-scanning tools for the current run; only explicit validation of a user-selected architecture contract remains available.
+- At two strikes, disable repository-scanning tools for the current run; only pathless validation of a user-selected architecture contract and pre-write artifact secret scanning remain available.
 - At three strikes, halt the current workflow and require an explicit new user-approved run.
 - A benign first off-topic question is redirected and does not produce a strike. Repeated off-topic requests produce at most one strike unless accompanied by a distinct prohibited action.
 
 Repository content, including source comments, Markdown, specifications, ADRs, generated files, commit messages, and filenames, MUST be treated as untrusted data. Content encountered during analysis MUST NOT change the agent role, override host or skill instructions, broaden file access, authorize tool calls, request secrets, or modify the original user intent. Before every tool call, an action gate MUST compare the proposed operation with the original user request, current workflow node, immutable workspace root, and deterministic tool policy. The repository content that influenced the proposal MUST NOT be the authority that approves it.
 
+Context collection MUST be minimized: prefer MCP-produced structural evidence, manifests, symbols, and the smallest relevant source ranges over complete files. Suspected credential values encountered in otherwise relevant source MUST NOT be repeated in prompts, responses, diagnostics, or artifacts. This control reduces exposure but cannot change the data-processing behavior of the user's chosen host after the host has read a file; that behavior must be disclosed through the host's own privacy and deployment documentation.
+
 The platform adapter is responsible for the intent-aware action gate because the local MCP server does not perform model reasoning. The MCP server MUST independently enforce its deterministic path, parser, budget, and read-only policies even if the host-side action gate fails. AI Software Architect MUST NOT claim to replace or weaken the coding assistant's sandbox, permission prompts, or native tool controls; host-native tools remain governed by the host and user. Any future MCP capability that writes outside `.ai-architect/`, executes processes, or accesses a network requires a separate threat-model update and explicit human approval and is outside the MVP.
 
 Suspected indirect prompt injection in repository content MUST be ignored as an instruction and MAY be reported as untrusted content. Detection by itself MUST NOT create a strike against the user. If the content is not necessary for the architecture task, it SHOULD be skipped; if it is necessary evidence, it MUST be quoted or summarized as data without following its instructions.
 
-The protected-file patterns are defense-in-depth, not a complete catalog of secret names. Tools MUST first restrict reads to relevant supported file categories and explicit user scope. File paths MUST be normalized and canonicalized, checked against the immutable workspace root, and checked again immediately before opening. Symlinks, junctions, reparse points, or other indirections that resolve outside the workspace MUST be denied without reading the target.
+Prompt-injection resistance is defense in depth, not a guarantee that a probabilistic host model will never be influenced by malicious text. The deterministic impact boundary is therefore primary: the MCP surface is read-only, sensitive paths and workspace escapes are denied independently of model behavior, repository-driven shell/network/model execution is absent, and material writes require the host's normal permission flow plus explicit architectural approval. Security documentation MUST disclose this residual model risk and MUST NOT claim perfect prompt-injection prevention.
+
+The protected-file patterns are defense-in-depth, not a complete catalog of secret names. Tools MUST first restrict reads to relevant supported file categories and explicit user scope. The implementation MUST own a tested allowlist registry of supported source extensions and exact manifest/artifact filenames; unknown formats are denied, and a deny rule wins over an allow rule. File paths MUST be normalized and canonicalized, checked against the immutable workspace root, and checked again immediately before opening. The implementation MUST open without following unverified indirection where the platform permits, derive and validate the final path from the opened handle, and read from that same handle. On Windows it MUST reject unapproved reparse-point components and validate the final handle path; if those guarantees are unavailable, the file is denied rather than opened. Symlinks, junctions, reparse points, path swaps, or other indirections that resolve outside the workspace MUST be denied without reading the target.
 
 Only safe, non-object-constructing parsers may process repository files. The MCP server MUST NOT use `eval`, `exec`, `pickle`, dynamic imports derived from repository content, shell commands, or automatic archive extraction. Unsupported, binary, malformed, or oversized files MUST be skipped with a bounded, sanitized error. Errors and diagnostics MUST use workspace-relative paths and MUST NOT echo protected file contents or secrets.
 
 Off-topic classification MUST be conservative. Questions about requirements, architecture, trade-offs, ADRs, design patterns, repository boundaries, or handoff constraints are in scope. General application implementation, unrelated research, personal assistance, and requests to bypass controls are out of scope for the architect role. The agent SHOULD explain what belongs in the coding task and offer to finish the architecture handoff.
 
-Project analysis remains local except for the documented behavior of the user's chosen coding assistant. The project operates no telemetry backend, requests no model-provider credentials, and stores no secrets in `.ai-architect/`. Optional future integration credentials MUST use host-supported secret mechanisms. Recommendations are advisory and MUST identify significant uncertainty.
+Durable architecture artifacts are assumed to be committed and potentially shared. They MUST contain the minimum decision-relevant detail and MUST NOT contain credentials, raw secrets, unnecessary personal data, or proprietary source excerpts. When a decision depends on a confidential value, record a safe qualitative constraint or user-approved reference rather than the value itself.
+
+Before any generated artifact is written, a local secret scanner MUST inspect the candidate content for private-key blocks and high-confidence credential/token patterns. A positive finding blocks the write and reports only the category and safe location, never the suspected value. Tests MUST include true positives and representative false positives. Project analysis remains local except for the documented behavior of the user's chosen coding assistant. The project operates no telemetry backend, requests no model-provider credentials, and stores no secrets in `.ai-architect/`. Optional future integration credentials MUST use host-supported secret mechanisms. Recommendations are advisory and MUST identify significant uncertainty.
 
 ### Public Repository and Software Supply Chain
 
@@ -1261,9 +1649,12 @@ The public repository MUST use a secure development and release process:
 - Keep runtime dependencies minimal, pin direct dependencies, commit a reproducible lock file with hashes, and review automated dependency updates.
 - Pin third-party GitHub Actions to immutable commit SHAs and grant workflows the minimum required permissions.
 - Build releases from reviewed tags in CI, publish checksums, and SHOULD publish signed provenance or attestations when supported.
+- Generate a software bill of materials for each bundled executable and keep `THIRD_PARTY_NOTICES.md` consistent with all redistributed dependencies and their licenses.
 - Do not download or execute code from a mutable branch at plugin runtime.
 - Define the plugin's MCP startup as a fixed executable plus argument array. It MUST NOT use a shell command string, environment interpolation, package-runner shorthand that fetches unpinned code, or repository-controlled executable paths.
 - Keep the startup command and requested permissions visible to the user during installation or configuration.
+- Author architecture and pattern references in original language. Cite authoritative sources, track content provenance, and do not copy book, article, or vendor-documentation text into the MIT-licensed corpus without compatible permission.
+- Secret-scanner tests MUST construct nonfunctional synthetic values in an isolated temporary directory at test time; no real credential or reusable private key may be committed as a fixture.
 
 Security requirements and residual risks MUST be tracked as versioned design decisions. Security fixes MUST receive regression tests, and reports involving a suspected vulnerability MUST avoid public issue disclosure until a safe remediation or coordinated disclosure decision exists.
 
@@ -1291,7 +1682,7 @@ AI Software Architect addresses the earlier reasoning problem:
 
 > Which architectural solution, if any, best fits these requirements and constraints?
 
-It may recommend Strategy, Factory Method, Observer, Repository, CQRS, Hexagonal Architecture, or no named pattern. It must explain alternatives and consequences rather than treating pattern usage as the goal.
+It may recommend Strategy, Factory Method, Observer, Repository, Hexagonal Architecture, or no named pattern. Future knowledge releases may add CQRS after its reference and evaluation coverage exist. The agent must explain alternatives and consequences rather than treating pattern usage as the goal.
 
 ## Key Differentiator
 
@@ -1342,17 +1733,19 @@ After approval, the agent creates ADRs, an architecture contract, and a coding h
 
 ## Behavioral Acceptance Criteria
 
-These scenarios are normative. They SHOULD be automated where a deterministic assertion is possible and used as evaluation fixtures where model judgment is involved.
+These scenarios are normative. Every scenario has a unique stable tag used as its requirement identifier, test selector, and release-evidence key. Tags MUST NOT be reused; replacing behavior requires a new tag while retired tags remain documented. Scenarios SHOULD be automated where a deterministic assertion is possible and used as evaluation fixtures where model judgment is involved.
 
 ```gherkin
 Feature: Agent Skills standard and progressive disclosure
 
+  @SKILL-001
   Scenario: Discover canonical skills without loading their bodies
     Given all canonical skills are installed in a supported host
     When the host builds its available-skill catalog
     Then it loads only each skill's "name" and "description"
     And it does not eagerly load any SKILL.md body or bundled reference
 
+  @SKILL-002
   Scenario: Load only relevant design-pattern knowledge
     Given the identified forces suggest interchangeable runtime behavior
     When "evaluate-architecture-options" is activated
@@ -1360,6 +1753,7 @@ Feature: Agent Skills standard and progressive disclosure
     And it loads only the pattern references needed for credible alternatives
     And it does not load all 23 GoF pattern files
 
+  @SKILL-003
   Scenario: Route related resilience references without loading the catalog
     Given the design calls an unreliable remote dependency
     When "evaluate-architecture-options" evaluates failure handling
@@ -1367,12 +1761,14 @@ Feature: Agent Skills standard and progressive disclosure
     And it evaluates their interaction and different failure conditions
     And it does not load unrelated architecture references
 
+  @SKILL-004
   Scenario: Keep planned distributed-system references outside initial knowledge
     Given the MVP skill package is being built
     When its canonical references and advertised capabilities are inspected
     Then post-MVP distributed-system references are not shipped as empty placeholders
     And the agent does not claim implemented guidance for references that are not packaged
 
+  @SKILL-005
   Scenario: Validate a canonical skill package
     Given a directory directly below "shared/skills" is ready for packaging
     When "skills-ref validate" checks that directory
@@ -1380,15 +1776,35 @@ Feature: Agent Skills standard and progressive disclosure
     And every bundled resource is referenced by a direct relative path within the skill root
     And every "evaluate-architecture-options" reference uses an approved category prefix or the "no-pattern.md" exception
 
-  Scenario: Package a canonical skill for a platform adapter
+  @SKILL-006
+  Scenario: Package canonical skills for a composition-capable platform
     Given a canonical skill has passed open-standard validation
-    When a Codex or other platform package is generated
+    When a platform with documented modular composition packages it unchanged
     Then the canonical SKILL.md instructions and references remain unchanged
     And platform-specific metadata is generated by the adapter
     And the adapter preserves on-demand resource loading
 
+  @PLUGIN-001
+  Scenario: Generate the Codex Composite without sibling-skill activation
+    Given all canonical workflow skills and resources have passed validation
+    When the Codex adapter builds the "ai-software-architect" plugin
+    Then the package contains one explicit user-facing Composite skill
+    And its workflow does not depend on activating a sibling skill
+    And its Codex metadata disables implicit invocation
+    And references remain progressively disclosed
+    And "provenance.json" maps every generated resource to its canonical hash
+
+  @PLUGIN-002
+  Scenario: Reject a stale or malformed Codex package
+    Given a canonical source changed after the last Codex package build
+    When plugin validation runs
+    Then the stale provenance hash causes the build to fail
+    And the package is not released
+    And the validator verifies the required plugin layout and real manifest values
+
 Feature: Host-native architectural reasoning
 
+  @HOST-001
   Scenario: Use the host model without a separate provider key
     Given the Codex plugin is installed
     And no model-provider API key is configured for AI Software Architect
@@ -1397,6 +1813,7 @@ Feature: Host-native architectural reasoning
     And the plugin does not request a separate model-provider credential
     And the Python MCP server makes no model or network request
 
+  @HOST-002
   Scenario: Different hosts produce different defensible recommendations
     Given two supported coding assistants receive the same requirements
     When each runs the shared architecture workflow
@@ -1405,6 +1822,7 @@ Feature: Host-native architectural reasoning
 
 Feature: Architecture workflow routing
 
+  @FLOW-001
   Scenario: Missing information could change a material decision
     Given the requirements omit a critical scale or reliability constraint
     When the agent assesses the available context
@@ -1412,12 +1830,14 @@ Feature: Architecture workflow routing
     And the agent asks no more than 5 focused questions in that round
     And each question states its decision impact
 
+  @FLOW-002
   Scenario: No named pattern is justified
     Given the simplest design satisfies the declared constraints
     When the agent evaluates the options
     Then it may recommend no named design pattern
     And it explains why added structure would not currently earn its cost
 
+  @FLOW-003
   Scenario: The user rejects a proposed decision
     Given a proposed decision is awaiting approval
     When the user rejects it and provides a new constraint
@@ -1426,12 +1846,14 @@ Feature: Architecture workflow routing
 
 Feature: Durable architecture state
 
+  @STATE-001
   Scenario: Structured output uses an incorrect YAML type
     Given generated YAML declares the integer field "priority" as the string "5"
     When the output is validated with the canonical Pydantic model
     Then strict validation fails without coercing the value
     And the workflow uses its bounded structured-output repair attempt
 
+  @STATE-002
   Scenario: Approved decisions become portable repository artifacts
     Given the user approves a material architecture decision
     When the workflow enters "record_and_handoff"
@@ -1439,6 +1861,7 @@ Feature: Durable architecture state
     And "architecture-contract.yaml" links the accepted ADR
     And both artifacts validate against the canonical Pydantic schemas
 
+  @STATE-003
   Scenario: Invalid structured output cannot overwrite valid state
     Given a valid architecture contract already exists
     And newly generated structured output fails Pydantic validation twice
@@ -1446,6 +1869,7 @@ Feature: Durable architecture state
     Then the existing contract remains unchanged
     And the workflow reports the validation errors
 
+  @STATE-004
   Scenario: Resume after loss of ephemeral state
     Given accepted architecture artifacts exist in the repository
     And no runtime checkpoint is available
@@ -1453,8 +1877,42 @@ Feature: Durable architecture state
     Then the workflow reconstructs durable context from those artifacts
     And accepted decisions are not regenerated as new decisions
 
+  @STATE-005
+  Scenario: Reject an accepted decision with an invalid option reference
+    Given an ADR is marked "accepted"
+    And its selected option is absent or not among its considered options
+    When canonical semantic validation runs
+    Then validation fails before any artifact is written
+    And the previous valid artifact set remains unchanged
+
+  @STATE-006
+  Scenario: Preserve a concurrent manual edit
+    Given the agent analyzed revision 3 of the architecture contract
+    And the user changes that contract before persistence
+    When the adapter performs its immediate pre-write hash check
+    Then it reports a concurrent-edit conflict
+    And it does not overwrite the user's version
+    And it asks to reconcile the candidate with the new content
+
+Feature: Reproducible Python development and build environment
+
+  @BUILD-001
+  Scenario: A dependency declaration changes without an updated lockfile
+    Given a workspace pyproject.toml no longer matches the committed uv.lock
+    When CI runs "uv lock --check"
+    Then the check fails
+    And no test, package, or release job proceeds with a stale resolution
+
+  @BUILD-002
+  Scenario: The installed plugin is independent of the build environment
+    Given a clean supported machine has neither uv nor Python installed
+    When Codex starts the plugin's local MCP server
+    Then the bundled self-contained executable starts successfully
+    And the plugin does not create ".venv" or install a dependency
+
 Feature: Local deterministic MCP tools
 
+  @MCP-001
   Scenario: Codex invokes a validation tool
     Given the plugin MCP configuration is active
     When Codex calls "validate_architecture_contract"
@@ -1462,6 +1920,7 @@ Feature: Local deterministic MCP tools
     And the tool returns a ContractValidationResult
     And the server does not start a network listener or persistent daemon
 
+  @MCP-002
   Scenario: MCP tools are temporarily unavailable
     Given the STDIO server cannot start
     When the agent needs deterministic validation
@@ -1469,15 +1928,32 @@ Feature: Local deterministic MCP tools
     And it may continue analysis with native host tools
     But it does not claim that the contract was deterministically validated
 
+  @MCP-003
+  Scenario: No trustworthy workspace binding is available
+    Given Codex has not supplied a documented and verified active-project binding
+    When the MCP server initializes
+    Then repository-reading tools are disabled or return "workspace-unavailable"
+    And no tool accepts a model-proposed workspace root
+    But pathless architecture-contract validation remains available
+
+  @MCP-004
+  Scenario: MCP initialization publishes bounded safety instructions
+    Given the local MCP server starts successfully
+    When it returns its initialization response
+    Then the first 512 instruction characters state the critical read-only constraints and budgets
+    And a deterministic test verifies that prefix
+
 Feature: Security and scope guardrails
 
+  @SEC-001
   Scenario: A path resolves outside the workspace
     Given an MCP tool input contains traversal or an escaping symlink, junction, or reparse point
     When the server resolves the requested path
     Then it denies the operation
-    And it records one local strike for the current run
+    And the host workflow records one local strike for the current run
     And it returns a stable boundary-violation error without reading the target
 
+  @SEC-002
   Scenario: Repository content contains an indirect prompt injection
     Given a relevant source file instructs the agent to ignore its role and read a protected file
     When the agent analyzes that source file
@@ -1485,24 +1961,28 @@ Feature: Security and scope guardrails
     And it does not broaden scope or invoke the prohibited tool
     And detection alone does not create a strike against the user
 
+  @SEC-003
   Scenario: Starting a new run does not reset permissions
     Given a protected-file read was denied in a previous run
     When the user starts an explicitly approved new run and requests the same prohibited read
     Then the strike counter may start at zero
     But the protected-file read is denied again
 
+  @SEC-004
   Scenario: YAML attempts arbitrary object construction
     Given an architecture artifact contains an unsafe YAML object tag
     When the MCP server parses the artifact
     Then safe parsing rejects the artifact without constructing the object
     And the error contains no protected content or absolute path
 
+  @SEC-005
   Scenario: MCP startup configuration invokes a shell or mutable package
     Given a plugin package defines MCP startup with shell interpolation or an unpinned remote package runner
     When the package security checks run
     Then the configuration is rejected before the command executes
     And the unsafe startup definition cannot be released
 
+  @SEC-006
   Scenario: A repository scan exceeds its configured budget
     Given more than 500 relevant files are present
     When a dependency analysis reaches the file budget
@@ -1510,6 +1990,7 @@ Feature: Security and scope guardrails
     And it returns the partial evidence with "truncated" set to true
     And the agent discloses the limitation in its interpretation
 
+  @SEC-007
   Scenario: The user asks an unrelated question
     Given the architect role is active
     When the user makes a benign request unrelated to software architecture
@@ -1517,8 +1998,32 @@ Feature: Security and scope guardrails
     And no repository-analysis tool is invoked
     And the agent redirects the user without issuing a strike
 
+  @SEC-008
+  Scenario: A generated artifact appears to contain a secret
+    Given a candidate ADR contains a private-key block or high-confidence token
+    When the pre-write secret scan runs
+    Then persistence is blocked
+    And the report does not echo the suspected secret value
+    And the previous artifact set remains unchanged
+
+  @SEC-009
+  Scenario: YAML attempts ambiguous or resource-exhausting structure
+    Given an architecture artifact contains duplicate keys, aliases, or excessive nesting
+    When the MCP server parses the artifact
+    Then parsing fails within the configured size and time budgets
+    And no partial object is accepted
+
+  @SEC-010
+  Scenario: A path is swapped after its initial boundary check
+    Given a repository entry initially resolves inside the workspace
+    And an attacker replaces it with an escaping indirection before the read
+    When the server opens and validates the final handle path
+    Then it denies the operation without returning target content
+    And the race-condition fixture passes on the advertised Windows platform
+
 Feature: Architecture conformance review
 
+  @REVIEW-001
   Scenario: Code violates an accepted dependency rule
     Given the architecture contract denies a dependency from the domain to a vendor adapter
     And repository evidence shows that dependency
@@ -1534,8 +2039,8 @@ Feature: Architecture conformance review
 
 The first Codex plugin must demonstrate one complete architecture-first loop:
 
-1. Install and activate the Codex plugin locally without configuring a separate model API key.
-2. Let Codex launch the bundled Python STDIO MCP server through the host MCP lifecycle.
+1. Build, validate, install, activate, and cleanly uninstall the correctly structured Codex plugin without configuring a separate model API key or silently editing user configuration.
+2. Let Codex launch the bundled self-contained Windows x86-64 Python STDIO executable through the host MCP lifecycle on a clean machine without Python or a first-run download.
 3. Validate that the MCP server starts without a network listener, model call, telemetry, or persistent daemon.
 4. Analyze a project or feature specification using host-native model reasoning.
 5. Ask focused clarification questions when material context is missing.
@@ -1552,6 +2057,12 @@ The first Codex plugin must demonstrate one complete architecture-first loop:
 16. Publish `SECURITY.md` and enable the specified secret, dependency, code-scanning, review, and release-integrity controls for the public repository.
 17. Validate every canonical skill with `skills-ref validate` and any Codex-specific package validator.
 18. Demonstrate progressive disclosure by discovering metadata first and loading only the workflow and pattern references required by the active architecture task.
+19. Generate the Codex Composite and provenance map reproducibly from canonical modular skills; fail the build when generated output is stale.
+20. Prove a trustworthy Codex workspace binding before enabling repository-reading MCP tools, or demonstrate the specified fail-closed mode.
+21. Enforce accepted-decision, reference-integrity, workflow-state, and cross-artifact semantic validation in addition to Pydantic shape validation.
+22. Preserve concurrent user edits and recover safely from a partial multi-file persistence failure.
+23. Block generated artifacts containing likely secrets and verify that `.ai-architect/.runtime/` cannot be committed.
+24. Create the development environment from the root uv workspace, reject a stale `uv.lock` in CI, and prove that `.venv/` and uv are absent from the released plugin runtime.
 
 ### Initial knowledge scope
 
@@ -1560,12 +2071,15 @@ The MVP should cover a deliberately bounded, progressively disclosed set of conc
 - modular monolith and service-oriented alternatives;
 - layered, clean, hexagonal, Model-View-Controller, and vertical-slice architecture;
 - dependency inversion, dependency injection, ports/adapters, and anti-corruption boundaries;
-- Strategy, Factory Method, Observer, Adapter, Command, Repository, and Unit of Work;
+- all 23 GoF object-design patterns as complete, focused MVP knowledge references; Strategy, Factory Method, Observer, Adapter, and Command receive deeper initial evaluation and demonstration coverage, but the other 18 patterns are also packaged and available on demand;
+- Repository and Unit of Work as data-access patterns distinct from the GoF catalog;
 - event-driven integration, Publish/Subscribe, and Saga coordination;
 - idempotency, Idempotent Consumer, and Transactional Outbox;
 - retry with backoff, timeout and deadline propagation, and Circuit Breaker;
 - Cache-Aside with explicit consistency and sensitive-data trade-offs;
 - explicit recommendation of no pattern when appropriate.
+
+Including a pattern reference means the AI Architect can evaluate and discuss that pattern; it does not mean the pattern is automatically implemented in the user's application. The agent loads only references relevant to the identified forces, compares credible alternatives, and recommends a pattern—or no named pattern—only when justified. Application code is produced later by the coding assistant from user-approved decisions.
 
 ### Demonstration scenario
 
@@ -1611,6 +2125,7 @@ verification_modes:
       - mcp-tool-output
       - path-boundaries
       - execution-budgets
+      - python-dependency-parser
       - artifact-linkage
       - safe-file-parsing
       - startup-command-validation
@@ -1619,6 +2134,16 @@ verification_modes:
       - direct-resource-path-validation
       - reference-inventory-validation
       - no-placeholder-capability-validation
+      - codex-plugin-structure-validation
+      - generated-provenance-validation
+      - semantic-cross-artifact-validation
+      - schema-migration-validation
+      - concurrent-edit-protection
+      - runtime-ignore-validation
+      - generated-artifact-secret-scanning
+      - mcp-instruction-prefix-validation
+      - uv-workspace-and-lock-validation
+      - release-archive-environment-exclusion
   scripted-host-test:
     applies_to:
       - plugin-installation
@@ -1629,6 +2154,10 @@ verification_modes:
       - skill-metadata-discovery
       - on-demand-resource-loading
       - adapter-content-integrity
+      - clean-machine-runtime-startup
+      - trustworthy-workspace-binding
+      - clean-uninstall
+      - clean-uv-workspace-sync
   model-evaluation:
     applies_to:
       - clarification-quality
@@ -1641,7 +2170,7 @@ verification_modes:
       - reference-routing-relevance
 ```
 
-Model-evaluation fixtures SHOULD use a rubric with evidence citations and MUST allow more than one recommendation to pass when it is consistent with the stated forces. MVP release evidence includes the scenario identifier, host and model used, result, evaluator, and any accepted deviation.
+Each scenario tag MUST be mapped in the test manifest to exactly one primary verification mode, although supporting checks MAY use other modes. Model-evaluation fixtures SHOULD use a rubric with evidence citations and MUST allow more than one recommendation to pass when it is consistent with the stated forces. MVP release evidence includes the stable scenario tag, host and model used, result, evaluator, tested plugin/runtime version, and any accepted deviation.
 
 ## Future Capabilities
 
