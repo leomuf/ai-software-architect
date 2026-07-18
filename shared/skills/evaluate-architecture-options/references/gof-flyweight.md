@@ -14,10 +14,42 @@ Can substantially reduce duplicated memory.
 Complicates state management, concurrency, and call sites.
 ## Implementation considerations
 Make shared state immutable and bound cache growth and eviction.
+## Python example
+**Example context:** A text editor reduces memory use by sharing identical font styles among many independently positioned glyphs.
+
+```python
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class TextStyle:
+    font: str
+    size: int
+    color: str
+
+
+class StyleFactory:
+    def __init__(self) -> None:
+        self._styles: dict[tuple[str, int, str], TextStyle] = {}
+
+    def get(self, font: str, size: int, color: str) -> TextStyle:
+        key = (font, size, color)
+        if key not in self._styles:
+            self._styles[key] = TextStyle(*key)
+        return self._styles[key]
+
+
+@dataclass(frozen=True)
+class Glyph:
+    character: str
+    x: int
+    y: int
+    style: TextStyle
+```
+`TextStyle` is shared intrinsic state, while each `Glyph` retains its extrinsic character and position.
 ## Credible alternatives
 Interning, value objects, compression, batching, or simpler caching.
 ## Related patterns
 Factory, Composite.
 ## Architecture interview questions
 What profiling evidence exists, and which state is safely immutable and shareable?
-

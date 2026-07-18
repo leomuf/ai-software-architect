@@ -39,6 +39,12 @@ implementation, rebuild, validation, and plugin reinstall cycle.
 
 ## Additional feedback for the next cycle
 
+- [x] Add one compact, progressively disclosed, syntax-validated Python example to
+      every GoF pattern reference and route generic example requests to the canonical
+      snippet.
+- [ ] After the next rebuild, verify that a generic Abstract Factory example request
+      loads only its focused reference, explains the pattern roles, and does not
+      inspect or modify the active repository.
 - [x] The post-reinstall "Identify useful design patterns" test completed in 1 minute
       32 seconds and produced useful repository-specific recommendations.
 - [x] That test still rendered five complementary patterns as a prioritized stack

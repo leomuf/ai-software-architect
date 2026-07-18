@@ -14,10 +14,41 @@ Supports composition, focused testing, and runtime policy selection.
 Adds indirection and moves selection complexity to a composition point.
 ## Implementation considerations
 Define behavioral invariants, selection ownership, failure semantics, and statefulness.
+## Python example
+**Example context:** An online checkout calculates a total using a selectable discount policy, such as no discount or ten percent off.
+
+```python
+from dataclasses import dataclass
+from typing import Protocol
+
+
+class Discount(Protocol):
+    def apply(self, subtotal: int) -> int: ...
+
+
+class NoDiscount:
+    def apply(self, subtotal: int) -> int:
+        return subtotal
+
+
+class TenPercentDiscount:
+    def apply(self, subtotal: int) -> int:
+        return subtotal * 90 // 100
+
+
+@dataclass(frozen=True)
+class Checkout:
+    discount: Discount
+
+    def total(self, subtotal: int) -> int:
+        if subtotal < 0:
+            raise ValueError("subtotal cannot be negative")
+        return self.discount.apply(subtotal)
+```
+`Checkout` stays stable while interchangeable discount strategies encapsulate the varying algorithm.
 ## Credible alternatives
 Direct conditional, Template Method, command function, or rules table.
 ## Related patterns
 State, Bridge, Template Method.
 ## Architecture interview questions
 Which algorithms are truly substitutable, and who owns selection and configuration?
-

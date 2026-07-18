@@ -9,6 +9,7 @@ scenarios:
   SKILL-004: {mode: deterministic-test, gate: GATE-SKILL}
   SKILL-005: {mode: deterministic-test, gate: GATE-SKILL}
   SKILL-006: {mode: scripted-host-test, gate: GATE-SKILL}
+  SKILL-007: {mode: deterministic-test, gate: GATE-SKILL}
   PLUGIN-001: {mode: deterministic-test, gate: GATE-PLUGIN}
   PLUGIN-002: {mode: deterministic-test, gate: GATE-PLUGIN}
   HOST-001: {mode: model-evaluation, gate: GATE-PLUGIN}

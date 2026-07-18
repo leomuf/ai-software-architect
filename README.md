@@ -35,6 +35,7 @@ The first implementation target is an installable [Codex](https://openai.com/cod
 - **Local-first operation:** requires no managed backend, hosted database, account system, usage metering, or project-data upload service.
 - **Modular Agent Skills:** separates interviewing, option evaluation, decision creation, coding handoff, and conformance review into reusable skills based on the open `SKILL.md` format.
 - **Progressive disclosure:** initially exposes only skill metadata, loads a workflow when activated, and reads only the architecture references relevant to the current decision.
+- **Ready-to-use Python examples:** every GoF pattern reference includes a compact, syntax-validated implementation example that is loaded only when the pattern is relevant or the user requests it.
 - **Deterministic local tools:** bundles a small read-only Python STDIO MCP server for Pydantic contract validation, ADR inspection, Python dependency evidence, architecture-boundary checks, and pre-write secret scanning. When Codex does not forward MCP roots, it can use compact line-preserving import statements for faster routine scans or bounded full source for higher-assurance analysis.
 - **Portable source of truth:** stores accepted architecture state as reviewable Markdown and YAML rather than in a proprietary service.
 
@@ -43,7 +44,7 @@ The first implementation target is an installable [Codex](https://openai.com/cod
 The architect selects references from the forces it discovers; users do not need to choose a pattern in advance, and the catalog is never loaded all at once.
 
 - **Architecture styles:** Modular Monolith, Service-Oriented Architecture, Layered Architecture, Clean Architecture, Hexagonal Architecture, Vertical Slice Architecture, Event-Driven Architecture, and Model-View-Controller.
-- **GoF object-design patterns:** all 23 Gang of Four patterns are available as separate focused references, with deeper initial evaluation coverage for Strategy, Factory Method, Observer, Adapter, and Command.
+- **GoF object-design patterns:** all 23 Gang of Four patterns are available as separate focused references with progressively disclosed Python examples, with deeper initial evaluation coverage for Strategy, Factory Method, Observer, Adapter, and Command.
 - **Dependencies and boundaries:** Dependency Inversion, Dependency Injection, Ports and Adapters, and Anti-Corruption Layer.
 - **Data and integration:** Repository, Unit of Work, Idempotency, Idempotent Consumer, Transactional Outbox, Saga, and Publish/Subscribe.
 - **Resilience and performance:** Retry with Backoff, Timeout and Deadline Propagation, Circuit Breaker, and Cache-Aside.

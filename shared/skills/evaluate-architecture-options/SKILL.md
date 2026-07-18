@@ -45,6 +45,12 @@ End `Your decision` by asking the user to approve, revise, or request more infor
 - Link the first user-facing pattern name to its canonical public reference under `https://github.com/leomuf/ai-software-architect/blob/main/shared/skills/evaluate-architecture-options/references/`, using the routed reference filename. Use plain text if the host cannot render Markdown links.
 - For supporting patterns, add a one-line role explaining where each applies. Do not assign them competing fit scores unless they are genuine alternatives within the same decision.
 
+## Implementation example requests
+
+- When the user asks for a generic Python implementation example of a GoF pattern, load only that routed `gof-*.md` reference and reuse its `Python example`. Explain briefly how the example's participants map to the pattern.
+- Reproduce the canonical example when a generic example is sufficient. For a repository-specific request, adapt the example to the user's domain and clearly identify the adaptation instead of presenting the canonical snippet as project-ready code.
+- Do not load unrelated pattern files or synthesize additional variants unless the user asks for them or a materially different variant is necessary.
+
 ## Direct reference routing
 
 ### Object design

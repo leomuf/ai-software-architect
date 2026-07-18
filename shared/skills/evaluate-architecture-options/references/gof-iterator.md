@@ -14,10 +14,38 @@ Separates traversal from storage and supports lazy consumption.
 Mutation, resource lifetime, and concurrent traversal semantics become complex.
 ## Implementation considerations
 Define ordering, snapshot behavior, cancellation, errors, and resource disposal.
+## Python example
+**Example context:** A numeric range library lets callers traverse a sequence while hiding how traversal state is stored.
+
+```python
+from collections.abc import Iterator
+
+
+class NumberIterator(Iterator[int]):
+    def __init__(self, start: int, stop: int) -> None:
+        self._current = start
+        self._stop = stop
+
+    def __next__(self) -> int:
+        if self._current >= self._stop:
+            raise StopIteration
+        value = self._current
+        self._current += 1
+        return value
+
+
+class NumberRange:
+    def __init__(self, start: int, stop: int) -> None:
+        self._start = start
+        self._stop = stop
+
+    def __iter__(self) -> NumberIterator:
+        return NumberIterator(self._start, self._stop)
+```
+`NumberIterator` owns traversal state while `NumberRange` keeps its representation behind Python's iteration protocol.
 ## Credible alternatives
 Standard collections, generators, streams, or query APIs.
 ## Related patterns
 Composite, Visitor.
 ## Architecture interview questions
 What traversal differs from the platform standard, and can the aggregate mutate during it?
-

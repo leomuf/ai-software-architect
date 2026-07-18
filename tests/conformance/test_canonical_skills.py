@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -32,6 +33,31 @@ REQUIRED_PATTERN_SECTIONS = (
     "Related patterns",
     "Architecture interview questions",
 )
+ALLOWED_EXAMPLE_IMPORTS = {
+    "__future__",
+    "abc",
+    "collections",
+    "copy",
+    "dataclasses",
+    "typing",
+}
+FORBIDDEN_EXAMPLE_CALLS = {
+    "compile",
+    "eval",
+    "exec",
+    "input",
+    "open",
+    "print",
+}
+FORBIDDEN_EXAMPLE_METHODS = {
+    "popen",
+    "replace_file",
+    "run",
+    "system",
+    "unlink",
+    "write_bytes",
+    "write_text",
+}
 
 
 def test_canonical_skill_contract_and_direct_resources() -> None:
@@ -67,11 +93,49 @@ def test_architecture_option_inventory_and_sections() -> None:
         assert reference.name == "no-pattern.md" or reference.name.startswith(ALLOWED_PREFIXES)
         text = reference.read_text("utf-8")
         assert "SPDX-FileCopyrightText" in text
-        for heading in REQUIRED_PATTERN_SECTIONS:
+        headings = REQUIRED_PATTERN_SECTIONS
+        if reference.name.startswith("gof-"):
+            headings += ("Python example",)
+        for heading in headings:
             assert re.search(rf"^## {re.escape(heading)}$", text, re.MULTILINE), (
                 reference.name,
                 heading,
             )
+
+
+def test_gof_python_examples_are_bounded_parseable_and_side_effect_free() -> None:
+    root = SKILLS / "evaluate-architecture-options" / "references"
+    references = sorted(root.glob("gof-*.md"))
+    assert len(references) == 23
+    for reference in references:
+        text = reference.read_text("utf-8")
+        blocks = re.findall(r"```python\n(.*?)\n```", text, re.DOTALL)
+        assert 1 <= len(blocks) <= 2, reference.name
+        for block in blocks:
+            assert len(block.splitlines()) <= 50, reference.name
+            tree = ast.parse(block, filename=reference.name)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    roots = {alias.name.split(".", 1)[0] for alias in node.names}
+                    assert roots <= ALLOWED_EXAMPLE_IMPORTS, (reference.name, roots)
+                elif isinstance(node, ast.ImportFrom):
+                    assert node.module is not None
+                    root_name = node.module.split(".", 1)[0]
+                    assert root_name in ALLOWED_EXAMPLE_IMPORTS, (
+                        reference.name,
+                        root_name,
+                    )
+                elif isinstance(node, ast.Call):
+                    if isinstance(node.func, ast.Name):
+                        assert node.func.id not in FORBIDDEN_EXAMPLE_CALLS, (
+                            reference.name,
+                            node.func.id,
+                        )
+                    elif isinstance(node.func, ast.Attribute):
+                        assert node.func.attr not in FORBIDDEN_EXAMPLE_METHODS, (
+                            reference.name,
+                            node.func.attr,
+                        )
 
 
 def test_user_facing_option_comparison_contract() -> None:
@@ -99,6 +163,8 @@ def test_user_facing_option_comparison_contract() -> None:
         assert f"`{heading}`" in options
     assert "prioritized stack of complementary patterns" in options
     assert "asking the user to approve, revise, or request more information" in options
+    assert "generic Python implementation example" in options
+    assert "reuse its `Python example`" in options
     assert "Never call it merely to demonstrate tool availability" in orchestration
     assert "conflicting platform or interface statements" in interview
 
