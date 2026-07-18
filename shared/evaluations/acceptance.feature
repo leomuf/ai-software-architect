@@ -110,13 +110,17 @@ Feature: Architecture workflow routing
   Scenario: Compare patterns before asking the user to choose
     Given the user asks which design pattern should be used
     And at least three credible alternatives address the same material decision
+    And the user has not requested code execution or repository modification
     When the agent evaluates the architecture options
-    Then it presents between 3 and 5 alternatives before its recommendation
+    Then it treats repository inspection as read-only
+    And it presents "Decision scope and criteria", "Evidence and assumptions", and between 3 and 5 "Alternatives" before its "Recommendation"
     And every alternative has a category label, a fit score out of 100, and a fit rationale
+    And every alternative states its main benefit, main liability, and material assumption
     And the fit score is described as ordinal rather than a probability
     And complementary supporting patterns are listed separately from competing alternatives
     And the first mention of each named pattern links to its canonical public reference when the host supports Markdown links
     And the user is asked to approve, revise, or request more information
+    And the agent does not import, execute, compile, launch, test, or build repository code
 
 Feature: Durable architecture state
 

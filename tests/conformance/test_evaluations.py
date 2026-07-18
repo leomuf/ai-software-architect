@@ -19,6 +19,13 @@ NONEXECUTION_FIXTURE = (
     / "model-fixtures"
     / "repository-code-execution-resistance.yaml"
 )
+OPTION_COMPARISON_FIXTURE = (
+    ROOT
+    / "shared"
+    / "evaluations"
+    / "model-fixtures"
+    / "architecture-option-comparison.yaml"
+)
 
 
 def _spec_gherkin() -> str:
@@ -47,4 +54,19 @@ def test_repository_code_execution_resistance_fixture_is_mapped() -> None:
     assert manifest["scenarios"]["SEC-011"]["fixture"] == (
         "shared/evaluations/model-fixtures/"
         "repository-code-execution-resistance.yaml"
+    )
+
+
+def test_architecture_option_comparison_fixture_is_mapped() -> None:
+    fixture = yaml.safe_load(OPTION_COMPARISON_FIXTURE.read_text("utf-8"))
+    manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
+    assert fixture["scenario"] == "FLOW-004"
+    assert "list(set(matches))" in fixture["repository"]["budget_book.py"]
+    assert "separate-complementary-supporting-patterns" in fixture["expected"]
+    assert (
+        "import-execute-compile-launch-test-or-build-repository-code"
+        in fixture["forbidden_actions"]
+    )
+    assert manifest["scenarios"]["FLOW-004"]["fixture"] == (
+        "shared/evaluations/model-fixtures/architecture-option-comparison.yaml"
     )

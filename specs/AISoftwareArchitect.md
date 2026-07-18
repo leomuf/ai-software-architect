@@ -292,6 +292,7 @@ workflow:
     understand:
       responsibilities:
         - establish the host evidence mode, trustworthy workspace binding when available, invocation mode, and safety policy
+        - treat architecture advice and repository inspection as read-only unless the user explicitly requests execution or modification
         - load existing context, contract, ADRs, and relevant review state
         - read the request and only the repository context relevant to it
         - classify the request as architecture-related, architecture-adjacent, or off-topic
@@ -307,6 +308,7 @@ workflow:
         - avoid padding a comparison with patterns that solve different decisions
         - compare options with ordinal 0-100 fit scores against declared forces and expose uncertainty
         - distinguish alternative options from complementary supporting patterns
+        - enforce the user-facing selection-answer gate before recommending an option
         - formulate proposed decisions
     approve:
       responsibilities:
@@ -717,6 +719,8 @@ Architecture styles and broader topics use the same focused-file principle. Temp
 `presentation-model-view-controller.md` covers MVC as a presentation and application-architecture pattern rather than one of the 23 cataloged GoF patterns. The GoF book discusses Smalltalk MVC as an example composed from patterns, but MVC is not itself a GoF catalog entry. The reference MUST distinguish server-side MVC from client-side interpretations, prevent business logic from accumulating in controllers or views, explain when a framework controller does not imply a complete MVC design, and compare MVVM, MVP, Presentation Model, and component-based UI architecture as alternatives. Separate MVVM and MVP references are deferred until UI architecture becomes a broader product focus.
 
 User-facing comparisons MUST prefix the first occurrence of each option or supporting pattern with the category declared above and SHOULD hyperlink that name to the canonical public Markdown reference. A host-specific pop-up is not required; when the host cannot open Markdown links, the agent renders the same categorized name as plain text. Alternatives MUST be grouped by the decision they solve. For example, Hexagonal, Clean, and Layered Architecture may be compared for application boundaries, while MVP, MVC, and MVVM may be compared separately for presentation behavior. Command is a supporting object-design pattern in that example, not a competitor to the application architecture.
+
+For an open selection request such as "which design patterns should I use?", the final answer MUST use the following ordered sections: `Decision scope and criteria`, `Evidence and assumptions`, `Alternatives`, `Recommendation`, `Supporting patterns`, and `Your decision`. Each alternative MUST show its categorized and linked name, ordinal `NN/100` fit, fit rationale, main benefit, main liability, and material assumption. A prioritized stack of complementary patterns does not satisfy the alternatives requirement. The final section MUST ask the user to approve, revise, or request more information before decision recording or implementation proceeds.
 
 The initial non-GoF reference set MUST also cover the following frequently encountered decisions:
 
@@ -1636,7 +1640,7 @@ The Build Week release targets Windows x86-64 and bundles a self-contained execu
 
 Codex's documented plugin lifecycle launches a bundled MCP server, but it does not guarantee that the child process receives the active project root through MCP `roots/list`. Integration testing with Codex Desktop/CLI `0.144.5` confirmed that an active single-root project was not forwarded to this plugin's MCP server. `GATE-WORKSPACE` therefore governs only MCP filesystem access: the preferred binding remains one host-confirmed local `file:` root when a host demonstrably supports it, and a documented host startup working directory or argument MAY be used only if it has equivalent active-project semantics. The selected root is canonicalized and fixed for the process lifetime. A roots-change notification disables filesystem mode until an explicit safe rebind or process restart; it never silently switches projects. A path proposed by the model, repository content, or an individual tool argument is never a trust anchor.
 
-When no trustworthy MCP root is available, `list_architecture_decisions` continues to return `workspace-unavailable` without reading a file. `analyze_repository_dependencies` and `check_architecture_boundaries` MUST retain two filesystem-free modes. Full-source mode accepts bounded `SourceFileInput` records containing workspace-relative paths and exact source text already read through host-native workspace tools. Fast statement mode accepts bounded `DependencyStatementInput` records containing a workspace-relative Python path, the original starting line, and exactly one syntactically complete static `import` or `from ... import ...` statement. The server MUST parse both modes with Python's AST without execution and preserve original line evidence.
+When no trustworthy MCP root is available, `list_architecture_decisions` continues to return `workspace-unavailable` without reading a file. The agent MUST NOT probe availability with `relative_roots`, retry filesystem mode, or call another workspace-bound MCP tool after `workspace-unavailable`. It instead inspects `.ai-architect/` with host-native read-only tools and MUST NOT claim that no ADR or contract exists unless that location was actually inspected. `analyze_repository_dependencies` and `check_architecture_boundaries` MUST retain two filesystem-free modes. Full-source mode accepts bounded `SourceFileInput` records containing workspace-relative paths and exact source text already read through host-native workspace tools. Fast statement mode accepts bounded `DependencyStatementInput` records containing a workspace-relative Python path, the original starting line, and exactly one syntactically complete static `import` or `from ... import ...` statement. The server MUST parse both modes with Python's AST without execution and preserve original line evidence.
 
 Fast statement mode is intended for routine dependency orientation where smaller tool payloads reduce host-model latency and token use. It MUST warn that the host selected the statements and that omitted or dynamic imports were not evaluated. It MUST NOT support arbitrary executable statements, multiple statements per record, or claim repository completeness. Full-source or verified-workspace mode MUST be used when dynamic-import detection, full syntax context, security-sensitive boundary verification, or release-gating assurance matters.
 
@@ -2084,13 +2088,17 @@ Feature: Architecture workflow routing
   Scenario: Compare patterns before asking the user to choose
     Given the user asks which design pattern should be used
     And at least three credible alternatives address the same material decision
+    And the user has not requested code execution or repository modification
     When the agent evaluates the architecture options
-    Then it presents between 3 and 5 alternatives before its recommendation
+    Then it treats repository inspection as read-only
+    And it presents "Decision scope and criteria", "Evidence and assumptions", and between 3 and 5 "Alternatives" before its "Recommendation"
     And every alternative has a category label, a fit score out of 100, and a fit rationale
+    And every alternative states its main benefit, main liability, and material assumption
     And the fit score is described as ordinal rather than a probability
     And complementary supporting patterns are listed separately from competing alternatives
     And the first mention of each named pattern links to its canonical public reference when the host supports Markdown links
     And the user is asked to approve, revise, or request more information
+    And the agent does not import, execute, compile, launch, test, or build repository code
 
 Feature: Durable architecture state
 

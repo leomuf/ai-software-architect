@@ -39,6 +39,19 @@ implementation, rebuild, validation, and plugin reinstall cycle.
 
 ## Additional feedback for the next cycle
 
+- [x] The post-reinstall "Identify useful design patterns" test completed in 1 minute
+      32 seconds and produced useful repository-specific recommendations.
+- [x] That test still rendered five complementary patterns as a prioritized stack
+      instead of comparing alternatives for one decision; it omitted fit scores,
+      category labels, canonical links, and the explicit user choice.
+- [x] The same test called filesystem mode without a verified MCP root and then
+      compiled the analyzed module, creating
+      `__pycache__/budget_book.cpython-314.pyc` during the review.
+- [x] Strengthen the canonical response gate, default read-only policy, Codex
+      frontmatter, workspace-unavailable routing, and model-evaluation fixture for
+      the exact observed prompt.
+- [ ] Include these source changes in the next deliberate build, validation, and
+      plugin reinstall cycle.
 - [ ] Test the plugin on at least two more small Python projects with different
       structures.
 - [ ] Record the host, model, reasoning effort, cold or warm task state, elapsed time,

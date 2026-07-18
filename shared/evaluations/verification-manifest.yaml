@@ -16,7 +16,10 @@ scenarios:
   FLOW-001: {mode: model-evaluation, gate: GATE-SCHEMA}
   FLOW-002: {mode: model-evaluation, gate: GATE-SCHEMA}
   FLOW-003: {mode: model-evaluation, gate: GATE-SCHEMA}
-  FLOW-004: {mode: model-evaluation, gate: GATE-SCHEMA}
+  FLOW-004:
+    mode: model-evaluation
+    gate: GATE-SCHEMA
+    fixture: shared/evaluations/model-fixtures/architecture-option-comparison.yaml
   STATE-001: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-002: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-003: {mode: deterministic-test, gate: GATE-SCHEMA}

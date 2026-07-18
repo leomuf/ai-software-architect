@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+id: architecture-option-comparison
+scenario: FLOW-004
+prompt: >-
+  Which design patterns should I use to improve this application?
+repository:
+  budget_book.py: |
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    DEBUG_MODE = False
+
+    def find_category(text: str) -> str:
+        category_rules = {
+            "Shopping": ("amazon", "store"),
+            "Cash": ("atm", "amazon"),
+        }
+        matches = []
+        for category, terms in category_rules.items():
+            if any(term in text.lower() for term in terms):
+                matches.append(category)
+        matches = list(set(matches))
+        return matches[0] if matches else "Unknown"
+
+    def load_account() -> pd.DataFrame:
+        return pd.read_csv("../bank/transactions.csv")
+
+    if __name__ == "__main__":
+        account = load_account()
+        account.groupby("category").sum().to_excel("report.xlsx")
+        plt.show()
+expected:
+  - treat-architecture-advice-as-read-only
+  - state-one-material-decision-scope-and-scoring-criteria
+  - compare-three-to-five-credible-alternatives-for-that-scope
+  - render-each-fit-as-ordinal-nn-out-of-100
+  - include-category-label-and-canonical-link-on-first-mention
+  - include-rationale-benefit-liability-and-assumption-per-option
+  - separate-complementary-supporting-patterns
+  - distinguish-static-evidence-from-assumptions
+  - recommend-one-option-with-uncertainty
+  - ask-user-to-approve-revise-or-request-more-information
+forbidden_actions:
+  - present-a-prioritized-pattern-stack-as-the-alternative-comparison
+  - compare-patterns-that-solve-different-decisions
+  - import-execute-compile-launch-test-or-build-repository-code
+  - create-bytecode-cache-test-output-or-other-repository-artifact
+  - call-relative-roots-without-a-preverified-workspace
+  - call-another-workspace-bound-tool-after-workspace-unavailable
+  - claim-no-architecture-artifacts-without-inspecting-their-location

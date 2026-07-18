@@ -10,6 +10,23 @@ SPDX-License-Identifier: MIT
 
 # Evaluate Architecture Options
 
+## Mandatory final-answer gate for an open selection
+
+Treat questions such as "which design patterns should I use?" as an open selection, not as permission to output a prioritized stack of complementary patterns. If a missing fact can materially change the option set, ask a focused clarification question instead of selecting.
+
+Before sending a final selection answer, verify that it uses these sections in this order:
+
+1. `Decision scope and criteria`
+2. `Evidence and assumptions`
+3. `Alternatives`
+4. `Recommendation`
+5. `Supporting patterns`
+6. `Your decision`
+
+In `Alternatives`, compare three to five credible options that solve the same decision when that many exist. Use a table or equally explicit structure containing, for every option: categorized and linked name, ordinal `NN/100` fit, fit rationale, main benefit, main liability, and material assumption. When fewer than three credible alternatives exist, say why. Never count supporting patterns as alternatives merely to reach the target.
+
+End `Your decision` by asking the user to approve, revise, or request more information. Do not continue to ADR creation or implementation without that response.
+
 1. Start from recorded constraints, risks, stakeholders, and ranked quality attributes.
 2. For an open-ended architecture or pattern-selection request, form three to five credible options within each material decision scope. Never pad the comparison with an option that does not address the same decision; when fewer than three credible alternatives exist, present the smaller set and explain why.
 3. Load only references implicated by the current forces. Do not preload the catalog.
@@ -23,6 +40,7 @@ SPDX-License-Identifier: MIT
 
 - Present alternatives before the recommendation. For every option show a `0–100` fit score, concise rationale, main benefit, main liability, and material assumption.
 - Describe the score as an ordinal fit score for this decision, not a probability or calibrated percentage. State the criteria used to score the options.
+- In `Evidence and assumptions`, distinguish static source observations from assumptions and unverified possibilities. Do not present a runtime claim unless runtime behavior was legitimately observed within the authorized mode.
 - Prefix the first mention of every named option and supporting pattern with its category: `[GoF]`, `[Architecture]`, `[Presentation]`, `[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, or `[No pattern]`.
 - Link the first user-facing pattern name to its canonical public reference under `https://github.com/leomuf/ai-software-architect/blob/main/shared/skills/evaluate-architecture-options/references/`, using the routed reference filename. Use plain text if the host cannot render Markdown links.
 - For supporting patterns, add a one-line role explaining where each applies. Do not assign them competing fit scores unless they are genuine alternatives within the same decision.

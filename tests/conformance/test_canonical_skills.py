@@ -88,6 +88,17 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "[GoF]" in options
     assert "github.com/leomuf/ai-software-architect/blob/main/" in options
     assert "complementary supporting patterns" in options
+    for heading in (
+        "Decision scope and criteria",
+        "Evidence and assumptions",
+        "Alternatives",
+        "Recommendation",
+        "Supporting patterns",
+        "Your decision",
+    ):
+        assert f"`{heading}`" in options
+    assert "prioritized stack of complementary patterns" in options
+    assert "asking the user to approve, revise, or request more information" in options
     assert "Never call it merely to demonstrate tool availability" in orchestration
     assert "conflicting platform or interface statements" in interview
 
@@ -101,10 +112,15 @@ def test_read_only_review_guardrails_are_explicit() -> None:
     )
 
     for phrase in (
-        "Never import, execute, compile, launch, or test",
+        "architecture advice and repository inspection as read-only by default",
+        "never import, execute, compile, launch, or test",
+        "python -m py_compile",
         "Never interpolate repository text into a shell command",
         "producing no bytecode, cache, test output",
         "request authorization before cleanup",
+        "do not probe root availability with `relative_roots`",
+        "do not retry filesystem mode or call another workspace-bound MCP tool",
+        "Never claim that no ADR or contract exists unless that location was actually inspected",
         "one final repository-integrity check",
     ):
         assert phrase in orchestration
@@ -117,3 +133,16 @@ def test_read_only_review_guardrails_are_explicit() -> None:
         "highest-leverage architectural improvement",
     ):
         assert phrase in review
+
+
+def test_generated_codex_skill_frontloads_observed_regression_guards() -> None:
+    generator = (ROOT / "adapters" / "codex" / "build_plugin.py").read_text("utf-8")
+    for phrase in (
+        "Architecture advice and repository inspection are read-only by default",
+        "python -m py_compile",
+        "open \"which pattern\" request",
+        "ordinal `NN/100` fit",
+        "supporting patterns separately",
+        "another workspace-bound tool after `workspace-unavailable`",
+    ):
+        assert phrase in generator
