@@ -19,7 +19,7 @@
     "developerName": "AUTOSOFT Engineering",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
-    "websiteURL": "https://www.autosoft-engineering.de",
+    "websiteURL": "https://github.com/leomuf/ai-software-architect",
     "defaultPrompt": [
       "Design the architecture before we implement this feature.",
       "Create an ADR and architecture contract for this decision.",
@@ -29,4 +29,3 @@
     "logo": "./assets/logo.png"
   }
 }
-
