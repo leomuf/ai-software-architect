@@ -141,7 +141,6 @@ Feature: Architecture workflow routing
   Scenario: Compare patterns before asking the user to choose
     Given the user asks which design pattern should be used
     And at least three credible alternatives address the same material decision
-    And the user has not requested code execution or repository modification
     When the agent evaluates the architecture options
     Then it treats repository inspection as read-only
     And it presents "Decision scope and criteria", "Evidence and assumptions", and between 3 and 5 "Alternatives" before its "Recommendation"

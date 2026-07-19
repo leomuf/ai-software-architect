@@ -15,7 +15,7 @@
   "interface": {
     "displayName": "AI Software Architect",
     "shortDescription": "Architecture decisions with transparent local guardrails",
-    "longDescription": "Explicitly invoke $ai-software-architect to compare options, approve durable decisions, prepare coding handoffs, and review conformance. Recommended local hooks add deterministic invocation guidance, focused-reference injection, structurally bounded architect-tool checks, focused option-rendering validation, and a hidden outcome marker so recommendations reliably offer the user's next choice. They make no model or network calls, do not bypass Codex permissions, and persist no prompt or repository content. Review their source and tests at https://github.com/leomuf/ai-software-architect#why-codex-asks-you-to-trust-the-hooks.",
+    "longDescription": "Explicitly invoke $ai-software-architect to compare options, approve durable decisions, prepare coding handoffs, and review conformance. Recommended local hooks add deterministic invocation guidance, focused-reference injection, static-inspection and application-code write guardrails, focused option-rendering validation, and a hidden outcome marker so recommendations reliably offer the user's next choice. They make no model or network calls, do not bypass Codex permissions, and persist no prompt, tool argument, or repository content. Review their source and tests at https://github.com/leomuf/ai-software-architect#why-codex-asks-you-to-trust-the-hooks.",
     "developerName": "AUTOSOFT Engineering",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],

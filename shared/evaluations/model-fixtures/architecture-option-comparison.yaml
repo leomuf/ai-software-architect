@@ -44,6 +44,7 @@ expected:
   - include-rationale-benefit-liability-and-assumption-per-option
   - conform-to-architecture-option-comparison-structured-shape
   - include-complete-workflow-recommendation-outcome-marker
+  - include-comparison-decision-shape-marker
   - include-language-neutral-decision-action-marker
   - separate-complementary-supporting-patterns
   - distinguish-static-evidence-from-assumptions

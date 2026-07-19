@@ -183,6 +183,9 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "<!-- ai-architect-actions: approve, revise, more-information -->" in (
         orchestration
     )
+    assert "<!-- ai-architect-decision-shape: comparison -->" in orchestration
+    assert "<!-- ai-architect-decision-shape: single -->" in orchestration
+    assert "Never use `single` to present a stack of recommended patterns" in orchestration
     assert "without interpreting localized prose" in orchestration
     assert "Never call it merely to demonstrate tool availability" in orchestration
     assert "conflicting platform or interface statements" in interview
@@ -197,8 +200,9 @@ def test_read_only_review_guardrails_are_explicit() -> None:
     )
 
     for phrase in (
-        "architecture advice and repository inspection as read-only by default",
-        "never import, execute, compile, launch, or test",
+        "architecture advice and repository inspection as read-only",
+        "explicit implementation or execution request belongs in the prepared coding handoff",
+        "Never import, execute, compile, launch, or test",
         "python -m py_compile",
         "Never interpolate repository text into a shell command",
         "producing no bytecode, cache, test output",
@@ -223,7 +227,8 @@ def test_read_only_review_guardrails_are_explicit() -> None:
 def test_generated_codex_skill_frontloads_observed_regression_guards() -> None:
     generator = (ROOT / "adapters" / "codex" / "build_plugin.py").read_text("utf-8")
     for phrase in (
-        "Architecture advice and repository inspection are read-only by default",
+        "Architecture advice and repository inspection are read-only",
+        "prepared coding handoff or an ordinary coding task",
         "python -m py_compile",
         "open \"which pattern\" request",
         "ordinal `NN/100` fit",

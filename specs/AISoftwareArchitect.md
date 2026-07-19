@@ -331,7 +331,7 @@ workflow:
     understand:
       responsibilities:
         - establish the host evidence mode, trustworthy workspace binding when available, invocation mode, and safety policy
-        - treat architecture advice and repository inspection as read-only unless the user explicitly requests execution or modification
+        - treat architecture advice and repository inspection as read-only and route application implementation or execution to the coding handoff
         - classify the request as architecture-related, architecture-adjacent, or off-topic
         - identify the decision scope and apply an evidence-sufficiency gate before repository reads, architecture-artifact discovery, language detection, or MCP calls
         - use sufficient user-supplied constraints as explicit assumptions without inspecting the active repository
@@ -1587,7 +1587,7 @@ The first release is an installable Codex plugin containing:
 - generated JSON schemas and output templates derived from the canonical sources;
 - a small local Python STDIO MCP server for deterministic validation and inspection;
 - generated Codex-specific metadata, plugin metadata, and local installation support;
-- a short-lived, user-trusted Codex control-plane hook for explicit invocation guidance, single-reference injection, focused-route MCP-call denial, and bounded focused-rendering validation;
+  - a short-lived, user-trusted Codex control-plane hook for explicit invocation guidance, single-reference injection, static-inspection enforcement, application-code patch denial, focused-route MCP-call denial, and bounded focused-rendering validation;
 - MCP configuration that lets Codex launch the server through its normal lifecycle.
 
 The user runs the architect with the selected Codex model and Codex credits. The plugin itself makes no model API calls.
@@ -1612,7 +1612,7 @@ codex_control_plane:
   user_prompt_submit:
     responsibility: block a missing skill invocation, add explicit-skill context, and inject one filename-matched bundled reference for the focused skill
   pre_tool_use:
-    responsibility: deny AI Software Architect MCP operations that are structurally outside the explicitly invoked focused skill
+    responsibility: deny repository execution, mutating shell commands, application-code patches, and AI Software Architect MCP operations that are structurally outside the explicitly invoked focused skill
   stop:
     responsibility: validate the focused option-comparison rendering and request at most one correction
   persisted_state:
@@ -1630,11 +1630,15 @@ codex_control_plane:
 
 The classifier MUST use only explicit host and package facts: the real plugin URI, the two `$` skill markers, and reference filenames already present in the installed focused skill. A plugin URI without either `$` skill routes to `missing_skill_invocation`; `UserPromptSubmit` blocks that malformed prompt and displays both valid invocations without persisting turn state. A plain-text mention such as documentation that quotes `@AI Software Architect` is not sufficient activation evidence. `$ai-software-architect` always enters the complete architecture workflow, where the selected host model and canonical skills determine the semantic phase. `$evaluate-architecture-options` injects one bundled reference when exactly one filename-derived reference alias matches, enters the stable option-comparison rendering when multiple references match, and otherwise leaves clarification, explanation, or comparison to the focused skill and selected model. The hook MUST NOT infer clarification, review, proportionality, platform conflicts, or other semantic intent from English or any other natural-language keyword list.
 
-The control plane MUST remain inactive for ordinary prompts containing neither the plugin URI nor an explicit architect skill invocation. A `missing_skill_invocation` is stopped at `UserPromptSubmit`, before tool selection. A single-reference focused route denies all AI Software Architect MCP calls because the trusted bundled reference already supplies the requested knowledge. Every focused option-evaluation route denies contract validation, generated-artifact scanning, and architecture-boundary checking; bounded Python dependency evidence may still be used when the user actually supplied project scope. The complete workflow retains access to all four tools and relies on the canonical skill phase rules plus the narrow MCP schemas. The hook MUST NOT claim coverage of hosted tools or replace the host sandbox, permissions, or model reasoning.
+The control plane MUST remain inactive for ordinary prompts containing neither the plugin URI nor an explicit architect skill invocation. A `missing_skill_invocation` is stopped at `UserPromptSubmit`, before tool selection. During every active architect turn, `PreToolUse` MUST inspect shell and patch arguments only in memory: it denies repository interpreters, test/build/package runners, mutating shell and Git commands, and patches outside `.ai-architect/`. Focused option-evaluation and single-reference routes deny every patch, including architecture artifacts. The complete workflow may patch only approved architecture artifacts under `.ai-architect/`; it never writes application code. These deterministic checks complement the skill's default read-only policy and deliberately keep the architect role static even if a model attempts an unnecessary compile or test command.
+
+A single-reference focused route denies all AI Software Architect MCP calls because the trusted bundled reference already supplies the requested knowledge. Every focused option-evaluation route denies contract validation, generated-artifact scanning, and architecture-boundary checking; bounded Python dependency evidence may still be used when the user actually supplied project scope. The complete workflow retains access to all four tools and relies on the canonical skill phase rules plus the narrow MCP schemas. The hook MUST NOT claim coverage of hosted tools or replace the host sandbox, permissions, or model reasoning. An explicit request to implement or execute application code belongs in the prepared coding handoff or an ordinary coding task, not inside the architect role.
 
 The `Stop` hook validates two small rendering contracts. For a focused option comparison, it checks the six stable ordered headings, two to five parseable alternative rows, canonical category labels, ordinal `NN/100` fit, links for named options, one recommendation that names a compared option, nonempty evidence and supporting-pattern sections, visible decision guidance, and the language-neutral HTML action marker `approve, revise, more-information`. The rendering parser returns exactly the fields it observed and validates each alternative with `ComparedArchitectureOption`; it does not claim to construct a complete `ArchitectureOptionComparison`.
 
-Every complete-workflow final response declares exactly one hidden outcome marker. `clarify` means material user input is required, `recommendation` means an architecture decision awaits the user, and `complete` means no architecture decision is pending. A recommendation MUST place exactly one decision-action marker immediately before visible, localized guidance to approve, revise, or request more information, followed by the recommendation outcome marker. The other outcomes MUST NOT include that action marker.
+Every complete-workflow final response declares exactly one hidden outcome marker. `clarify` means material user input is required, `recommendation` means an architecture decision awaits the user, and `complete` means no architecture decision is pending. Before drafting a recommendation, the host-native model MUST declare exactly one decision shape. `comparison` applies to an open request to choose architecture or design-pattern options and activates the same strict six-section rendering validator used by the focused comparison route. `single` applies only when the user explicitly requests one highest-leverage improvement or when supplied constraints make one proportionate simplicity decision sufficient; it MUST NOT be used to present a stack of recommended patterns. A recommendation MUST place its decision-shape marker immediately before exactly one decision-action marker, followed by visible, localized guidance to approve, revise, or request more information and then the recommendation outcome marker. The other outcomes MUST NOT include decision-shape or action markers.
+
+For a `single` recommendation, all recommendation headings and content MUST precede the decision-shape and action markers. Only the final visible user-decision prompt may appear between those markers and the outcome marker; another Markdown heading there is a deterministic rendering violation.
 
 ```yaml
 complete_workflow_response:
@@ -1646,9 +1650,16 @@ complete_workflow_response:
       - complete
     exactly_one: true
   recommendation:
+    decision_shape_marker:
+      syntax: "<!-- ai-architect-decision-shape: SHAPE -->"
+      allowed_shapes:
+        - comparison
+        - single
+      exactly_one: true
     action_marker: "<!-- ai-architect-actions: approve, revise, more-information -->"
     visible_localized_decision_guidance: required
     ordering:
+      - decision-shape-marker
       - action-marker
       - visible-localized-decision-guidance
       - recommendation-outcome-marker
@@ -1656,7 +1667,7 @@ complete_workflow_response:
     action_marker: forbidden
 ```
 
-These stable markers let visible content be localized without searching English or any other natural-language prose. They do not determine which semantic phase is correct: that remains host-model reasoning governed by the canonical skill. Single-reference explanations are not policed by `Stop`. A rendering failure generates one complete replacement request; `stop_hook_active` and turn-state removal prevent an infinite retry.
+These stable markers let visible content be localized without searching English or any other natural-language prose. They do not determine which semantic phase is correct: that remains host-model reasoning governed by the canonical skill. Single-reference explanations are not policed by `Stop`. A rendering failure generates one complete replacement request whose reason repeats the exact ordered headings, six-column Alternatives header, category/link rule, and ordinal-fit rule; `stop_hook_active` and turn-state removal prevent an infinite retry.
 
 Codex requires users to review and trust non-managed plugin hooks. Therefore the skill MUST remain usable when hooks are disabled, untrusted, unsupported, or fail. Hook validation improves observed reliability but is not a security boundary or proof of semantic architectural quality. The README and installation testing MUST disclose the trust step and verify both trusted-hook and no-hook behavior.
 
@@ -2321,7 +2332,6 @@ Feature: Architecture workflow routing
   Scenario: Compare patterns before asking the user to choose
     Given the user asks which design pattern should be used
     And at least three credible alternatives address the same material decision
-    And the user has not requested code execution or repository modification
     When the agent evaluates the architecture options
     Then it treats repository inspection as read-only
     And it presents "Decision scope and criteria", "Evidence and assumptions", and between 3 and 5 "Alternatives" before its "Recommendation"

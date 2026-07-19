@@ -142,6 +142,50 @@ def smoke_test_hook(executable: Path) -> None:
         if result.stderr:
             raise RuntimeError(f"hook runtime wrote to stderr:\n{result.stderr}")
 
+        shell_payload = {
+            "session_id": "smoke-session",
+            "turn_id": "smoke-turn",
+            "hook_event_name": "PreToolUse",
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": "python -m py_compile analyzed_repository.py",
+            },
+        }
+        shell_guard = subprocess.run(  # noqa: S603
+            [
+                powershell,
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                command,
+            ],
+            input=json.dumps(shell_payload),
+            text=True,
+            capture_output=True,
+            env=environment,
+            timeout=10,
+            check=True,
+        )
+        shell_response = json.loads(shell_guard.stdout)
+        if (
+            shell_response.get("hookSpecificOutput", {}).get(
+                "permissionDecision"
+            )
+            != "deny"
+            or "does not run interpreters"
+            not in shell_response.get("hookSpecificOutput", {}).get(
+                "permissionDecisionReason",
+                "",
+            )
+        ):
+            raise RuntimeError(
+                f"read-only shell guard smoke test failed: {shell_response}"
+            )
+        if shell_guard.stderr:
+            raise RuntimeError(
+                f"read-only shell hook runtime wrote to stderr:\n{shell_guard.stderr}"
+            )
+
         stop_payload = {
             "session_id": "smoke-session",
             "turn_id": "smoke-turn",

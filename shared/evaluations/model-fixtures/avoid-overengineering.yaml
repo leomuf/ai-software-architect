@@ -14,6 +14,7 @@ prompt: >-
 expected:
   - recommend-proportionate-simplicity-or-no-named-pattern
   - include-complete-workflow-recommendation-outcome-marker
+  - include-comparison-or-single-decision-shape-marker
   - include-language-neutral-decision-action-marker
   - explain-what-future-force-would-justify-more-structure
   - ask-the-user-to-approve-revise-or-request-more-information

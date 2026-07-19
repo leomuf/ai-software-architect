@@ -42,11 +42,59 @@ PLUGIN_MCP_TOOLS = {
     "analyze_python_dependencies",
     "check_python_architecture_boundaries",
 }
+SHELL_TOOL_NAMES = {"bash", "exec_command", "shell_command"}
+PATCH_TOOL_NAMES = {"apply_patch", "edit", "write"}
 OPTION_COMPARISON_DISALLOWED_TOOLS = {
     "validate_complete_architecture_contract",
     "scan_generated_architecture_artifact",
     "check_python_architecture_boundaries",
 }
+REPOSITORY_EXECUTION_PATTERN = re.compile(
+    r"""(?ix)
+    (?:^|[;&|{(=]\s*)(?:&\s*)?(?:["'][^"'\r\n]*[\\/])?
+    (?:
+        python(?:3(?:\.\d+)*)? | py | pytest | tox | nox | coverage |
+        uv | pip(?:3)? | node | npm | npx | pnpm | yarn | bun | deno |
+        ruby | bundle | php | java | javac | gradle | mvn | dotnet |
+        cargo | rustc | go | cmd | powershell | pwsh | wsl | bash | sh |
+        zsh | start-process | invoke-expression | iex | import-module
+    )
+    (?:\.exe)?(?=\s|$|["'])
+    """
+)
+DIRECT_EXECUTABLE_PATTERN = re.compile(
+    r"""(?ix)
+    (?:^|[;&|{(=]\s*)(?:&\s*)?
+    (?:"[^"\r\n]+"|'[^'\r\n]+'|[^\s;&|{}()=]+)
+    \.(?:exe|bat|cmd|ps1|sh|py)
+    (?=\s|$)
+    """
+)
+REPOSITORY_MUTATION_PATTERN = re.compile(
+    r"""(?ix)
+    (?:^|[;&|{(]\s*)
+    (?:
+        remove-item | set-content | add-content | out-file | new-item |
+        copy-item | move-item | rename-item | clear-content |
+        del | erase | copy | move | mkdir | rmdir
+    )
+    (?=\s|$)
+    """
+)
+GIT_MUTATION_PATTERN = re.compile(
+    r"""(?ix)
+    (?:^|[;&|{(]\s*)git(?:\.exe)?\s+
+    (?:
+        add | commit | checkout | switch | restore | reset | clean | merge |
+        rebase | cherry-pick | revert | pull | push | tag | stash | rm | mv
+    )
+    (?=\s|$)
+    """
+)
+PATCH_FILE_PATTERN = re.compile(
+    r"^\*\*\* (?:Add|Update|Delete) File: (.+)$|^\*\*\* Move to: (.+)$",
+    flags=re.MULTILINE,
+)
 REQUIRED_COMPARISON_SECTIONS = (
     "## Decision scope and criteria",
     "## Evidence and assumptions",
@@ -57,6 +105,14 @@ REQUIRED_COMPARISON_SECTIONS = (
 )
 DECISION_ACTION_MARKER = (
     "<!-- ai-architect-actions: approve, revise, more-information -->"
+)
+COMPARISON_DECISION_SHAPE_MARKER = (
+    "<!-- ai-architect-decision-shape: comparison -->"
+)
+SINGLE_DECISION_SHAPE_MARKER = "<!-- ai-architect-decision-shape: single -->"
+DECISION_SHAPES = ("comparison", "single")
+DECISION_SHAPE_PATTERN = re.compile(
+    r"<!--\s*ai-architect-decision-shape:\s*([^<>]*?)\s*-->",
 )
 WORKFLOW_OUTCOMES = ("clarify", "recommendation", "complete")
 WORKFLOW_OUTCOME_PATTERN = re.compile(
@@ -208,7 +264,35 @@ def developer_context(context: CodexTurnContext) -> str:
         "model determine whether to understand, clarify, design, approve, record and "
         "handoff, or review. Never treat a recommendation as approved. Use MCP only "
         "for bounded repository evidence or artifact validation that the current "
-        "workflow phase actually requires. End every final response with exactly one "
+        "workflow phase actually requires. Apply the clarification gate before "
+        "selecting a decision shape: materially conflicting platform or interface "
+        "statements require one focused clarification, no repository inspection, no "
+        "MCP call, and no recommendation in that turn. Only after that gate passes, "
+        "choose the recommendation's decision shape using host-native reasoning. "
+        "An open request to choose "
+        "architecture or design-pattern options is `comparison`: use the six stable "
+        "comparison headings exactly and in order—"
+        + ", ".join(REQUIRED_COMPARISON_SECTIONS)
+        + "—and render Alternatives as a Markdown table with exactly these columns: "
+        "Option, Fit, Rationale, Main benefit, Main liability, Material assumption. "
+        "Allowed category labels are GoF, Architecture, Presentation, Dependency, "
+        "Data, Integration, Resilience, Modernization, and No pattern. Example Option "
+        "cells are `[No pattern] Keep the script simple` and `[GoF] "
+        f"[Strategy]({CANONICAL_REFERENCE_BASE}gof-strategy.md)`. Named options link "
+        "their bundled public reference, and Fit is ordinal NN/100. Compare genuine "
+        "alternatives for one decision, and "
+        f"include {COMPARISON_DECISION_SHAPE_MARKER}. Use "
+        f"{SINGLE_DECISION_SHAPE_MARKER} only when the user explicitly requests one "
+        "highest-leverage improvement or supplied constraints make one proportionate "
+        "simplicity decision sufficient; never use `single` to present a stack of "
+        "recommended patterns. For `single`, put all recommendation content first, "
+        "then place the shape and action markers immediately before one final visible "
+        "decision prompt that offers approval, revision, and more information; no "
+        "heading or recommendation content follows those markers. Named supporting "
+        "patterns use `[Category] [Name](canonical public reference)`; ordinary coding "
+        "practices may remain plain bullets. Place exactly one decision-shape marker "
+        "immediately before the action marker in every recommendation. End every final response "
+        "with exactly one "
         "language-neutral outcome marker: `<!-- ai-architect-outcome: clarify -->` "
         "when material input is required, `<!-- ai-architect-outcome: recommendation "
         "-->` when an architecture decision awaits the user, or `<!-- "
@@ -239,12 +323,104 @@ def _canonical_tool_name(value: object) -> str | None:
     return next((name for name in PLUGIN_MCP_TOOLS if name in value), None)
 
 
+def _normalized_local_tool_name(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    return value.rsplit(".", 1)[-1].casefold()
+
+
+def _command_from_tool_input(value: object) -> str | None:
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, dict):
+        return None
+    command = value.get("command")
+    return command if isinstance(command, str) else None
+
+
+def _shell_denial_reason(tool_input: object) -> str | None:
+    command = _command_from_tool_input(tool_input)
+    if command is None:
+        return (
+            "The AI Software Architect could not verify this shell command's "
+            "arguments, so it was denied. Use host-native static reads instead."
+        )
+    if REPOSITORY_EXECUTION_PATTERN.search(
+        command
+    ) or DIRECT_EXECUTABLE_PATTERN.search(command):
+        return (
+            "AI Software Architect analysis treats repository code as untrusted "
+            "data and does not run interpreters, test runners, package runners, or "
+            "build tools. Use host-native static reads and the bounded AST tools."
+        )
+    if REPOSITORY_MUTATION_PATTERN.search(command) or GIT_MUTATION_PATTERN.search(
+        command
+    ):
+        return (
+            "AI Software Architect shell inspection is read-only and cannot mutate "
+            "repository files or Git state. Approved architecture artifacts must be "
+            "written through a reviewable patch limited to .ai-architect/."
+        )
+    return None
+
+
+def _patch_text_from_tool_input(value: object) -> str | None:
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, dict):
+        return None
+    for key in ("patch", "input"):
+        patch = value.get(key)
+        if isinstance(patch, str):
+            return patch
+    return None
+
+
+def _patch_is_limited_to_architecture_artifacts(tool_input: object) -> bool:
+    patch = _patch_text_from_tool_input(tool_input)
+    if patch is None:
+        return False
+    targets = tuple(
+        (match.group(1) or match.group(2)).strip().replace("\\", "/")
+        for match in PATCH_FILE_PATTERN.finditer(patch)
+    )
+    return bool(targets) and all(
+        target.startswith(".ai-architect/")
+        and not target.startswith("/")
+        and ".." not in target.split("/")
+        for target in targets
+    )
+
+
 def tool_denial_reason(
     context: CodexTurnContext,
     tool_name_value: object,
+    tool_input: object = None,
 ) -> str | None:
+    if not context.active:
+        return None
+    local_tool_name = _normalized_local_tool_name(tool_name_value)
+    if local_tool_name in SHELL_TOOL_NAMES:
+        reason = _shell_denial_reason(tool_input)
+        if reason is not None:
+            return reason
+    if local_tool_name in PATCH_TOOL_NAMES:
+        if context.route in {
+            CodexTurnRoute.FOCUSED_WORKFLOW,
+            CodexTurnRoute.OPTION_COMPARISON,
+            CodexTurnRoute.PATTERN_REFERENCE,
+        }:
+            return (
+                "The focused architecture-options workflow is explanatory and "
+                "read-only; it cannot edit repository files."
+            )
+        if not _patch_is_limited_to_architecture_artifacts(tool_input):
+            return (
+                "The AI Software Architect never writes application code. Its patch "
+                "surface is limited to approved files under .ai-architect/."
+            )
     tool_name = _canonical_tool_name(tool_name_value)
-    if not context.active or tool_name is None:
+    if tool_name is None:
         return None
     if context.route == CodexTurnRoute.PATTERN_REFERENCE:
         return (
@@ -298,7 +474,21 @@ def parse_option_comparison_markdown(message: str) -> ParsedOptionComparison:
     )
     for line in alternatives_text.splitlines():
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        if len(cells) != 6 or not re.fullmatch(r"(?:100|[1-9]?[0-9])/100", cells[1]):
+        if len(cells) != 6:
+            continue
+        score_match = re.fullmatch(
+            r"(?P<plain_score>(?:100|[1-9]?[0-9])/100)|"
+            r"(?P<emphasis>\*\*|__)"
+            r"(?P<emphasized_score>(?:100|[1-9]?[0-9])/100)"
+            r"(?P=emphasis)",
+            cells[1],
+        )
+        if score_match is None:
+            continue
+        score_text = score_match.group(
+            "plain_score"
+        ) or score_match.group("emphasized_score")
+        if score_text is None:
             continue
         matched = option_pattern.fullmatch(cells[0])
         if matched is None:
@@ -314,7 +504,7 @@ def parse_option_comparison_markdown(message: str) -> ParsedOptionComparison:
                 "canonical_reference": (
                     None if category == "No pattern" else matched.group("link")
                 ),
-                "fit_score": int(cells[1].removesuffix("/100")),
+                "fit_score": int(score_text.removesuffix("/100")),
                 "fit_rationale": cells[2],
                 "main_benefit": cells[3],
                 "main_liability": cells[4],
@@ -344,6 +534,16 @@ def parse_option_comparison_markdown(message: str) -> ParsedOptionComparison:
     if DECISION_ACTION_MARKER not in decision_prompt:
         raise ValueError("language-neutral decision action marker is missing")
     visible_decision_prompt = decision_prompt.replace(DECISION_ACTION_MARKER, "").strip()
+    visible_decision_prompt = DECISION_SHAPE_PATTERN.sub(
+        "",
+        visible_decision_prompt,
+    ).strip()
+    visible_decision_prompt = re.sub(
+        r"<!--.*?-->",
+        "",
+        visible_decision_prompt,
+        flags=re.DOTALL,
+    ).strip()
     if not visible_decision_prompt:
         raise ValueError("user decision prompt must contain visible guidance")
 
@@ -385,7 +585,23 @@ def _option_comparison_violations(message: str) -> list[str]:
     try:
         parse_option_comparison_markdown(message)
     except (ValidationError, ValueError) as exc:
-        return [str(exc)]
+        return [
+            "render one complete replacement with these exact ordered headings: "
+            + ", ".join(REQUIRED_COMPARISON_SECTIONS)
+            + ". Under `## Alternatives`, use exactly this six-column header: "
+            "`| Option | Fit | Rationale | Main benefit | Main liability | "
+            "Material assumption |`. Provide two to five genuine rows (normally "
+            "three to five). Allowed category labels are `GoF`, `Architecture`, "
+            "`Presentation`, `Dependency`, `Data`, `Integration`, `Resilience`, "
+            "`Modernization`, and `No pattern`. Example Option cells: `[No pattern] "
+            "Keep the script simple`; `[GoF] "
+            f"[Strategy]({CANONICAL_REFERENCE_BASE}gof-strategy.md)`. Each named "
+            "option links its canonical public reference, and each Fit is ordinal "
+            "`NN/100`. The Recommendation must name one table "
+            "option; Supporting patterns must remain separate; Your decision must "
+            "contain the action marker followed by visible guidance. Validation "
+            f"detail: {exc}"
+        ]
     return []
 
 
@@ -403,6 +619,7 @@ def _architecture_workflow_violations(message: str) -> list[str]:
             "workflow outcome must be exactly clarify, recommendation, or complete"
         ]
     action_marker_count = message.count(DECISION_ACTION_MARKER)
+    decision_shape_matches = tuple(DECISION_SHAPE_PATTERN.finditer(message))
     if outcome == "recommendation" and action_marker_count != 1:
         return [
             "a recommendation outcome must include exactly one language-neutral "
@@ -410,6 +627,26 @@ def _architecture_workflow_violations(message: str) -> list[str]:
             "guidance"
         ]
     if outcome == "recommendation":
+        if len(decision_shape_matches) != 1:
+            return [
+                "a recommendation outcome must declare exactly one decision shape "
+                "using comparison or single"
+            ]
+        decision_shape = decision_shape_matches[0].group(1).strip()
+        if decision_shape not in DECISION_SHAPES:
+            return [
+                "recommendation decision shape must be exactly comparison or single"
+            ]
+        shape_marker_end = decision_shape_matches[0].end()
+        action_marker_start = message.find(DECISION_ACTION_MARKER)
+        if (
+            action_marker_start < shape_marker_end
+            or message[shape_marker_end:action_marker_start].strip()
+        ):
+            return [
+                "place the decision-shape marker immediately before the decision "
+                "action marker"
+            ]
         action_marker_end = message.find(DECISION_ACTION_MARKER) + len(
             DECISION_ACTION_MARKER
         )
@@ -425,9 +662,27 @@ def _architecture_workflow_violations(message: str) -> list[str]:
                 "place visible localized decision guidance between the action marker "
                 "and the recommendation outcome marker"
             ]
+        if decision_shape == "single" and re.search(
+            r"(?m)^#{1,6}\s+",
+            visible_guidance,
+        ):
+            return [
+                "for a single recommendation, put all recommendation headings and "
+                "content before the decision-shape and action markers; after the "
+                "markers include only one final visible decision prompt offering "
+                "approval, revision, and more information"
+            ]
+        if decision_shape == "comparison":
+            comparison_violations = _option_comparison_violations(message)
+            if comparison_violations:
+                return comparison_violations
     if outcome != "recommendation" and action_marker_count:
         return [
             "the decision action marker is reserved for a recommendation outcome"
+        ]
+    if outcome != "recommendation" and decision_shape_matches:
+        return [
+            "the decision-shape marker is reserved for a recommendation outcome"
         ]
     return []
 

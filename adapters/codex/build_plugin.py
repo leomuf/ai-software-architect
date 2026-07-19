@@ -73,18 +73,23 @@ Codex entry contract: the plugin distributes this capability, but the workflow r
 only when the user explicitly invokes `$ai-software-architect`. A plugin `@` mention
 does not replace the `$` skill invocation. For a direct pattern explanation or
 implementation example, the user may instead invoke `$evaluate-architecture-options`.
-Architecture advice and repository inspection are read-only by default. Unless the
-user explicitly requests execution or modification, never import, execute, compile
-(including `python -m py_compile`), launch, test, or build analyzed repository code.
+Architecture advice and repository inspection are read-only. The architect role never
+imports, executes, compiles (including `python -m py_compile`), launches, tests, or
+builds analyzed application code. Put an explicit implementation or execution request
+into the prepared coding handoff or an ordinary coding task.
 Before any repository read, artifact discovery, language detection, or MCP call,
 decide whether additional evidence could materially change the next response. When
 the user's stated constraints are sufficient for proportionate guidance, use them as
 explicit assumptions and do not inspect the active repository or call an MCP tool.
 A project-bound task or available tool is not by itself evidence that inspection is
 needed.
+If platform or interface statements conflict materially, ask one focused clarification
+and end the current turn without a recommendation, repository inspection, or MCP call.
 For an open "which pattern" request, compare three to five alternatives for one
-decision with categorized links and ordinal `NN/100` fit before recommending; list
-supporting patterns separately and ask the user to approve or revise.
+decision in the canonical six-column Markdown table, with categorized links and
+ordinal `NN/100` fit before recommending; list supporting patterns separately and ask
+the user to approve or revise. Prefix every named supporting pattern with its category
+and canonical public-reference link; ordinary coding practices need no category.
 Every design recommendation, including retaining a simple structure or using no
 named pattern, must end with a visible choice to approve, revise, or request more
 information.
@@ -96,17 +101,19 @@ pending. A recommendation must also include exactly one
 `<!-- ai-architect-actions: approve, revise, more-information -->` marker
 immediately before visible, localized decision guidance, followed by its outcome
 marker. The other outcomes must not include the action marker.
+For a single recommendation, put the full recommendation first and place the shape and
+action markers only before the final user-decision sentence; no heading or additional
+recommendation content may follow those markers.
 For generic architecture guidance, pattern explanations, or implementation examples,
 use the routed skill reference directly and do not call MCP tools. Call MCP tools only
 when the requested task actually requires repository evidence or artifact validation.
-If platform or interface statements conflict materially, ask one focused clarification
-and end the current turn without a recommendation or MCP call.
 The bundled Codex control-plane hook is defense in depth: it reinforces explicit
 routing, injects one explicitly matched bundled reference, blocks MCP operations that
-are structurally outside a focused skill route, validates the focused option-
-comparison rendering, and checks the complete workflow's stable outcome/action
-markers once when the user has trusted it. It does not infer semantic workflow phases
-from natural-language keywords. Correctness must not depend on hook availability.
+are structurally outside a focused skill route, blocks repository execution and
+application-code edits during architect turns, validates the focused option-comparison
+rendering, and checks the complete workflow's stable outcome/action markers once when
+the user has trusted it. It does not infer semantic workflow phases from natural-
+language keywords. Correctness must not depend on hook availability.
 For deterministic Python evidence in Codex, read only relevant workspace files with
 native file tools. Prefer bounded `dependency_statements` for routine static import
 scans; use `source_files` when full AST context or higher assurance matters. The Codex

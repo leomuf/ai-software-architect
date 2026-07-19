@@ -12,9 +12,14 @@ from pathlib import Path
 
 from adapters.codex import runtime_entry
 from adapters.codex.control_plane import (
+    COMPARISON_DECISION_SHAPE_MARKER,
     DECISION_ACTION_MARKER,
+    REQUIRED_COMPARISON_SECTIONS,
+    SINGLE_DECISION_SHAPE_MARKER,
+    CodexTurnContext,
     CodexTurnRoute,
     classify_prompt,
+    developer_context,
     parse_option_comparison_markdown,
 )
 from adapters.codex.hook_entry import (
@@ -102,6 +107,27 @@ def test_activation_uses_host_and_skill_markers_not_natural_language() -> None:
     )
 
 
+def test_complete_workflow_context_frontloads_clarification_and_exact_sections() -> None:
+    context = developer_context(
+        CodexTurnContext(
+            active=True,
+            route=CodexTurnRoute.ARCHITECTURE_WORKFLOW,
+        )
+    )
+    assert context.index("Apply the clarification gate") < context.index(
+        "choose the recommendation's decision shape"
+    )
+    assert "no repository inspection, no MCP call, and no recommendation" in context
+    assert (
+        "Option, Fit, Rationale, Main benefit, Main liability, Material assumption"
+        in context
+    )
+    assert "[No pattern] Keep the script simple" in context
+    assert "[GoF] [Strategy]" in context
+    positions = [context.index(section) for section in REQUIRED_COMPARISON_SECTIONS]
+    assert positions == sorted(positions)
+
+
 def test_plugin_uri_without_skill_blocks_before_model_or_mcp(tmp_path: Path) -> None:
     submit = _payload("UserPromptSubmit")
     submit["prompt"] = (
@@ -164,6 +190,105 @@ def test_option_comparison_denies_artifact_tools_but_allows_repository_evidence(
     assert handle_pre_tool_use(analysis, tmp_path / "data") == {}
 
 
+def test_architecture_workflow_blocks_execution_and_allows_static_shell_reads(
+    tmp_path: Path,
+) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = (
+        "$ai-software-architect Which design patterns should I use here?"
+    )
+    handle_user_prompt_submit(submit, tmp_path / "data")
+
+    execution = _payload("PreToolUse")
+    execution["tool_name"] = "Bash"
+    execution["tool_input"] = {
+        "command": "Get-Content budget_book.py; python -m py_compile budget_book.py"
+    }
+    denied = handle_pre_tool_use(execution, tmp_path / "data")
+    assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+    assert "does not run interpreters" in denied["hookSpecificOutput"][  # type: ignore[index]
+        "permissionDecisionReason"
+    ]
+
+    assigned_execution = _payload("PreToolUse")
+    assigned_execution["tool_name"] = "Bash"
+    assigned_execution["tool_input"] = {
+        "command": "foreach ($seed in 1,2) { $result = python -c \"print(1)\" }"
+    }
+    assert handle_pre_tool_use(assigned_execution, tmp_path / "data")[
+        "hookSpecificOutput"
+    ]["permissionDecision"] == "deny"  # type: ignore[index]
+
+    direct_execution = _payload("PreToolUse")
+    direct_execution["tool_name"] = "Bash"
+    direct_execution["tool_input"] = {"command": "& .\\scripts\\inspect.py"}
+    assert handle_pre_tool_use(direct_execution, tmp_path / "data")[
+        "hookSpecificOutput"
+    ]["permissionDecision"] == "deny"  # type: ignore[index]
+
+    static_read = _payload("PreToolUse")
+    static_read["tool_name"] = "Bash"
+    static_read["tool_input"] = {
+        "command": "Get-Content budget_book.py; git status --short"
+    }
+    assert handle_pre_tool_use(static_read, tmp_path / "data") == {}
+
+
+def test_architect_patch_surface_is_limited_to_architecture_artifacts(
+    tmp_path: Path,
+) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Record the approved decision."
+    handle_user_prompt_submit(submit, tmp_path / "data")
+
+    application_patch = _payload("PreToolUse")
+    application_patch["tool_name"] = "apply_patch"
+    application_patch["tool_input"] = {
+        "patch": "*** Begin Patch\n*** Add File: src/app.py\n+pass\n*** End Patch\n"
+    }
+    denied = handle_pre_tool_use(application_patch, tmp_path / "data")
+    assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+    assert ".ai-architect/" in denied["hookSpecificOutput"][  # type: ignore[index]
+        "permissionDecisionReason"
+    ]
+
+    architecture_patch = _payload("PreToolUse")
+    architecture_patch["tool_name"] = "apply_patch"
+    architecture_patch["tool_input"] = {
+        "patch": (
+            "*** Begin Patch\n"
+            "*** Add File: .ai-architect/decisions/ADR-001.md\n"
+            "+# Decision\n"
+            "*** End Patch\n"
+        )
+    }
+    assert handle_pre_tool_use(architecture_patch, tmp_path / "data") == {}
+
+
+def test_focused_workflow_denies_even_architecture_artifact_patches(
+    tmp_path: Path,
+) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$evaluate-architecture-options Compare Strategy and State."
+    handle_user_prompt_submit(submit, tmp_path / "data")
+
+    patch = _payload("PreToolUse")
+    patch["tool_name"] = "apply_patch"
+    patch["tool_input"] = {
+        "patch": (
+            "*** Begin Patch\n"
+            "*** Add File: .ai-architect/notes.md\n"
+            "+# Notes\n"
+            "*** End Patch\n"
+        )
+    }
+    denied = handle_pre_tool_use(patch, tmp_path / "data")
+    assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+    assert "explanatory and read-only" in denied["hookSpecificOutput"][  # type: ignore[index]
+        "permissionDecisionReason"
+    ]
+
+
 def test_option_comparison_rendering_preserves_every_parsed_section(
     tmp_path: Path,
 ) -> None:
@@ -182,7 +307,7 @@ Static evidence is limited; integration volatility is an assumption.
 ## Alternatives
 | Option | Fit | Rationale | Main benefit | Main liability | Material assumption |
 | --- | ---: | --- | --- | --- | --- |
-| [Architecture] [Hexagonal](https://x/h) | 86/100 | Strong | Isolation | Mapping | Change |
+| [Architecture] [Hexagonal](https://x/h) | **86/100** | Strong | Isolation | Mapping | Change |
 | [Architecture] [Layered](https://x/l) | 72/100 | Familiar | Simple | Erosion | Small team |
 | [No pattern] Keep functions | 45/100 | Low ceremony | Cheap | Coupling | Scope stays tiny |
 
@@ -199,6 +324,7 @@ Bitte bestätigen, überarbeiten oder weitere Informationen anfordern.
     parsed = parse_option_comparison_markdown(answer)
     assert parsed.recommended_option_id == "OPT-001"
     assert len(parsed.alternatives) == 3
+    assert parsed.alternatives[0].fit_score == 86
     assert "integration volatility" in parsed.evidence_and_assumptions
     assert "Dependency injection" in parsed.supporting_patterns
     assert parsed.user_decision_prompt.startswith("Bitte")
@@ -225,7 +351,10 @@ def test_stop_requests_one_complete_correction_for_invalid_focused_rendering(
     retry = handle_stop(stop, tmp_path / "data")
     assert retry["decision"] == "block"
     assert "complete standalone replacement response" in retry["reason"]
-    assert "sections" in retry["reason"]
+    assert "exact ordered headings" in retry["reason"]
+    assert "| Option | Fit | Rationale | Main benefit" in retry["reason"]
+    assert "Allowed category labels" in retry["reason"]
+    assert "ordinal `NN/100`" in retry["reason"]
 
     stop["stop_hook_active"] = True
     assert handle_stop(stop, tmp_path / "data") == {}
@@ -302,6 +431,7 @@ def test_complete_workflow_recommendation_requires_decision_action_marker(
     handle_user_prompt_submit(submit, tmp_path)
     stop["last_assistant_message"] = (
         "I recommend a modular monolith.\n\n"
+        f"{SINGLE_DECISION_SHAPE_MARKER}\n"
         f"{DECISION_ACTION_MARKER}\n"
         "Please approve it, request a revision, or ask for more information.\n\n"
         "<!-- ai-architect-outcome: recommendation -->"
@@ -311,12 +441,78 @@ def test_complete_workflow_recommendation_requires_decision_action_marker(
     handle_user_prompt_submit(submit, tmp_path)
     stop["last_assistant_message"] = (
         "I recommend a modular monolith.\n\n"
+        f"{SINGLE_DECISION_SHAPE_MARKER}\n"
         f"{DECISION_ACTION_MARKER}\n"
         "<!-- ai-architect-outcome: recommendation -->"
     )
     missing_guidance = handle_stop(stop, tmp_path)
     assert missing_guidance["decision"] == "block"
     assert "visible localized decision guidance" in missing_guidance["reason"]
+
+    handle_user_prompt_submit(submit, tmp_path)
+    stop["last_assistant_message"] = (
+        f"{SINGLE_DECISION_SHAPE_MARKER}\n"
+        f"{DECISION_ACTION_MARKER}\n"
+        "## Highest-leverage improvement\n"
+        "Extract a pure processing boundary and approve it.\n\n"
+        "<!-- ai-architect-outcome: recommendation -->"
+    )
+    misplaced_decision = handle_stop(stop, tmp_path)
+    assert misplaced_decision["decision"] == "block"
+    assert "put all recommendation headings and content before" in (
+        misplaced_decision["reason"]
+    )
+
+
+def test_complete_workflow_recommendation_requires_one_decision_shape(
+    tmp_path: Path,
+) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Recommend an architecture."
+    handle_user_prompt_submit(submit, tmp_path)
+
+    stop = _payload("Stop")
+    stop["last_assistant_message"] = (
+        "I recommend a modular monolith.\n\n"
+        f"{DECISION_ACTION_MARKER}\n"
+        "Please approve it, request a revision, or ask for more information.\n\n"
+        "<!-- ai-architect-outcome: recommendation -->"
+    )
+    missing_shape = handle_stop(stop, tmp_path)
+    assert missing_shape["decision"] == "block"
+    assert "exactly one decision shape" in missing_shape["reason"]
+
+    handle_user_prompt_submit(submit, tmp_path)
+    stop["last_assistant_message"] = (
+        "I recommend a modular monolith.\n\n"
+        "<!-- ai-architect-decision-shape: unsupported -->\n"
+        f"{DECISION_ACTION_MARKER}\n"
+        "Please approve it, request a revision, or ask for more information.\n\n"
+        "<!-- ai-architect-outcome: recommendation -->"
+    )
+    unsupported_shape = handle_stop(stop, tmp_path)
+    assert unsupported_shape["decision"] == "block"
+    assert "exactly comparison or single" in unsupported_shape["reason"]
+
+
+def test_complete_workflow_comparison_shape_uses_strict_rendering_contract(
+    tmp_path: Path,
+) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Help me choose an architecture."
+    handle_user_prompt_submit(submit, tmp_path)
+
+    stop = _payload("Stop")
+    stop["last_assistant_message"] = (
+        "Recommended patterns: Strategy, Adapter, and Factory.\n\n"
+        f"{COMPARISON_DECISION_SHAPE_MARKER}\n"
+        f"{DECISION_ACTION_MARKER}\n"
+        "Please approve, revise, or request more information.\n\n"
+        "<!-- ai-architect-outcome: recommendation -->"
+    )
+    invalid = handle_stop(stop, tmp_path)
+    assert invalid["decision"] == "block"
+    assert "comparison sections" in invalid["reason"]
 
 
 def test_complete_workflow_nonrecommendation_rejects_decision_action_marker(

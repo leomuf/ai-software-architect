@@ -19,6 +19,7 @@ expected:
   - distinguish-static-evidence-from-assumptions
   - recommend-one-proportionate-high-leverage-improvement
   - include-complete-workflow-recommendation-outcome-marker
+  - include-single-decision-shape-marker
   - include-language-neutral-decision-action-marker
 forbidden_actions:
   - submit-relative-roots

@@ -80,6 +80,9 @@ def test_codex_plugin_is_reproducible_and_complete(
     hooks = json.loads((second / "hooks" / "hooks.json").read_text("utf-8"))
     assert set(hooks["hooks"]) == {"UserPromptSubmit", "PreToolUse", "Stop"}
     assert "--codex-hook" in str(hooks)
+    pre_tool_matcher = hooks["hooks"]["PreToolUse"][0]["matcher"]
+    assert "Bash" in pre_tool_matcher
+    assert "apply_patch" in pre_tool_matcher
 
     provenance = json.loads((second / "provenance.json").read_text("utf-8"))
     assert provenance["generator"] == "adapters/codex/build_plugin.py"

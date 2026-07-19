@@ -202,7 +202,11 @@ def handle_pre_tool_use(
     plugin_data: Path,
 ) -> dict[str, Any]:
     context = _read_context(payload, plugin_data)
-    reason = tool_denial_reason(context, payload.get("tool_name"))
+    reason = tool_denial_reason(
+        context,
+        payload.get("tool_name"),
+        payload.get("tool_input"),
+    )
     if reason is None:
         return {}
     return {

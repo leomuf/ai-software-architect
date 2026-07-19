@@ -56,6 +56,7 @@ Use this compact response template exactly for an open selection:
 - [Category] [Linked name] — <its non-competing role>
 
 ## Your decision
+<!-- ai-architect-decision-shape: comparison -->
 <!-- ai-architect-actions: approve, revise, more-information -->
 Please approve, revise, or request more information before I continue.
 ```
