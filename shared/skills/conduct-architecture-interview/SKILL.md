@@ -16,7 +16,9 @@ SPDX-License-Identifier: MIT
 4. Ask no more than five focused questions per round. Ask only when an answer can change a material decision; explain that impact.
 5. Mark each question critical or noncritical. After at most three rounds, block on unanswered critical questions or continue with explicit assumptions.
 6. Produce structured interview evidence for option evaluation; do not select a pattern during discovery.
-7. Treat conflicting platform or interface statements as material when they change the option set. For example, a request for a web interface implemented with a desktop GUI toolkit requires clarification before selecting the presentation architecture; conditional alternatives may be explained, but not collapsed into one final choice.
+7. Treat conflicting platform or interface statements as material when they change the option set. For example, a request for a web interface implemented with a desktop GUI toolkit requires clarification before selecting the presentation architecture.
+8. Make that clarification terminal for the current turn: ask the focused question, explain its decision impact, and defer option comparison and recommendation until the user answers. Do not reinterpret one side of the contradiction as a correction.
+9. Do not call an MCP tool while asking a clarification or giving generic architecture guidance.
 
 ## Load references selectively
 

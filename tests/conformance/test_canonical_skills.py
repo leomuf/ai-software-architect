@@ -163,8 +163,27 @@ def test_user_facing_option_comparison_contract() -> None:
         assert f"`{heading}`" in options
     assert "prioritized stack of complementary patterns" in options
     assert "asking the user to approve, revise, or request more information" in options
+    assert "<!-- ai-architect-actions: approve, revise, more-information -->" in options
+    assert "language-neutral `offered_actions`" in options
     assert "generic Python implementation example" in options
     assert "reuse its `Python example`" in options
+    assert "Do not call an MCP tool for a generic pattern explanation" in options
+    assert "Apply the orchestration evidence sufficiency gate" in options
+    assert "recommendation adds nothing" in options
+    assert "Before any repository read" in orchestration
+    assert "A project-bound task or available tool is not by itself a reason to inspect" in (
+        orchestration
+    )
+    assert "This includes a recommendation to retain proportionate simplicity" in (
+        orchestration
+    )
+    assert "Never end a design recommendation without a visible approval" in orchestration
+    for outcome in ("clarify", "recommendation", "complete"):
+        assert f"<!-- ai-architect-outcome: {outcome} -->" in orchestration
+    assert "<!-- ai-architect-actions: approve, revise, more-information -->" in (
+        orchestration
+    )
+    assert "without interpreting localized prose" in orchestration
     assert "Never call it merely to demonstrate tool availability" in orchestration
     assert "conflicting platform or interface statements" in interview
 
@@ -184,8 +203,8 @@ def test_read_only_review_guardrails_are_explicit() -> None:
         "Never interpolate repository text into a shell command",
         "producing no bytecode, cache, test output",
         "request authorization before cleanup",
-        "do not probe root availability with `relative_roots`",
-        "do not retry filesystem mode or call another workspace-bound MCP tool",
+        "exposes no workspace-root parameter and no ADR-listing tool",
+        "use only filesystem-free MCP inputs",
         "Never claim that no ADR or contract exists unless that location was actually inspected",
         "one final repository-integrity check",
     ):
@@ -209,6 +228,16 @@ def test_generated_codex_skill_frontloads_observed_regression_guards() -> None:
         "open \"which pattern\" request",
         "ordinal `NN/100` fit",
         "supporting patterns separately",
-        "another workspace-bound tool after `workspace-unavailable`",
+        "generic architecture guidance",
+        "do not call MCP tools",
+        "Before any repository read, artifact discovery, language detection, or MCP call",
+        "A project-bound task or available tool is not by itself evidence",
+        "Every design recommendation, including retaining a simple structure",
+        "plugin distributes this capability",
+        "explicitly invokes `$ai-software-architect`",
+        "control-plane hook is defense in depth",
+        "does not infer semantic",
+        "accepts no workspace root and exposes no ADR-listing tool",
+        "inspect `result.valid`",
     ):
         assert phrase in generator

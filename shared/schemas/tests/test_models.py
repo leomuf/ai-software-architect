@@ -7,6 +7,7 @@ import pytest
 from ai_architect_schemas import (
     ArchitectureContract,
     ArchitectureDecision,
+    ArchitectureOptionComparison,
     ArtifactSecretScanResult,
     DependencyStatementInput,
     EvidenceClaim,
@@ -161,3 +162,134 @@ def test_dependency_statement_rejects_blank_null_and_mixed_code() -> None:
             start_line=1,
             statement="import os\x00",
         )
+
+
+def test_option_comparison_enforces_user_facing_contract() -> None:
+    comparison = ArchitectureOptionComparison.model_validate(
+        {
+            "decision_scope": "Choose the application boundary style.",
+            "scoring_criteria": ["Testability", "Change cost"],
+            "alternatives": [
+                {
+                    "id": "OPT-001",
+                    "category": "Architecture",
+                    "name": "Hexagonal Architecture",
+                    "canonical_reference": "references/architecture-hexagonal.md",
+                    "fit_score": 86,
+                    "fit_rationale": "Strong isolation for volatile adapters.",
+                    "main_benefit": "Keeps domain policy independent.",
+                    "main_liability": "Introduces ports and mapping code.",
+                    "material_assumption": "External integrations will change.",
+                },
+                {
+                    "id": "OPT-002",
+                    "category": "Architecture",
+                    "name": "Layered Architecture",
+                    "canonical_reference": "references/architecture-layered.md",
+                    "fit_score": 72,
+                    "fit_rationale": "Simple and familiar for the current scope.",
+                    "main_benefit": "Low learning cost.",
+                    "main_liability": "Layer boundaries can erode.",
+                    "material_assumption": "Deployment remains simple.",
+                },
+                {
+                    "id": "OPT-003",
+                    "category": "No pattern",
+                    "name": "Keep functions",
+                    "canonical_reference": None,
+                    "fit_score": 48,
+                    "fit_rationale": "Low ceremony but weak isolation.",
+                    "main_benefit": "Minimal refactoring.",
+                    "main_liability": "Volatile responsibilities stay coupled.",
+                    "material_assumption": "The application will remain small.",
+                },
+            ],
+            "recommended_option_id": "OPT-001",
+            "recommendation_rationale": "The adapter volatility justifies the boundary.",
+            "user_decision_prompt": (
+                "Please approve, revise, or request more information before I continue."
+            ),
+            "offered_actions": ["approve", "revise", "more-information"],
+        }
+    )
+    assert comparison.recommended_option_id == "OPT-001"
+
+
+def test_option_comparison_rejects_incomplete_choice_contract() -> None:
+    with pytest.raises(ValidationError, match="fewer_than_three_rationale"):
+        ArchitectureOptionComparison.model_validate(
+            {
+                "decision_scope": "Choose one structure.",
+                "scoring_criteria": ["Simplicity"],
+                "alternatives": [
+                    {
+                        "id": "OPT-001",
+                        "category": "Architecture",
+                        "name": "Layered",
+                        "canonical_reference": "references/architecture-layered.md",
+                        "fit_score": 70,
+                        "fit_rationale": "Familiar.",
+                        "main_benefit": "Simple.",
+                        "main_liability": "Can couple layers.",
+                        "material_assumption": "Small team.",
+                    },
+                    {
+                        "id": "OPT-002",
+                        "category": "No pattern",
+                        "name": "No pattern",
+                        "canonical_reference": None,
+                        "fit_score": 50,
+                        "fit_rationale": "Few moving parts.",
+                        "main_benefit": "No ceremony.",
+                        "main_liability": "No explicit boundary.",
+                        "material_assumption": "Scope stays tiny.",
+                    },
+                ],
+                "recommended_option_id": "OPT-001",
+                "recommendation_rationale": "A small boundary is justified.",
+                "user_decision_prompt": (
+                    "Please approve, revise, or request more information."
+                ),
+                "offered_actions": ["approve", "revise", "more-information"],
+            }
+        )
+
+
+def test_option_comparison_actions_are_language_independent() -> None:
+    payload = {
+        "decision_scope": "Choose one structure.",
+        "scoring_criteria": ["Simplicity"],
+        "alternatives": [
+            {
+                "id": "OPT-001",
+                "category": "Architecture",
+                "name": "Layered",
+                "canonical_reference": "references/architecture-layered.md",
+                "fit_score": 70,
+                "fit_rationale": "Familiar.",
+                "main_benefit": "Simple.",
+                "main_liability": "Can couple layers.",
+                "material_assumption": "Small team.",
+            },
+            {
+                "id": "OPT-002",
+                "category": "No pattern",
+                "name": "No pattern",
+                "canonical_reference": None,
+                "fit_score": 50,
+                "fit_rationale": "Few moving parts.",
+                "main_benefit": "No ceremony.",
+                "main_liability": "No explicit boundary.",
+                "material_assumption": "Scope stays tiny.",
+            },
+        ],
+        "fewer_than_three_rationale": "Only two alternatives address this decision.",
+        "recommended_option_id": "OPT-001",
+        "recommendation_rationale": "A small boundary is justified.",
+        "user_decision_prompt": (
+            "Bitte bestätigen, überarbeiten oder weitere Informationen anfordern."
+        ),
+        "offered_actions": ["approve", "revise", "more-information"],
+    }
+    comparison = ArchitectureOptionComparison.model_validate(payload)
+    assert comparison.user_decision_prompt.startswith("Bitte")

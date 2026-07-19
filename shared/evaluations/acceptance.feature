@@ -55,14 +55,18 @@ Feature: Agent Skills standard and progressive disclosure
     And no example performs filesystem, network, subprocess, or dynamic-code operations
     And the agent loads no unrelated GoF reference
     And it explains how the example participants map to the pattern
+    And it calls no MCP tool for the generic example request
 
   @PLUGIN-001
-  Scenario: Generate the Codex Composite without sibling-skill activation
+  Scenario: Generate the Codex Composite and focused option skill
     Given all canonical workflow skills and resources have passed validation
     When the Codex adapter builds the "ai-software-architect" plugin
     Then the package contains one explicit user-facing Composite skill
+    And it contains a focused explicit "evaluate-architecture-options" skill
     And its workflow does not depend on activating a sibling skill
     And its Codex metadata disables implicit invocation
+    And users need no separately installed custom-agent or subagent profile
+    And the plugin does not create or modify Codex custom-agent configuration
     And references remain progressively disclosed
     And "provenance.json" maps every generated resource to its canonical hash
 
@@ -73,6 +77,19 @@ Feature: Agent Skills standard and progressive disclosure
     Then the stale provenance hash causes the build to fail
     And the package is not released
     And the validator verifies the required plugin layout and real manifest values
+
+  @PLUGIN-003
+  Scenario: Codex plugin selection and skill invocation remain distinct
+    Given the AI Software Architect plugin is installed and selected with an "@" mention
+    When an architecture request omits both explicit "$" skill invocations
+    Then the control plane routes to "missing_skill_invocation"
+    And it explains how to invoke "$ai-software-architect" or "$evaluate-architecture-options"
+    And the user prompt is blocked before model or MCP execution
+    And no turn state is persisted
+    When the user resends the request with "$ai-software-architect"
+    Then the architecture workflow may begin
+    And every plugin default prompt includes that skill invocation
+    And ordinary prompts without an architect activation marker do not enter the control plane
 
 Feature: Host-native architectural reasoning
 
@@ -96,18 +113,22 @@ Feature: Architecture workflow routing
 
   @FLOW-001
   Scenario: Missing information could change a material decision
-    Given the requirements omit a critical scale or reliability constraint
+    Given the requirements omit a critical constraint or conflict about the presentation platform
     When the agent assesses the available context
     Then the workflow routes to "clarify"
     And the agent asks no more than 5 focused questions in that round
     And each question states its decision impact
+    And a material platform contradiction ends the turn without a recommendation or MCP call
 
   @FLOW-002
   Scenario: No named pattern is justified
-    Given the simplest design satisfies the declared constraints
+    Given the user supplies sufficient constraints showing that the simplest design satisfies the current need
     When the agent evaluates the options
-    Then it may recommend no named design pattern
+    Then it does not inspect the active repository, discover architecture artifacts, detect repository languages, or call an MCP tool
+    And it may recommend no named design pattern
     And it explains why added structure would not currently earn its cost
+    And it identifies a future force that would justify more structure
+    And it asks the user to approve, revise, or request more information
 
   @FLOW-003
   Scenario: The user rejects a proposed decision
@@ -130,7 +151,26 @@ Feature: Architecture workflow routing
     And complementary supporting patterns are listed separately from competing alternatives
     And the first mention of each named pattern links to its canonical public reference when the host supports Markdown links
     And the user is asked to approve, revise, or request more information
+    And structured output validates as ArchitectureOptionComparison when requested
+    And the focused Codex Markdown rendering preserves only fields it actually parsed
     And the agent does not import, execute, compile, launch, test, or build repository code
+
+  @FLOW-005
+  Scenario: Codex control plane enforces deterministic focused-skill boundaries
+    Given the focused option-evaluation skill was explicitly invoked
+    And the user has trusted the plugin control-plane hooks
+    When that focused route proposes complete-contract validation
+    Then the pre-tool hook denies the structurally invalid call before execution
+    When the first final response omits the stable comparison rendering
+    Then the stop hook requests one complete replacement
+    And a second stop does not create an infinite retry
+    When the complete workflow returns a recommendation
+    Then it emits exactly one "recommendation" outcome marker
+    And it includes the language-neutral decision-action marker
+    When the complete workflow instead clarifies or finishes without a pending decision
+    Then it emits the matching "clarify" or "complete" outcome marker
+    And it omits the decision-action marker
+    But the complete architecture workflow remains semantic host-model reasoning
 
 Feature: Durable architecture state
 
@@ -195,7 +235,8 @@ Feature: Reproducible Python development and build environment
   Scenario: The installed plugin is independent of the build environment
     Given a clean supported machine has neither uv nor Python installed
     When Codex starts the plugin's local MCP server
-    Then the bundled self-contained executable starts successfully
+    Then the bundled self-contained one-directory runtime starts successfully
+    And one logical launch creates one runtime process rather than a one-file bootloader pair
     And the plugin does not create ".venv" or install a dependency
 
 Feature: Local deterministic MCP tools
@@ -203,9 +244,10 @@ Feature: Local deterministic MCP tools
   @MCP-001
   Scenario: Codex invokes a validation tool
     Given the plugin MCP configuration is active
-    When Codex calls "validate_architecture_contract"
+    When Codex calls "validate_complete_architecture_contract" with validation scope "complete-candidate-contract"
     Then the host launches the Python STDIO server as a managed child process if needed
     And the tool returns a ContractValidationResult
+    And Codex checks "result.valid" before claiming validation succeeded
     And the server does not start a network listener or persistent daemon
 
   @MCP-002
@@ -220,10 +262,10 @@ Feature: Local deterministic MCP tools
   Scenario: No trustworthy workspace binding is available
     Given Codex has not supplied a documented and verified active-project binding
     When the agent requests deterministic Python dependency evidence
-    Then MCP filesystem reads remain disabled or return "workspace-unavailable"
+    Then the Codex MCP schemas expose no filesystem-root or ADR-listing input
     And no tool accepts a model-proposed workspace root
     But the agent may read relevant Python files through host-native workspace tools
-    And call the same analysis tool with bounded workspace-relative "dependency_statements" for a routine static dependency scan
+    And call "analyze_python_dependencies" with bounded workspace-relative "dependency_statements" for a routine static dependency scan
     And the MCP server parses only that supplied content without opening a path
     And the result discloses that host selection may be incomplete and dynamic imports were not evaluated
 
@@ -240,10 +282,19 @@ Feature: Local deterministic MCP tools
     And dynamic imports, full AST context, or a release-gating boundary conclusion matters
     When the agent requests deterministic Python dependency evidence
     Then it reads only relevant approved Python files through host-native workspace tools
-    And calls the analysis tool with bounded workspace-relative "source_files"
-    And omits "relative_roots" and "dependency_statements"
+    And calls "analyze_python_dependencies" with bounded workspace-relative "source_files"
+    And omits "dependency_statements"
     And the MCP server parses the supplied source without opening a path
     And the result discloses that host file selection may be incomplete
+
+  @MCP-006
+  Scenario: Stale Codex MCP sessions cannot block plugin uninstall
+    Given the one-directory MCP runtime was launched by several Codex tasks
+    And no MCP tool call remains active
+    When stdin closes, the parent exits, or the bounded idle interval expires
+    Then every affected runtime process exits within the lifecycle grace period
+    And no one-file bootloader parent remains
+    And Codex can uninstall the plugin on the first attempt without manual process termination
 
 Feature: Security and scope guardrails
 

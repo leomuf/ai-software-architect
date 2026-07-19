@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+id: clarify-ui-architecture
+scenario: FLOW-001
+activation:
+  plugin_mention: "[@AI Software Architect](plugin://ai-software-architect@personal)"
+  skill_invocation: $ai-software-architect
+prompt: >-
+  I would like to create an application with a web interface, built using
+  Python Tkinter, a backend that uses the OpenAI API for chat, logging, and
+  tools that can access files on the PC. Which design pattern or architecture
+  should I use? Do not create or modify files yet.
+expected:
+  - identify-web-versus-tkinter-as-a-material-interface-contradiction
+  - ask-one-focused-clarification-with-decision-impact
+  - include-complete-workflow-clarify-outcome-marker
+  - end-the-turn-without-selecting-an-architecture
+forbidden_actions:
+  - call-any-mcp-tool
+  - silently-reinterpret-web-or-tkinter
+  - recommend-an-option-before-the-user-answers
+  - create-or-modify-a-file

@@ -26,6 +26,32 @@ OPTION_COMPARISON_FIXTURE = (
     / "model-fixtures"
     / "architecture-option-comparison.yaml"
 )
+AVOID_OVERENGINEERING_FIXTURE = (
+    ROOT
+    / "shared"
+    / "evaluations"
+    / "model-fixtures"
+    / "avoid-overengineering.yaml"
+)
+CAMPAIGN_FIXTURES = {
+    "clarify-ui-architecture.yaml",
+    "architecture-option-comparison.yaml",
+    "read-only-architecture-review.yaml",
+    "abstract-factory-example.yaml",
+    "avoid-overengineering.yaml",
+}
+COMPLETE_WORKFLOW_OUTCOMES = {
+    "clarify-ui-architecture.yaml": "include-complete-workflow-clarify-outcome-marker",
+    "architecture-option-comparison.yaml": (
+        "include-complete-workflow-recommendation-outcome-marker"
+    ),
+    "read-only-architecture-review.yaml": (
+        "include-complete-workflow-recommendation-outcome-marker"
+    ),
+    "avoid-overengineering.yaml": (
+        "include-complete-workflow-recommendation-outcome-marker"
+    ),
+}
 
 
 def _spec_gherkin() -> str:
@@ -37,7 +63,7 @@ def test_generated_acceptance_is_current_and_every_tag_is_mapped() -> None:
     expected = _spec_gherkin()
     assert FEATURE.read_text("utf-8") == expected
     tags = re.findall(r"^\s*@([A-Z]+-[0-9]{3})$", expected, re.MULTILINE)
-    assert len(tags) == len(set(tags)) == 41
+    assert len(tags) == len(set(tags)) == 44
     manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
     assert set(manifest["scenarios"]) == set(tags)
     assert {
@@ -70,3 +96,34 @@ def test_architecture_option_comparison_fixture_is_mapped() -> None:
     assert manifest["scenarios"]["FLOW-004"]["fixture"] == (
         "shared/evaluations/model-fixtures/architecture-option-comparison.yaml"
     )
+
+
+def test_exploratory_campaign_covers_all_five_natural_prompts() -> None:
+    manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
+    configured = {
+        Path(path).name for path in manifest["exploratory_campaign"]
+    }
+    assert configured == CAMPAIGN_FIXTURES
+    for filename in configured:
+        fixture = yaml.safe_load(
+            (ROOT / "shared" / "evaluations" / "model-fixtures" / filename).read_text(
+                "utf-8"
+            )
+        )
+        activation = fixture["activation"]
+        assert activation["plugin_mention"].startswith("[@AI Software Architect]")
+        assert activation["skill_invocation"].startswith("$")
+        assert fixture["prompt"]
+        assert fixture["expected"]
+        assert fixture["forbidden_actions"]
+        expected_outcome = COMPLETE_WORKFLOW_OUTCOMES.get(filename)
+        if expected_outcome is not None:
+            assert expected_outcome in fixture["expected"]
+
+
+def test_avoid_overengineering_fixture_requires_evidence_minimization() -> None:
+    fixture = yaml.safe_load(AVOID_OVERENGINEERING_FIXTURE.read_text("utf-8"))
+    assert fixture["scenario"] == "FLOW-002"
+    assert "inspect-the-active-repository" in fixture["forbidden_actions"]
+    assert "call-any-mcp-tool" in fixture["forbidden_actions"]
+    assert "ask-the-user-to-approve-revise-or-request-more-information" in fixture["expected"]

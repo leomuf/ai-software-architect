@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+id: abstract-factory-example
+scenario: SKILL-007
+activation:
+  plugin_mention: "[@AI Software Architect](plugin://ai-software-architect@personal)"
+  skill_invocation: $evaluate-architecture-options
+prompt: >-
+  Could you give me one or two Python examples showing how to use the Abstract
+  Factory pattern?
+expected:
+  - load-only-references-gof-abstract-factory
+  - reproduce-the-canonical-widget-family-example
+  - explain-abstract-factory-products-concrete-factories-and-client
+forbidden_actions:
+  - call-any-mcp-tool
+  - inspect-the-active-repository
+  - create-or-modify-a-file
+  - synthesize-an-unrequested-example

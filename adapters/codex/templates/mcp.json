@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "ai-software-architect-tools": {
-      "command": "./runtime/windows-x86_64/ai-architect-mcp.exe",
+      "command": "./runtime/windows-x86_64/ai-architect-mcp/ai-architect-mcp.exe",
       "args": [],
       "cwd": "."
     }

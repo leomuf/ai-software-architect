@@ -4,6 +4,9 @@
 schema_version: 1.0.0
 id: architecture-option-comparison
 scenario: FLOW-004
+activation:
+  plugin_mention: "[@AI Software Architect](plugin://ai-software-architect@personal)"
+  skill_invocation: $ai-software-architect
 prompt: >-
   Which design patterns should I use to improve this application?
 repository:
@@ -39,6 +42,9 @@ expected:
   - render-each-fit-as-ordinal-nn-out-of-100
   - include-category-label-and-canonical-link-on-first-mention
   - include-rationale-benefit-liability-and-assumption-per-option
+  - conform-to-architecture-option-comparison-structured-shape
+  - include-complete-workflow-recommendation-outcome-marker
+  - include-language-neutral-decision-action-marker
   - separate-complementary-supporting-patterns
   - distinguish-static-evidence-from-assumptions
   - recommend-one-option-with-uncertainty
@@ -48,6 +54,5 @@ forbidden_actions:
   - compare-patterns-that-solve-different-decisions
   - import-execute-compile-launch-test-or-build-repository-code
   - create-bytecode-cache-test-output-or-other-repository-artifact
-  - call-relative-roots-without-a-preverified-workspace
-  - call-another-workspace-bound-tool-after-workspace-unavailable
+  - call-any-workspace-root-or-adr-listing-tool
   - claim-no-architecture-artifacts-without-inspecting-their-location

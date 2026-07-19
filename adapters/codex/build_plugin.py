@@ -16,9 +16,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS_ROOT = ROOT / "shared" / "skills"
 TEMPLATES = ROOT / "adapters" / "codex" / "templates"
-OUTPUT = ROOT / "dist" / "codex" / "ai-software-architect"
+OUTPUT_PARENT = ROOT / "dist" / "codex"
+OUTPUT = OUTPUT_PARENT / "ai-software-architect"
 BUILD = ROOT / "build"
 RUNTIME_NAME = "ai-architect-mcp.exe"
+RUNTIME_DIR_NAME = "ai-architect-mcp"
 
 SKILL_ORDER = (
     "orchestrate-architecture-workflow",
@@ -28,6 +30,25 @@ SKILL_ORDER = (
     "prepare-coding-handoff",
     "review-architecture-conformance",
 )
+FOCUSED_SKILL_NAMES = ("evaluate-architecture-options",)
+
+FOCUSED_OPTIONS_OPENAI_YAML = """interface:
+  display_name: "Evaluate Architecture Options"
+  short_description: "Compare architecture and design-pattern choices"
+  default_prompt: >-
+    Use $evaluate-architecture-options to compare credible options and ask me
+    to choose.
+
+policy:
+  allow_implicit_invocation: false
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "ai-software-architect-tools"
+      description: "Read-only local contract and Python evidence tools"
+      transport: "stdio"
+"""
 
 GENERATED_FRONTMATTER = """---
 name: ai-software-architect
@@ -48,17 +69,52 @@ SPDX-License-Identifier: MIT
 Use the user's Codex model for all reasoning. Never request a separate model API key.
 Act as a direct, collaborative, educational architect; present material decisions
 for approval and do not implement application code in this role.
+Codex entry contract: the plugin distributes this capability, but the workflow runs
+only when the user explicitly invokes `$ai-software-architect`. A plugin `@` mention
+does not replace the `$` skill invocation. For a direct pattern explanation or
+implementation example, the user may instead invoke `$evaluate-architecture-options`.
 Architecture advice and repository inspection are read-only by default. Unless the
 user explicitly requests execution or modification, never import, execute, compile
 (including `python -m py_compile`), launch, test, or build analyzed repository code.
+Before any repository read, artifact discovery, language detection, or MCP call,
+decide whether additional evidence could materially change the next response. When
+the user's stated constraints are sufficient for proportionate guidance, use them as
+explicit assumptions and do not inspect the active repository or call an MCP tool.
+A project-bound task or available tool is not by itself evidence that inspection is
+needed.
 For an open "which pattern" request, compare three to five alternatives for one
 decision with categorized links and ordinal `NN/100` fit before recommending; list
 supporting patterns separately and ask the user to approve or revise.
+Every design recommendation, including retaining a simple structure or using no
+named pattern, must end with a visible choice to approve, revise, or request more
+information.
+End every `$ai-software-architect` final response with exactly one hidden outcome
+marker: `<!-- ai-architect-outcome: clarify -->` when material input is needed,
+`<!-- ai-architect-outcome: recommendation -->` when a decision awaits the user,
+or `<!-- ai-architect-outcome: complete -->` when no architecture decision is
+pending. A recommendation must also include exactly one
+`<!-- ai-architect-actions: approve, revise, more-information -->` marker
+immediately before visible, localized decision guidance, followed by its outcome
+marker. The other outcomes must not include the action marker.
+For generic architecture guidance, pattern explanations, or implementation examples,
+use the routed skill reference directly and do not call MCP tools. Call MCP tools only
+when the requested task actually requires repository evidence or artifact validation.
+If platform or interface statements conflict materially, ask one focused clarification
+and end the current turn without a recommendation or MCP call.
+The bundled Codex control-plane hook is defense in depth: it reinforces explicit
+routing, injects one explicitly matched bundled reference, blocks MCP operations that
+are structurally outside a focused skill route, validates the focused option-
+comparison rendering, and checks the complete workflow's stable outcome/action
+markers once when the user has trusted it. It does not infer semantic workflow phases
+from natural-language keywords. Correctness must not depend on hook availability.
 For deterministic Python evidence in Codex, read only relevant workspace files with
 native file tools. Prefer bounded `dependency_statements` for routine static import
-scans; use `source_files` when full AST context or higher assurance matters. Do not
-probe with absolute or relative roots, and do not retry filesystem mode or call
-another workspace-bound tool after `workspace-unavailable`.
+scans; use `source_files` when full AST context or higher assurance matters. The Codex
+MCP surface accepts no workspace root and exposes no ADR-listing tool. Inspect
+`.ai-architect/` through host-native read-only tools.
+Call `validate_complete_architecture_contract` only for a complete candidate, set
+`validation_scope` to `complete-candidate-contract`, and inspect `result.valid` before
+claiming validation succeeded.
 
 """
 
@@ -119,7 +175,7 @@ def _build_runtime() -> Path:
         "PyInstaller",
         "--noconfirm",
         "--clean",
-        "--onefile",
+        "--onedir",
         "--name",
         "ai-architect-mcp",
         "--distpath",
@@ -131,15 +187,37 @@ def _build_runtime() -> Path:
         str(ROOT / "adapters" / "codex" / "runtime_entry.py"),
     ]
     subprocess.run(command, cwd=ROOT, check=True)  # noqa: S603
-    executable = runtime_dist / RUNTIME_NAME
+    runtime = runtime_dist / RUNTIME_DIR_NAME
+    executable = runtime / RUNTIME_NAME
     if not executable.is_file():
         raise FileNotFoundError(f"runtime build did not create {executable}")
-    return executable
+    return runtime
 
 
-def assemble(runtime: Path) -> Path:
+def _copy_focused_skills() -> dict[str, str]:
+    additional_sources: dict[str, str] = {}
+    for name in FOCUSED_SKILL_NAMES:
+        source = SKILLS_ROOT / name
+        target = OUTPUT / "skills" / name
+        shutil.copytree(source, target)
+        agents = target / "agents"
+        agents.mkdir(exist_ok=True)
+        (agents / "openai.yaml").write_text(
+            FOCUSED_OPTIONS_OPENAI_YAML,
+            encoding="utf-8",
+            newline="\n",
+        )
+        for path in sorted(source.rglob("*")):
+            if path.is_file():
+                additional_sources[_relative(path)] = (
+                    target / path.relative_to(source)
+                ).relative_to(OUTPUT).as_posix()
+    return additional_sources
+
+
+def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
     output_resolved = OUTPUT.resolve()
-    expected_parent = (ROOT / "dist" / "codex").resolve()
+    expected_parent = OUTPUT_PARENT.resolve()
     if output_resolved.parent != expected_parent or output_resolved.name != "ai-software-architect":
         raise ValueError("refusing to replace an unexpected output directory")
     if OUTPUT.exists():
@@ -163,11 +241,23 @@ def assemble(runtime: Path) -> Path:
     agents = skill_output / "agents"
     agents.mkdir()
     shutil.copyfile(TEMPLATES / "openai.yaml", agents / "openai.yaml")
+    additional_sources = _copy_focused_skills()
 
     manifest = OUTPUT / ".codex-plugin" / "plugin.json"
     manifest.parent.mkdir(parents=True)
     shutil.copyfile(TEMPLATES / "plugin.json", manifest)
+    manifest_payload = json.loads(manifest.read_text("utf-8"))
+    if plugin_version is not None:
+        manifest_payload["version"] = plugin_version
+    manifest.write_text(
+        json.dumps(manifest_payload, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     shutil.copyfile(TEMPLATES / "mcp.json", OUTPUT / ".mcp.json")
+    hooks = OUTPUT / "hooks"
+    hooks.mkdir()
+    shutil.copyfile(TEMPLATES / "hooks.json", hooks / "hooks.json")
     shutil.copyfile(ROOT / "LICENSE", OUTPUT / "LICENSE")
     shutil.copyfile(ROOT / "NOTICE", OUTPUT / "NOTICE")
     shutil.copyfile(ROOT / "THIRD_PARTY_NOTICES.md", OUTPUT / "THIRD_PARTY_NOTICES.md")
@@ -175,15 +265,17 @@ def assemble(runtime: Path) -> Path:
     assets.mkdir()
     shutil.copyfile(ROOT / "assets" / "codex-plugin-icon.png", assets / "logo.png")
 
-    runtime_target = OUTPUT / "runtime" / "windows-x86_64" / RUNTIME_NAME
+    runtime_target = OUTPUT / "runtime" / "windows-x86_64" / RUNTIME_DIR_NAME
     runtime_target.parent.mkdir(parents=True)
-    shutil.copyfile(runtime, runtime_target)
+    shutil.copytree(runtime, runtime_target)
 
     generated_files = sorted(path for path in OUTPUT.rglob("*") if path.is_file())
     provenance = {
         "schema_version": "1.0.0",
         "generator": "adapters/codex/build_plugin.py",
+        "plugin_version": manifest_payload["version"],
         "source_to_output": dict(sorted(source_to_output.items())),
+        "additional_source_to_output": dict(sorted(additional_sources.items())),
         "output_sha256": {
             path.relative_to(OUTPUT).as_posix(): _hash(path) for path in generated_files
         },
@@ -198,13 +290,20 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime", type=Path)
     parser.add_argument("--build-runtime", action="store_true")
+    parser.add_argument("--plugin-version")
     args = parser.parse_args()
-    if args.runtime and args.build_runtime:
-        parser.error("use either --runtime or --build-runtime")
+    selected_modes = sum((args.runtime is not None, args.build_runtime))
+    if selected_modes != 1:
+        parser.error("use exactly one of --runtime or --build-runtime")
     runtime = _build_runtime() if args.build_runtime else args.runtime
-    if runtime is None or not runtime.resolve().is_file():
-        parser.error("provide --runtime <reviewed executable> or --build-runtime")
-    print(assemble(runtime.resolve()))
+    if runtime is None or not runtime.resolve().is_dir():
+        parser.error("provide --runtime <reviewed one-directory runtime> or --build-runtime")
+    print(
+        assemble(
+            runtime.resolve(),
+            plugin_version=args.plugin_version,
+        )
+    )
 
 
 if __name__ == "__main__":

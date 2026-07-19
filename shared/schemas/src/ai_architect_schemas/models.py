@@ -20,6 +20,18 @@ RelativePathText = Annotated[str, Field(min_length=1, max_length=240)]
 ShortText = Annotated[str, Field(min_length=1, max_length=500)]
 EvidenceText = Annotated[str, Field(min_length=1, max_length=2_000)]
 NarrativeText = Annotated[str, Field(min_length=1, max_length=20_000)]
+PatternCategory = Literal[
+    "GoF",
+    "Architecture",
+    "Presentation",
+    "Dependency",
+    "Data",
+    "Integration",
+    "Resilience",
+    "Modernization",
+    "No pattern",
+]
+DecisionAction = Literal["approve", "revise", "more-information"]
 MAX_INLINE_SOURCE_FILES = 500
 MAX_INLINE_SOURCE_BYTES = 5_000_000
 MAX_INLINE_SOURCE_FILE_BYTES = 500_000
@@ -99,6 +111,80 @@ class ArchitectureOption(StrictModel):
     risks: list[EvidenceText] = Field(default_factory=list, max_length=20)
     fit_score: int = Field(ge=0, le=100)
     fit_rationale: EvidenceText
+
+
+class ComparedArchitectureOption(StrictModel):
+    id: OptionId
+    category: PatternCategory
+    name: ShortText
+    canonical_reference: ShortText | None = None
+    fit_score: int = Field(ge=0, le=100)
+    fit_rationale: EvidenceText
+    main_benefit: EvidenceText
+    main_liability: EvidenceText
+    material_assumption: EvidenceText
+
+    @model_validator(mode="after")
+    def validate_reference(self) -> Self:
+        if self.category == "No pattern":
+            if self.canonical_reference is not None:
+                raise ValueError("the no-pattern option must not declare a canonical reference")
+        elif self.canonical_reference is None:
+            raise ValueError("named options require a canonical reference")
+        return self
+
+
+class SupportingPattern(StrictModel):
+    category: PatternCategory
+    name: ShortText
+    canonical_reference: ShortText
+    role: EvidenceText
+
+    @model_validator(mode="after")
+    def validate_supporting_category(self) -> Self:
+        if self.category == "No pattern":
+            raise ValueError("a supporting pattern must be a named pattern")
+        return self
+
+
+class ArchitectureOptionComparison(StrictModel):
+    decision_scope: EvidenceText
+    scoring_criteria: list[EvidenceText] = Field(min_length=1, max_length=10)
+    evidence_and_assumptions: list[EvidenceClaim] = Field(
+        default_factory=list, max_length=50
+    )
+    alternatives: list[ComparedArchitectureOption] = Field(min_length=2, max_length=5)
+    fewer_than_three_rationale: EvidenceText | None = None
+    recommended_option_id: OptionId
+    recommendation_rationale: EvidenceText
+    supporting_patterns: list[SupportingPattern] = Field(default_factory=list, max_length=10)
+    user_decision_prompt: EvidenceText
+    offered_actions: list[DecisionAction] = Field(min_length=3, max_length=3)
+
+    @model_validator(mode="after")
+    def validate_comparison(self) -> Self:
+        option_ids = [option.id for option in self.alternatives]
+        if len(option_ids) != len(set(option_ids)):
+            raise ValueError("alternative option ids must be unique")
+        if len({option.name.casefold() for option in self.alternatives}) != len(
+            self.alternatives
+        ):
+            raise ValueError("alternative option names must be unique")
+        if len(self.alternatives) < 3 and self.fewer_than_three_rationale is None:
+            raise ValueError(
+                "fewer_than_three_rationale is required when fewer than three alternatives exist"
+            )
+        if len(self.alternatives) >= 3 and self.fewer_than_three_rationale is not None:
+            raise ValueError(
+                "fewer_than_three_rationale is allowed only for fewer than three alternatives"
+            )
+        if self.recommended_option_id not in option_ids:
+            raise ValueError("recommended_option_id must reference an alternative")
+        if set(self.offered_actions) != {"approve", "revise", "more-information"}:
+            raise ValueError(
+                "offered_actions must contain approve, revise, and more-information"
+            )
+        return self
 
 
 class ArchitectureDecision(StrictModel):
@@ -268,6 +354,10 @@ class ContractValidationInput(StrictModel):
     yaml_content: str = Field(min_length=1, max_length=500_000)
 
 
+class CompleteContractValidationInput(ContractValidationInput):
+    validation_scope: Literal["complete-candidate-contract"]
+
+
 class DecisionListInput(StrictModel):
     statuses: list[Literal["proposed", "accepted", "rejected", "superseded"]] = Field(
         default_factory=list, max_length=4
@@ -316,6 +406,39 @@ class DependencyStatementInput(StrictModel):
         return value
 
 
+def _validate_inline_analysis_content(
+    source_files: list[SourceFileInput],
+    dependency_statements: list[DependencyStatementInput],
+) -> None:
+    normalized_paths = [
+        PurePosixPath(source.relative_path.replace("\\", "/")).as_posix()
+        for source in source_files
+    ]
+    if len(normalized_paths) != len(set(normalized_paths)):
+        raise ValueError("source_files paths must be unique")
+    total_bytes = sum(len(source.content.encode("utf-8")) for source in source_files)
+    if total_bytes > MAX_INLINE_SOURCE_BYTES:
+        raise ValueError("source_files exceed the total inline-source byte budget")
+    statement_keys = [
+        (
+            PurePosixPath(item.relative_path.replace("\\", "/")).as_posix(),
+            item.start_line,
+        )
+        for item in dependency_statements
+    ]
+    if len(statement_keys) != len(set(statement_keys)):
+        raise ValueError(
+            "dependency_statements path and start_line pairs must be unique"
+        )
+    statement_bytes = sum(
+        len(item.statement.encode("utf-8")) for item in dependency_statements
+    )
+    if statement_bytes > MAX_DEPENDENCY_STATEMENT_TOTAL_BYTES:
+        raise ValueError(
+            "dependency_statements exceed the total statement byte budget"
+        )
+
+
 class RepositoryAnalysisInput(StrictModel):
     relative_roots: list[RelativePathText] = Field(default_factory=list, max_length=20)
     source_files: list[SourceFileInput] = Field(
@@ -343,39 +466,58 @@ class RepositoryAnalysisInput(StrictModel):
                 "provide exactly one of relative_roots, source_files, "
                 "or dependency_statements"
             )
-        normalized_paths = [
-            PurePosixPath(source.relative_path.replace("\\", "/")).as_posix()
-            for source in self.source_files
-        ]
-        if len(normalized_paths) != len(set(normalized_paths)):
-            raise ValueError("source_files paths must be unique")
-        total_bytes = sum(len(source.content.encode("utf-8")) for source in self.source_files)
-        if total_bytes > MAX_INLINE_SOURCE_BYTES:
-            raise ValueError("source_files exceed the total inline-source byte budget")
-        statement_keys = [
-            (
-                PurePosixPath(item.relative_path.replace("\\", "/")).as_posix(),
-                item.start_line,
-            )
-            for item in self.dependency_statements
-        ]
-        if len(statement_keys) != len(set(statement_keys)):
-            raise ValueError(
-                "dependency_statements path and start_line pairs must be unique"
-            )
-        statement_bytes = sum(
-            len(item.statement.encode("utf-8"))
-            for item in self.dependency_statements
+        _validate_inline_analysis_content(
+            self.source_files,
+            self.dependency_statements,
         )
-        if statement_bytes > MAX_DEPENDENCY_STATEMENT_TOTAL_BYTES:
-            raise ValueError(
-                "dependency_statements exceed the total statement byte budget"
-            )
         return self
+
+
+class InlineRepositoryAnalysisInput(StrictModel):
+    source_files: list[SourceFileInput] = Field(
+        default_factory=list, max_length=MAX_INLINE_SOURCE_FILES
+    )
+    dependency_statements: list[DependencyStatementInput] = Field(
+        default_factory=list, max_length=MAX_DEPENDENCY_STATEMENTS
+    )
+    languages: list[Literal["python"]] = Field(
+        default_factory=_default_languages, min_length=1, max_length=1
+    )
+
+    @model_validator(mode="after")
+    def validate_inline_source(self) -> Self:
+        if bool(self.source_files) == bool(self.dependency_statements):
+            raise ValueError(
+                "provide exactly one of source_files or dependency_statements"
+            )
+        _validate_inline_analysis_content(
+            self.source_files,
+            self.dependency_statements,
+        )
+        return self
+
+    def to_domain_input(self) -> RepositoryAnalysisInput:
+        return RepositoryAnalysisInput(
+            source_files=self.source_files,
+            dependency_statements=self.dependency_statements,
+            languages=self.languages,
+        )
 
 
 class BoundaryCheckInput(RepositoryAnalysisInput):
     contract_yaml: str = Field(min_length=1, max_length=500_000)
+
+
+class InlineBoundaryCheckInput(InlineRepositoryAnalysisInput):
+    contract_yaml: str = Field(min_length=1, max_length=500_000)
+
+    def to_domain_input(self) -> BoundaryCheckInput:
+        return BoundaryCheckInput(
+            source_files=self.source_files,
+            dependency_statements=self.dependency_statements,
+            languages=self.languages,
+            contract_yaml=self.contract_yaml,
+        )
 
 
 class ArtifactSecretScanInput(StrictModel):

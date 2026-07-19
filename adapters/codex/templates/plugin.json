@@ -1,7 +1,7 @@
 {
   "name": "ai-software-architect",
   "version": "0.1.0",
-  "description": "Architecture-first analysis, decisions, coding handoffs, and conformance review using your Codex model.",
+  "description": "Architecture-first analysis using your Codex model, with transparent local hooks for deterministic safety and response quality.",
   "author": {
     "name": "Leonardo Muffato (AUTOSOFT Engineering)",
     "url": "https://www.autosoft-engineering.de"
@@ -14,16 +14,16 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "AI Software Architect",
-    "shortDescription": "Architecture decisions before implementation",
-    "longDescription": "Compare architecture options, approve durable decisions, prepare coding handoffs, and review conformance with local read-only validation tools.",
+    "shortDescription": "Architecture decisions with transparent local guardrails",
+    "longDescription": "Explicitly invoke $ai-software-architect to compare options, approve durable decisions, prepare coding handoffs, and review conformance. Recommended local hooks add deterministic invocation guidance, focused-reference injection, structurally bounded architect-tool checks, focused option-rendering validation, and a hidden outcome marker so recommendations reliably offer the user's next choice. They make no model or network calls, do not bypass Codex permissions, and persist no prompt or repository content. Review their source and tests at https://github.com/leomuf/ai-software-architect#why-codex-asks-you-to-trust-the-hooks.",
     "developerName": "AUTOSOFT Engineering",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/leomuf/ai-software-architect",
     "defaultPrompt": [
-      "Design the architecture before we implement this feature.",
-      "Create an ADR and architecture contract for this decision.",
-      "Review this implementation against our architecture contract."
+      "$ai-software-architect Design the architecture before we implement this feature.",
+      "$ai-software-architect Create an ADR and architecture contract for this decision.",
+      "$ai-software-architect Review this implementation against our architecture contract."
     ],
     "composerIcon": "./assets/logo.png",
     "logo": "./assets/logo.png"

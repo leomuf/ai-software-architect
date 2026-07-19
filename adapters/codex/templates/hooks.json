@@ -1,0 +1,45 @@
+{
+  "description": "Recommended local guardrails for explicit architect skills: correct incomplete plugin invocation, inject one matched bundled reference, restrict structurally invalid focused-route tool use, validate focused option rendering, and check a hidden complete-workflow outcome marker. No semantic keyword routing, model calls, or network calls; review the public source at https://github.com/leomuf/ai-software-architect#why-codex-asks-you-to-trust-the-hooks.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$PLUGIN_ROOT/runtime/windows-x86_64/ai-architect-mcp/ai-architect-mcp.exe\" --codex-hook",
+            "commandWindows": "& \"$env:PLUGIN_ROOT\\runtime\\windows-x86_64\\ai-architect-mcp\\ai-architect-mcp.exe\" --codex-hook",
+            "timeout": 5,
+            "statusMessage": "Routing the architecture workflow"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": ".*(validate_complete_architecture_contract|scan_generated_architecture_artifact|analyze_python_dependencies|check_python_architecture_boundaries).*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$PLUGIN_ROOT/runtime/windows-x86_64/ai-architect-mcp/ai-architect-mcp.exe\" --codex-hook",
+            "commandWindows": "& \"$env:PLUGIN_ROOT\\runtime\\windows-x86_64\\ai-architect-mcp\\ai-architect-mcp.exe\" --codex-hook",
+            "timeout": 5,
+            "statusMessage": "Checking architecture tool use"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$PLUGIN_ROOT/runtime/windows-x86_64/ai-architect-mcp/ai-architect-mcp.exe\" --codex-hook",
+            "commandWindows": "& \"$env:PLUGIN_ROOT\\runtime\\windows-x86_64\\ai-architect-mcp\\ai-architect-mcp.exe\" --codex-hook",
+            "timeout": 5,
+            "statusMessage": "Validating the architecture response"
+          }
+        ]
+      }
+    ]
+  }
+}

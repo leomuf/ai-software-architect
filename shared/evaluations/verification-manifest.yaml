@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: MIT
 
 schema_version: 1.0.0
+exploratory_campaign:
+  - shared/evaluations/model-fixtures/clarify-ui-architecture.yaml
+  - shared/evaluations/model-fixtures/architecture-option-comparison.yaml
+  - shared/evaluations/model-fixtures/read-only-architecture-review.yaml
+  - shared/evaluations/model-fixtures/abstract-factory-example.yaml
+  - shared/evaluations/model-fixtures/avoid-overengineering.yaml
 scenarios:
   SKILL-001: {mode: scripted-host-test, gate: GATE-SKILL}
   SKILL-002: {mode: model-evaluation, gate: GATE-SKILL}
@@ -12,6 +18,7 @@ scenarios:
   SKILL-007: {mode: deterministic-test, gate: GATE-SKILL}
   PLUGIN-001: {mode: deterministic-test, gate: GATE-PLUGIN}
   PLUGIN-002: {mode: deterministic-test, gate: GATE-PLUGIN}
+  PLUGIN-003: {mode: deterministic-test, gate: GATE-CONTROL-PLANE}
   HOST-001: {mode: model-evaluation, gate: GATE-PLUGIN}
   HOST-002: {mode: model-evaluation, gate: GATE-PLUGIN}
   FLOW-001: {mode: model-evaluation, gate: GATE-SCHEMA}
@@ -21,6 +28,7 @@ scenarios:
     mode: model-evaluation
     gate: GATE-SCHEMA
     fixture: shared/evaluations/model-fixtures/architecture-option-comparison.yaml
+  FLOW-005: {mode: deterministic-test, gate: GATE-CONTROL-PLANE}
   STATE-001: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-002: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-003: {mode: deterministic-test, gate: GATE-SCHEMA}
@@ -34,6 +42,7 @@ scenarios:
   MCP-003: {mode: scripted-host-test, gate: GATE-WORKSPACE}
   MCP-004: {mode: deterministic-test, gate: GATE-SECURITY}
   MCP-005: {mode: scripted-host-test, gate: GATE-WORKSPACE}
+  MCP-006: {mode: scripted-host-test, gate: GATE-PLUGIN}
   SEC-001: {mode: deterministic-test, gate: GATE-SECURITY}
   SEC-002: {mode: model-evaluation, gate: GATE-SECURITY}
   SEC-003: {mode: deterministic-test, gate: GATE-SECURITY}

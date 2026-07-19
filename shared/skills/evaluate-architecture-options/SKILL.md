@@ -10,9 +10,15 @@ SPDX-License-Identifier: MIT
 
 # Evaluate Architecture Options
 
+## Evidence before inspection
+
+Apply the orchestration evidence sufficiency gate before reading the active repository or calling a tool. If the user has already supplied enough constraints to judge proportionality, treat those constraints as assumptions and answer from them. Do not inspect a project merely because the task is project-bound or repository access is available.
+
+Use repository evidence only when implementation facts could materially change the option set or the user requests review, verification, or repository-specific advice. Tool availability is not evidence of need.
+
 ## Mandatory final-answer gate for an open selection
 
-Treat questions such as "which design patterns should I use?" as an open selection, not as permission to output a prioritized stack of complementary patterns. If a missing fact can materially change the option set, ask a focused clarification question instead of selecting.
+Treat questions such as "which design patterns should I use?" as an open selection, not as permission to output a prioritized stack of complementary patterns. If a missing fact can materially change the option set, ask a focused clarification question and end the current turn without an option comparison, recommendation, or MCP call.
 
 Before sending a final selection answer, verify that it uses these sections in this order:
 
@@ -26,6 +32,37 @@ Before sending a final selection answer, verify that it uses these sections in t
 In `Alternatives`, compare three to five credible options that solve the same decision when that many exist. Use a table or equally explicit structure containing, for every option: categorized and linked name, ordinal `NN/100` fit, fit rationale, main benefit, main liability, and material assumption. When fewer than three credible alternatives exist, say why. Never count supporting patterns as alternatives merely to reach the target.
 
 End `Your decision` by asking the user to approve, revise, or request more information. Do not continue to ADR creation or implementation without that response.
+
+A recommendation to keep the current simple structure or use no named pattern is still a proposed architecture decision. Explain the future force that would justify more structure, then visibly ask the user to approve, revise, or request more information. Do not omit the decision handoff merely because the recommendation adds nothing.
+
+Use this compact response template exactly for an open selection:
+
+```markdown
+## Decision scope and criteria
+<one decision and its ordinal scoring criteria>
+
+## Evidence and assumptions
+<confirmed/static evidence, then explicit assumptions and unknowns>
+
+## Alternatives
+| Option | Fit | Rationale | Main benefit | Main liability | Material assumption |
+| --- | ---: | --- | --- | --- | --- |
+| [Category] [Linked name] | NN/100 | ... | ... | ... | ... |
+
+## Recommendation
+<one option, uncertainty, and why the trade-off is justified>
+
+## Supporting patterns
+- [Category] [Linked name] — <its non-competing role>
+
+## Your decision
+<!-- ai-architect-actions: approve, revise, more-information -->
+Please approve, revise, or request more information before I continue.
+```
+
+Shape the same content as `ArchitectureOptionComparison` when a structured output is requested, including the language-neutral `offered_actions` values `approve`, `revise`, and `more-information`. Validate that complete shape in host-native structured-output mode; do not call an MCP tool merely to validate a recommendation. The HTML action marker in the Markdown template is not displayed to the user; it lets a trusted Codex Stop hook verify the offered actions without searching localized prose for English words.
+
+Before sending the answer, perform the same deterministic rendering self-check used by the Codex control plane: all six headings appear in order, two to five genuine alternatives are rendered (normally three to five when that many are credible), category labels and canonical links are present, one compared option is recommended, and the final section contains the action marker plus visible decision guidance. When this focused skill is invoked directly, a trusted Codex Stop hook may request one complete corrected rendering.
 
 1. Start from recorded constraints, risks, stakeholders, and ranked quality attributes.
 2. For an open-ended architecture or pattern-selection request, form three to five credible options within each material decision scope. Never pad the comparison with an option that does not address the same decision; when fewer than three credible alternatives exist, present the smaller set and explain why.
@@ -48,8 +85,10 @@ End `Your decision` by asking the user to approve, revise, or request more infor
 ## Implementation example requests
 
 - When the user asks for a generic Python implementation example of a GoF pattern, load only that routed `gof-*.md` reference and reuse its `Python example`. Explain briefly how the example's participants map to the pattern.
+- In Codex, a user may explicitly invoke `$evaluate-architecture-options` for a direct pattern or implementation-example request. When `$ai-software-architect` is already active, use the Composite's own copied reference and do not attempt sibling-skill activation.
 - Reproduce the canonical example when a generic example is sufficient. For a repository-specific request, adapt the example to the user's domain and clearly identify the adaptation instead of presenting the canonical snippet as project-ready code.
 - Do not load unrelated pattern files or synthesize additional variants unless the user asks for them or a materially different variant is necessary.
+- Do not call an MCP tool for a generic pattern explanation, implementation example, or architecture-guidance request. Use the routed skill reference directly. Call deterministic MCP tools only when the requested task actually requires repository evidence, architecture-artifact inspection, contract or boundary validation, or generated-artifact secret scanning.
 
 ## Direct reference routing
 

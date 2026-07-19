@@ -47,4 +47,4 @@ ignore = ["S101"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
-packages = ["ai_architect_schemas", "ai_architect_tools"]
+packages = ["ai_architect_schemas", "ai_architect_tools", "adapters.codex"]

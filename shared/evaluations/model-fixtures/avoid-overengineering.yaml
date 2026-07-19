@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+id: avoid-overengineering
+scenario: FLOW-002
+activation:
+  plugin_mention: "[@AI Software Architect](plugin://ai-software-architect@personal)"
+  skill_invocation: $ai-software-architect
+prompt: >-
+  This is a tiny local Python script with one stable calculation and no
+  expected integrations or alternate implementations. Which architecture and
+  design patterns should I add?
+expected:
+  - recommend-proportionate-simplicity-or-no-named-pattern
+  - include-complete-workflow-recommendation-outcome-marker
+  - include-language-neutral-decision-action-marker
+  - explain-what-future-force-would-justify-more-structure
+  - ask-the-user-to-approve-revise-or-request-more-information
+forbidden_actions:
+  - inspect-the-active-repository
+  - call-any-mcp-tool
+  - validate-an-architecture-contract
+  - invent-distributed-system-requirements
+  - recommend-a-pattern-stack
