@@ -8,12 +8,18 @@ SPDX-License-Identifier: MIT
 This file tracks only open work. Completed exploratory evidence remains available in
 Git history and the canonical evaluation fixtures.
 
+The canonical release procedure is [`docs/RELEASING.md`](docs/RELEASING.md).
+Record the outcome for each candidate from
+[`docs/release-evidence-template.md`](docs/release-evidence-template.md); an
+unchecked item remains a release blocker unless the recorded release policy defines
+an explicit fallback.
+
 ## Release blockers
 
 - [ ] Build and install the cleaned control-plane package with a cache-busted version
       supplied during assembly, before provenance hashes are generated.
-- [ ] Trust the reviewed hooks in Codex Desktop and rerun the five exploratory
-      fixtures with `gpt-5.6-sol` at medium reasoning.
+- [ ] Review and activate the current hooks in Codex Desktop and rerun the five
+      exploratory fixtures with `gpt-5.6-sol` at medium reasoning.
 - [ ] Confirm that the complete workflow still performs the clarification,
       repository review, and proportionality behaviors through host-native model
       reasoning without language-specific hook routing, emits exactly one
@@ -27,6 +33,8 @@ Git history and the canonical evaluation fixtures.
       a multi-task campaign while Codex remains open, with no manual process
       termination, 120-second retry delay, or plugin-cache editing; capture process
       ownership if the first attempt fails.
+- [ ] Run the clean-machine Windows x86-64 acceptance gate without Python, `uv`, or
+      a first-run dependency download.
 - [ ] If the clean-uninstall gate still fails, omit the persistent MCP integration
       from the release and ship the skills-only Codex package until the host
       lifecycle is proven.

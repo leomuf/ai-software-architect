@@ -79,7 +79,10 @@ ai-software-architect/
 │   └── codex/                  # Codex Composite, control plane, packaging, and smoke tests
 ├── tests/                      # Schema, security, conformance, and packaging tests
 ├── specs/                      # Approved product and security specification
+├── docs/                       # Release procedure and per-version evidence
+├── scripts/                    # Repeatable PowerShell build and release helpers
 ├── .github/                    # CI, CodeQL, release, and dependency automation
+├── CHANGELOG.md                # User-facing release history
 ├── pyproject.toml              # uv workspace and development tooling
 └── uv.lock                     # Reproducible locked dependency resolution
 ```
@@ -231,16 +234,90 @@ uv run python shared/evaluations/generate_acceptance.py
 
 ### Build the Codex Adapter
 
-Build and smoke-test the self-contained Windows x86-64 plugin:
+For a full local development build, create a self-contained Windows x86-64
+runtime, assign a unique cache-busted version, validate the package, and
+smoke-test the packaged hooks and MCP server:
 
 ```powershell
-uv run python adapters/codex/build_plugin.py --build-runtime
-uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/windows-x86_64/ai-architect-mcp/ai-architect-mcp.exe
+.\scripts\build-codex-plugin.ps1
 ```
 
-For a local cache-busted package, pass the complete SemVer through `--plugin-version` during the build. The version is written before provenance hashes are generated; packaged files must not be re-stamped afterward.
-
 The assembled plugin is written to `dist/codex/ai-software-architect/`.
+The script prints the generated version and package path. To build a particular
+version, add `-PluginVersion 0.1.0-beta.1`. The version is written before
+provenance hashes are generated; never change the generated manifest or
+recalculate provenance afterward.
+
+For a faster rebuild after skill, reference, template, plugin-metadata, icon, or
+packaged-notice-only changes, reuse the existing reviewed runtime:
+
+```powershell
+.\scripts\build-codex-plugin.ps1 -ReuseRuntime
+```
+
+Perform a full `--build-runtime` build whenever runtime Python, MCP code, schemas,
+dependencies, or `uv.lock` change. Always rerun package validation and the runtime
+smoke test after either build; the wrapper does both automatically. See
+[`docs/RELEASING.md`](docs/RELEASING.md#reuse-an-existing-runtime-for-a-fast-rebuild)
+for the complete reuse boundary. Pure README or `docs/` changes do not require a
+plugin rebuild because those files are not packaged.
+
+### Copy to the Personal Marketplace
+
+Preview the validated destination without changing it:
+
+```powershell
+.\scripts\copy-codex-plugin-to-personal-marketplace.ps1 -WhatIf
+```
+
+Then validate, stage, and copy the development package:
+
+```powershell
+.\scripts\copy-codex-plugin-to-personal-marketplace.ps1
+```
+
+This expects the personal marketplace at `~/.agents/plugins/marketplace.json` and
+the plugin entry at `./plugins/ai-software-architect`. If it does not exist, create
+it with Codex's `$plugin-creator` workflow instead of manually editing Codex global
+configuration. The script validates a staged copy and can restore the previous
+package if replacement fails; it never edits the catalog or Codex's installed
+plugin cache. See [`scripts/README.md`](scripts/README.md) for all script options
+and safety boundaries.
+
+### Install or Update from the Codex Plugins Window
+
+After copying the package:
+
+1. Open **Plugins** in Codex Desktop.
+2. Select the **Personal** marketplace and open **AI Software Architect**.
+3. Select **Install**, or **Update** if an older development build is installed.
+4. Review the bundled hook definitions and activate them from the plugin page.
+5. Confirm that the displayed version matches the version printed by the build
+   script.
+6. Start a new task before testing the updated skills, hooks, and MCP tools.
+
+If **Update** is not shown, verify the copied manifest version, refresh or restart
+Codex, and reopen the plugin from **Personal**. Do not edit Codex's installed-plugin
+cache. Detailed troubleshooting and clean-reinstall instructions are in
+[`docs/RELEASING.md`](docs/RELEASING.md#install-or-update-from-the-codex-plugins-window).
+
+## Release Documentation
+
+- [`docs/RELEASING.md`](docs/RELEASING.md) is the canonical maintainer guide for
+  local builds, personal-marketplace testing, exact release-candidate gates,
+  Codex Desktop acceptance, and GitHub publication.
+- [`.github/workflows/release.yml`](.github/workflows/release.yml) defines the
+  existing tag-triggered package workflow. It currently uploads a build artifact
+  but does not yet support manual dispatch or create a public GitHub Release.
+- [`shared/evaluations/verification-manifest.yaml`](shared/evaluations/verification-manifest.yaml)
+  maps acceptance scenarios to release gates.
+- [`shared/evaluations/release-automation-plan.md`](shared/evaluations/release-automation-plan.md)
+  proposes future automation for the five exploratory fixtures; it is not yet an
+  active release workflow.
+- [`docs/release-evidence-template.md`](docs/release-evidence-template.md) records
+  the exact package, deterministic gates, exploratory results, clean-machine test,
+  first-attempt uninstall, and final go/no-go decision for each release.
+- [`CHANGELOG.md`](CHANGELOG.md) records user-facing changes.
 
 ## Security Guardrails
 
@@ -268,6 +345,13 @@ These controls reduce risk but do not claim perfect prompt-injection prevention.
 ## License
 
 MIT License. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Contributing and Support
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development and pull-request guidance,
+[`SUPPORT.md`](SUPPORT.md) for support channels and diagnostic information, and
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for community expectations. Report
+suspected vulnerabilities privately as described in [`SECURITY.md`](SECURITY.md).
 
 ## 💖 Acknowledgments & Recognition
 
