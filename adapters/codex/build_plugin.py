@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -30,33 +31,15 @@ SKILL_ORDER = (
     "prepare-coding-handoff",
     "review-architecture-conformance",
 )
-FOCUSED_SKILL_NAMES = ("evaluate-architecture-options",)
-
-FOCUSED_OPTIONS_OPENAI_YAML = """interface:
-  display_name: "Evaluate Architecture Options"
-  short_description: "Compare architecture and design-pattern choices"
-  default_prompt: >-
-    Use $evaluate-architecture-options to compare credible options and ask me
-    to choose.
-
-policy:
-  allow_implicit_invocation: false
-
-dependencies:
-  tools:
-    - type: "mcp"
-      value: "ai-software-architect-tools"
-      description: "Read-only local contract and Python evidence tools"
-      transport: "stdio"
-"""
 
 GENERATED_FRONTMATTER = """---
 name: ai-software-architect
 description: >-
-  Perform architecture-first analysis, compare credible options, obtain approval,
+  Review a current project, suggest and compare suitable design patterns or
+  architecture styles, explain patterns with stored examples, obtain approval,
   create ADRs and an architecture contract, prepare coding handoffs, or review
-  conformance. Use only when the user explicitly invokes the AI Software Architect
-  for an architecture task.
+  conformance. Use when the user explicitly invokes the AI Software Architect for
+  an architecture task.
 license: MIT
 ---
 <!--
@@ -69,10 +52,16 @@ SPDX-License-Identifier: MIT
 Use the user's Codex model for all reasoning. Never request a separate model API key.
 Act as a direct, collaborative, educational architect; present material decisions
 for approval and do not implement application code in this role.
-Codex entry contract: the plugin distributes this capability, but the workflow runs
-only when the user explicitly invokes `$ai-software-architect`. A plugin `@` mention
-does not replace the `$` skill invocation. For a direct pattern explanation or
-implementation example, the user may instead invoke `$evaluate-architecture-options`.
+Codex entry contract: the plugin distributes this capability. The normal composer
+entry is `$ai-software-architect`; a substantive request launched from the plugin
+page carries Codex's explicit `@` plugin selection and is valid too. A plugin
+selection without a request is incomplete. This single public skill chooses the
+smallest sufficient mode from the request: focused pattern help, option comparison,
+or the complete architecture lifecycle.
+Route a definition, implementation example, or named-pattern explanation to focused
+help without repository inspection, MCP, or artifacts. Route an open choice among
+architectures or patterns to option comparison. Route project analysis, approval,
+decision recording, coding handoff, and conformance review to the complete lifecycle.
 Architecture advice and repository inspection are read-only. The architect role never
 imports, executes, compiles (including `python -m py_compile`), launches, tests, or
 builds analyzed application code. Put an explicit implementation or execution request
@@ -93,35 +82,57 @@ and canonical public-reference link; ordinary coding practices need no category.
 Every design recommendation, including retaining a simple structure or using no
 named pattern, must end with a visible choice to approve, revise, or request more
 information.
-End every `$ai-software-architect` final response with exactly one hidden outcome
-marker: `<!-- ai-architect-outcome: clarify -->` when material input is needed,
-`<!-- ai-architect-outcome: recommendation -->` when a decision awaits the user,
-or `<!-- ai-architect-outcome: complete -->` when no architecture decision is
-pending. A recommendation must also include exactly one
-`<!-- ai-architect-actions: approve, revise, more-information -->` marker
-immediately before visible, localized decision guidance, followed by its outcome
-marker. The other outcomes must not include the action marker.
-For a single recommendation, put the full recommendation first and place the shape and
-action markers only before the final user-decision sentence; no heading or additional
-recommendation content may follow those markers.
+The immediate answer to a clarification or decision request remains in this
+workflow without another skill invocation. After approval of a project-bound
+material decision, do not merely acknowledge approval: enter `record_and_handoff`
+and safely create and validate the ADR, architecture contract, context, and coding
+handoff. Preserve an explicit no-create/no-modify restriction, explain when a
+projectless task cannot persist artifacts, and never treat architecture approval
+as authorization to modify application code.
+Return only user-facing Markdown. Never emit internal `ai-architect` control
+markers or HTML comments because Codex may display them. Clarifications end with
+their focused visible question. Open architecture or pattern selections use the
+canonical six-section comparison contract. Every recommendation ends with
+`## Your decision` and ordinary visible guidance asking the user to approve,
+revise, or request more information. For a single recommendation, put the full
+recommendation first and keep that final section limited to the user-decision
+prompt. Completed recording, handoff, review, or informational work states its
+result plainly.
 For generic architecture guidance, pattern explanations, or implementation examples,
-use the routed skill reference directly and do not call MCP tools. Call MCP tools only
-when the requested task actually requires repository evidence or artifact validation.
+loading the exact routed bundled reference is a hard gate: do not answer from model
+memory, and disclose an unavailable reference instead of inventing an example.
+Reproduce the canonical example for a generic request and do not browse merely to
+discover or verify deterministic canonical links; use the bundled generated
+reference catalog and do not call MCP tools for focused reference help. Call MCP
+tools only when the requested task actually requires repository
+evidence or artifact validation.
 The bundled Codex control-plane hook is defense in depth: it reinforces explicit
-routing, injects one explicitly matched bundled reference, blocks MCP operations that
-are structurally outside a focused skill route, blocks repository execution and
-application-code edits during architect turns, validates the focused option-comparison
-rendering, and checks the complete workflow's stable outcome/action markers once when
-the user has trusted it. It does not infer semantic workflow phases from natural-
-language keywords. Correctness must not depend on hook availability.
+activation, blocks repository execution and application-code edits during architect
+turns, validates stable visible option-comparison rendering when present, and rejects
+leaked internal response markers when the user has trusted it. It does not select a
+semantic mode or infer workflow phases from natural-language keywords.
+Correctness must not depend on hook availability.
+The installed Composite is already active when these instructions are present. Do
+not try to rediscover its `SKILL.md` with workspace tools and do not report the skill
+unavailable merely because its installation path is not exposed as a workspace file.
 For deterministic Python evidence in Codex, read only relevant workspace files with
-native file tools. Prefer bounded `dependency_statements` for routine static import
-scans; use `source_files` when full AST context or higher assurance matters. The Codex
-MCP surface accepts no workspace root and exposes no ADR-listing tool. Inspect
+native file tools. `analyze_python_dependencies` accepts bounded
+`dependency_statements` only and never complete source files. Reserve `source_files`
+for approved higher-assurance `check_python_architecture_boundaries` calls; disclose
+the limitation when interactive data-transfer approval is unavailable. The Codex MCP
+surface accepts no workspace root and exposes no ADR-listing tool. Inspect
 `.ai-architect/` through host-native read-only tools.
 Call `validate_complete_architecture_contract` only for a complete candidate, set
 `validation_scope` to `complete-candidate-contract`, and inspect `result.valid` before
-claiming validation succeeded.
+claiming validation succeeded. During `record_and_handoff`, prepare all complete
+candidates before any durable patch. Call contract validation with exactly
+`request: {yaml_content: <complete YAML>, validation_scope:
+complete-candidate-contract}`. Scan each candidate with exactly
+`request: {content: <complete content>, artifact_kind:
+<adr|contract|context|implementation-plan>}` and inspect `result.safe_to_write`.
+Never patch durable artifacts first and validate them afterward. Only after every
+required result passes may one reviewable patch persist the approved set under
+`.ai-architect/`.
 
 """
 
@@ -185,6 +196,11 @@ def _build_runtime() -> Path:
         "--onedir",
         "--name",
         "ai-architect-mcp",
+        "--add-data",
+        (
+            f"{ROOT / 'adapters' / 'codex' / 'reference_catalog.json'}"
+            f"{os.pathsep}adapters/codex"
+        ),
         "--distpath",
         str(runtime_dist),
         "--workpath",
@@ -199,27 +215,6 @@ def _build_runtime() -> Path:
     if not executable.is_file():
         raise FileNotFoundError(f"runtime build did not create {executable}")
     return runtime
-
-
-def _copy_focused_skills() -> dict[str, str]:
-    additional_sources: dict[str, str] = {}
-    for name in FOCUSED_SKILL_NAMES:
-        source = SKILLS_ROOT / name
-        target = OUTPUT / "skills" / name
-        shutil.copytree(source, target)
-        agents = target / "agents"
-        agents.mkdir(exist_ok=True)
-        (agents / "openai.yaml").write_text(
-            FOCUSED_OPTIONS_OPENAI_YAML,
-            encoding="utf-8",
-            newline="\n",
-        )
-        for path in sorted(source.rglob("*")):
-            if path.is_file():
-                additional_sources[_relative(path)] = (
-                    target / path.relative_to(source)
-                ).relative_to(OUTPUT).as_posix()
-    return additional_sources
 
 
 def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
@@ -248,7 +243,6 @@ def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
     agents = skill_output / "agents"
     agents.mkdir()
     shutil.copyfile(TEMPLATES / "openai.yaml", agents / "openai.yaml")
-    additional_sources = _copy_focused_skills()
 
     manifest = OUTPUT / ".codex-plugin" / "plugin.json"
     manifest.parent.mkdir(parents=True)
@@ -265,6 +259,9 @@ def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
     hooks = OUTPUT / "hooks"
     hooks.mkdir()
     shutil.copyfile(TEMPLATES / "hooks.json", hooks / "hooks.json")
+    scripts = OUTPUT / "scripts"
+    scripts.mkdir()
+    shutil.copyfile(TEMPLATES / "start-mcp.ps1", scripts / "start-mcp.ps1")
     shutil.copyfile(ROOT / "LICENSE", OUTPUT / "LICENSE")
     shutil.copyfile(ROOT / "NOTICE", OUTPUT / "NOTICE")
     shutil.copyfile(ROOT / "THIRD_PARTY_NOTICES.md", OUTPUT / "THIRD_PARTY_NOTICES.md")
@@ -282,7 +279,7 @@ def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
         "generator": "adapters/codex/build_plugin.py",
         "plugin_version": manifest_payload["version"],
         "source_to_output": dict(sorted(source_to_output.items())),
-        "additional_source_to_output": dict(sorted(additional_sources.items())),
+        "additional_source_to_output": {},
         "output_sha256": {
             path.relative_to(OUTPUT).as_posix(): _hash(path) for path in generated_files
         },

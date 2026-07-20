@@ -116,8 +116,8 @@ or sensitive runner paths.
 Use code, not a model, wherever the condition is mechanically observable. Examples
 include:
 
-- exactly one valid complete-workflow outcome marker;
-- a recommendation includes its decision-action marker and visible guidance;
+- no internal `ai-architect` response marker is exposed;
+- a rendered comparison includes its stable visible sections and decision guidance;
 - no forbidden MCP tool was called;
 - no repository code was executed during a read-only review;
 - no unexpected file or bytecode cache was created;

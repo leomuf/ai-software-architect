@@ -36,9 +36,12 @@ $ExpectedSourcePath = "./plugins/ai-software-architect"
 $RepositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $ValidatorProgram = Join-Path $RepositoryRoot "adapters\codex\validate_plugin.py"
 $RepositoryUvCache = Join-Path $RepositoryRoot ".uv-cache"
-$MarketplaceRoot = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".agents\plugins"
+$UserProfile = [Environment]::GetFolderPath("UserProfile")
+$MarketplaceRoot = Join-Path $UserProfile ".agents\plugins"
 $MarketplaceFile = Join-Path $MarketplaceRoot "marketplace.json"
-$TargetParent = [IO.Path]::GetFullPath((Join-Path $MarketplaceRoot "plugins"))
+# Codex's built-in personal marketplace resolves ./plugins/<name> from the
+# user profile, while marketplace.json itself lives under .agents\plugins.
+$TargetParent = [IO.Path]::GetFullPath((Join-Path $UserProfile "plugins"))
 $Target = [IO.Path]::GetFullPath((Join-Path $TargetParent $PluginName))
 
 function Invoke-Checked {
@@ -79,7 +82,7 @@ function Assert-ManagedTemporaryPath {
 
     $FullPath = [IO.Path]::GetFullPath($Path)
     if (-not (Test-SamePath (Split-Path -Parent $FullPath) $TargetParent)) {
-        throw "Refusing temporary path outside the marketplace plugin directory: $FullPath"
+        throw "Refusing temporary path outside the personal plugin source directory: $FullPath"
     }
     if ((Split-Path -Leaf $FullPath) -notlike ".$PluginName.*") {
         throw "Refusing unexpected temporary marketplace path: $FullPath"
@@ -188,7 +191,7 @@ try {
     }
 
     Write-Host ""
-    Write-Host "Personal marketplace package is ready."
+    Write-Host "Personal marketplace source package is ready."
     Write-Host "Version: $($Manifest.version)"
     Write-Host "Target: $Target"
     Write-Host ""

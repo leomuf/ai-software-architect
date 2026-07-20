@@ -41,10 +41,10 @@ def test_codex_plugin_is_reproducible_and_complete(
 
     manifest = json.loads((second / ".codex-plugin" / "plugin.json").read_text("utf-8"))
     assert manifest["name"] == "ai-software-architect"
-    assert all(
-        "$ai-software-architect" in prompt
-        for prompt in manifest["interface"]["defaultPrompt"]
-    )
+    default_prompts = manifest["interface"]["defaultPrompt"]
+    assert all("$ai-software-architect" not in prompt for prompt in default_prompts)
+    assert all("plugin://ai-software-architect" not in prompt for prompt in default_prompts)
+    assert "Suggest suitable design patterns for my current project." in default_prompts
     assert manifest["license"] == "MIT"
     assert manifest["mcpServers"] == "./.mcp.json"
     assert not (second / ".codex-plugin" / ".mcp.json").exists()
@@ -55,28 +55,41 @@ def test_codex_plugin_is_reproducible_and_complete(
     skill_text = (skill / "SKILL.md").read_text("utf-8")
     assert len(skill_text.splitlines()) <= 500
     assert all(f"Canonical module: `{name}`" in skill_text for name in build_plugin.SKILL_ORDER)
-    assert "<!-- ai-architect-outcome: clarify -->" in skill_text
-    assert "<!-- ai-architect-outcome: recommendation -->" in skill_text
-    assert "<!-- ai-architect-outcome: complete -->" in skill_text
-    assert "<!-- ai-architect-actions: approve, revise, more-information -->" in skill_text
+    assert "Return only user-facing Markdown" in skill_text
+    assert "Every recommendation ends with" in skill_text
+    for marker in (
+        "ai-architect-outcome:",
+        "ai-architect-decision-shape:",
+        "ai-architect-actions:",
+    ):
+        assert marker not in skill_text
     assert len(list((skill / "references").iterdir())) == 51
     assert len(list((skill / "assets").iterdir())) == 3
-    focused = second / "skills" / "evaluate-architecture-options"
-    assert (focused / "SKILL.md").is_file()
-    assert (focused / "references" / "gof-abstract-factory.md").is_file()
-    focused_metadata = yaml.safe_load((focused / "agents" / "openai.yaml").read_text("utf-8"))
-    assert focused_metadata["policy"]["allow_implicit_invocation"] is False
+    assert {path.name for path in (second / "skills").iterdir() if path.is_dir()} == {
+        "ai-software-architect"
+    }
+    assert (skill / "references" / "gof-abstract-factory.md").is_file()
 
     metadata = yaml.safe_load((skill / "agents" / "openai.yaml").read_text("utf-8"))
+    assert metadata["interface"]["short_description"] == (
+        "Suggest project-fit patterns and guide architecture decisions"
+    )
     assert metadata["policy"]["allow_implicit_invocation"] is False
     assert metadata["dependencies"]["tools"][0]["transport"] == "stdio"
 
     mcp_config = json.loads((second / ".mcp.json").read_text("utf-8"))
-    server = mcp_config["mcpServers"]["ai-software-architect-tools"]
-    assert server["command"] == ("./runtime/windows-x86_64/ai-architect-mcp/ai-architect-mcp.exe")
-    assert server["args"] == []
+    server = mcp_config["mcpServers"]["ai-software-architect-mcp"]
+    assert server["command"] == "powershell.exe"
+    assert server["args"][-2:] == ["-File", "./scripts/start-mcp.ps1"]
+    assert (second / "scripts" / "start-mcp.ps1").is_file()
     assert server["cwd"] == "."
-    assert (second / server["command"].removeprefix("./")).is_file()
+    assert (
+        second
+        / "runtime"
+        / "windows-x86_64"
+        / "ai-architect-mcp"
+        / "ai-architect-mcp.exe"
+    ).is_file()
     hooks = json.loads((second / "hooks" / "hooks.json").read_text("utf-8"))
     assert set(hooks["hooks"]) == {"UserPromptSubmit", "PreToolUse", "Stop"}
     assert "--codex-hook" in str(hooks)
@@ -87,10 +100,7 @@ def test_codex_plugin_is_reproducible_and_complete(
     provenance = json.loads((second / "provenance.json").read_text("utf-8"))
     assert provenance["generator"] == "adapters/codex/build_plugin.py"
     assert len(provenance["source_to_output"]) == 60
-    assert (
-        "shared/skills/evaluate-architecture-options/SKILL.md"
-        in (provenance["additional_source_to_output"])
-    )
+    assert provenance["additional_source_to_output"] == {}
     for relative, expected_hash in provenance["output_sha256"].items():
         assert hashlib.sha256((second / relative).read_bytes()).hexdigest() == expected_hash
 
@@ -101,9 +111,7 @@ def test_codex_plugin_is_reproducible_and_complete(
     versioned_manifest_path = versioned / ".codex-plugin" / "plugin.json"
     versioned_manifest = json.loads(versioned_manifest_path.read_text("utf-8"))
     assert versioned_manifest["version"] == "0.1.0+codex.test-cachebuster"
-    versioned_provenance = json.loads(
-        (versioned / "provenance.json").read_text("utf-8")
-    )
+    versioned_provenance = json.loads((versioned / "provenance.json").read_text("utf-8"))
     assert versioned_provenance["plugin_version"] == versioned_manifest["version"]
     assert (
         versioned_provenance["output_sha256"][".codex-plugin/plugin.json"]

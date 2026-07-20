@@ -12,6 +12,28 @@ behavior as well as the manual gates that remain necessary before a release.
 The initial supported package is Windows x86-64. Future coding-agent adapters and
 operating-system packages require their own validated release procedures.
 
+## PowerShell Execution Policy
+
+If PowerShell reports that running scripts is disabled, inspect the effective
+policies first:
+
+```powershell
+Get-ExecutionPolicy -List
+```
+
+On a personal computer, prefer a user-scoped setting:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+This normally does not require Administrator rights and does not alter the
+machine-wide policy. Review repository scripts before running them. Do not
+override an organization-managed `MachinePolicy` or `UserPolicy`; follow the
+policy approved by the administrator for that environment. A temporary,
+process-scoped alternative is documented in
+[`scripts/README.md`](../scripts/README.md#powershell-execution-policy).
+
 ## Release Documentation Map
 
 | Concern | Canonical location |
@@ -148,7 +170,7 @@ Its AI Software Architect entry should resolve
 `./plugins/ai-software-architect`, making the package target:
 
 ```text
-~/.agents/plugins/plugins/ai-software-architect/
+~/plugins/ai-software-architect/
 ```
 
 Preview the exact destination and operation without changing marketplace files:
@@ -190,7 +212,7 @@ After copying the package:
 If **Update** is not shown:
 
 1. verify the version in
-   `~/.agents/plugins/plugins/ai-software-architect/.codex-plugin/plugin.json`;
+   `~/plugins/ai-software-architect/.codex-plugin/plugin.json`;
 2. confirm that it differs from the installed version;
 3. refresh or restart Codex Desktop; and
 4. reopen the plugin from the **Personal** marketplace.
@@ -252,8 +274,9 @@ For the initial beta:
 
 - use `gpt-5.6-sol` with medium reasoning;
 - use a new Codex task for each independent fixture;
-- select the exact release-candidate plugin and invoke the skill specified by the
-  fixture;
+- install the exact release-candidate plugin, then invoke
+  `$ai-software-architect` directly for every fixture; do not add an `@` plugin
+  mention;
 - assess every expected and forbidden behavior;
 - record repository status and side effects;
 - do not retry a behavioral failure merely to obtain a better answer; and
@@ -265,7 +288,8 @@ This gate is required even after future model-evaluation automation exists:
 
 1. Install or update the exact candidate through the Plugins window.
 2. Review and activate its current hook definitions.
-3. Confirm explicit main-skill and focused-skill activation.
+3. Confirm the single `$ai-software-architect` skill covers focused help and the
+   complete lifecycle without an `@` plugin mention.
 4. Confirm expected hook and MCP behavior in at least one complete workflow.
 5. Run the candidate from multiple tasks.
 6. Keep Codex Desktop open and uninstall on the first attempt.

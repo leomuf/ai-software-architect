@@ -1,8 +1,16 @@
 {
   "mcpServers": {
-    "ai-software-architect-tools": {
-      "command": "./runtime/windows-x86_64/ai-architect-mcp/ai-architect-mcp.exe",
-      "args": [],
+    "ai-software-architect-mcp": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "./scripts/start-mcp.ps1"
+      ],
       "cwd": "."
     }
   }

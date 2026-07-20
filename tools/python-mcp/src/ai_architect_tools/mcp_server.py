@@ -20,9 +20,9 @@ from ai_architect_schemas import (
     CompleteContractValidationInput,
     ConformanceReport,
     ContractValidationResult,
+    DependencyAnalysisInput,
     DependencyGraphEvidence,
     InlineBoundaryCheckInput,
-    InlineRepositoryAnalysisInput,
     ToolError,
 )
 from mcp.server.fastmcp import FastMCP
@@ -42,28 +42,13 @@ INSTRUCTIONS = (
     "each, plus 5,000 edges, 60 seconds, and 200 process calls."
 )
 
-mcp = FastMCP("ai-software-architect-tools", instructions=INSTRUCTIONS, log_level="ERROR")
+mcp = FastMCP("ai-software-architect-mcp", instructions=INSTRUCTIONS, log_level="ERROR")
 _tool_calls = 0
 MAX_TOOL_CALLS = 200
-DEFAULT_IDLE_SECONDS = 120.0
-MIN_IDLE_SECONDS = 10.0
-MAX_IDLE_SECONDS = 3_600.0
+IDLE_SELF_REAP_SECONDS = 15.0
 _activity_lock = threading.Lock()
 _active_calls = 0
 _last_activity = time.monotonic()
-
-
-def _configured_idle_seconds() -> float:
-    raw = os.environ.get("AI_ARCHITECT_MCP_IDLE_SECONDS")
-    if raw is None:
-        return DEFAULT_IDLE_SECONDS
-    try:
-        value = float(raw)
-    except ValueError:
-        return DEFAULT_IDLE_SECONDS
-    if not MIN_IDLE_SECONDS <= value <= MAX_IDLE_SECONDS:
-        return DEFAULT_IDLE_SECONDS
-    return value
 
 
 def _parent_is_alive(parent_pid: int) -> bool:
@@ -91,9 +76,14 @@ def _parent_is_alive(parent_pid: int) -> bool:
     return True
 
 
-def _idle_expired(now: float, idle_seconds: float) -> bool:
-    with _activity_lock:
-        return _active_calls == 0 and now - _last_activity >= idle_seconds
+def _should_self_reap(
+    *,
+    active_calls: int,
+    last_activity: float,
+    now: float,
+    idle_seconds: float = IDLE_SELF_REAP_SECONDS,
+) -> bool:
+    return active_calls == 0 and now - last_activity >= idle_seconds
 
 
 @contextmanager
@@ -113,11 +103,17 @@ def _tool_activity() -> Iterator[None]:
 def _watch_process_lifecycle(
     stop_event: threading.Event,
     parent_pid: int,
-    idle_seconds: float,
 ) -> None:
-    interval = min(1.0, idle_seconds / 4)
-    while not stop_event.wait(interval):
-        if not _parent_is_alive(parent_pid) or _idle_expired(time.monotonic(), idle_seconds):
+    while not stop_event.wait(1.0):
+        if not _parent_is_alive(parent_pid):
+            os._exit(0)
+        with _activity_lock:
+            should_self_reap = _should_self_reap(
+                active_calls=_active_calls,
+                last_activity=_last_activity,
+                now=time.monotonic(),
+            )
+        if should_self_reap:
             os._exit(0)
 
 
@@ -154,7 +150,7 @@ def _workspace_error(exc: WorkspaceAccessError) -> ToolError:
 
 
 def _analysis_reader(
-    request: InlineRepositoryAnalysisInput | InlineBoundaryCheckInput,
+    request: InlineBoundaryCheckInput,
 ) -> InlineSourceReader | ToolError | None:
     if request.dependency_statements:
         return None
@@ -190,19 +186,16 @@ def scan_generated_artifact(
 
 @mcp.tool(name="analyze_python_dependencies")
 async def analyze_repository_dependencies(
-    request: InlineRepositoryAnalysisInput,
+    request: DependencyAnalysisInput,
 ) -> DependencyGraphEvidence | ToolError:
-    """Extract Python imports only from bounded host-supplied sources or import statements."""
+    """Extract Python imports from bounded host-supplied static import statements."""
 
     with _tool_activity():
         if error := _count_call():
             return error
         domain_request = request.to_domain_input()
-        reader = _analysis_reader(request)
-        if isinstance(reader, ToolError):
-            return reader
         try:
-            return analyze_dependencies_domain(reader, domain_request)
+            return analyze_dependencies_domain(None, domain_request)
         except WorkspaceAccessError as exc:
             return _workspace_error(exc)
 
@@ -253,7 +246,7 @@ def main() -> None:
     stop_event = threading.Event()
     watchdog = threading.Thread(
         target=_watch_process_lifecycle,
-        args=(stop_event, os.getppid(), _configured_idle_seconds()),
+        args=(stop_event, os.getppid()),
         name="ai-architect-mcp-lifecycle",
         daemon=True,
     )

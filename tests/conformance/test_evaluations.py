@@ -40,17 +40,11 @@ CAMPAIGN_FIXTURES = {
     "abstract-factory-example.yaml",
     "avoid-overengineering.yaml",
 }
-COMPLETE_WORKFLOW_OUTCOMES = {
-    "clarify-ui-architecture.yaml": "include-complete-workflow-clarify-outcome-marker",
-    "architecture-option-comparison.yaml": (
-        "include-complete-workflow-recommendation-outcome-marker"
-    ),
-    "read-only-architecture-review.yaml": (
-        "include-complete-workflow-recommendation-outcome-marker"
-    ),
-    "avoid-overengineering.yaml": (
-        "include-complete-workflow-recommendation-outcome-marker"
-    ),
+COMPLETE_WORKFLOW_EXPECTATIONS = {
+    "clarify-ui-architecture.yaml": "end-with-one-visible-focused-question",
+    "architecture-option-comparison.yaml": "use-visible-comparison-sections",
+    "read-only-architecture-review.yaml": "use-a-visible-single-recommendation-shape",
+    "avoid-overengineering.yaml": "use-a-proportionate-visible-recommendation-shape",
 }
 
 
@@ -93,6 +87,11 @@ def test_architecture_option_comparison_fixture_is_mapped() -> None:
         "import-execute-compile-launch-test-or-build-repository-code"
         in fixture["forbidden_actions"]
     )
+    assert (
+        "patch-durable-artifacts-before-required-validation"
+        in fixture["continuation"]["forbidden_actions"]
+    )
+    assert "leave-application-source-unchanged" in fixture["continuation"]["expected"]
     assert manifest["scenarios"]["FLOW-004"]["fixture"] == (
         "shared/evaluations/model-fixtures/architecture-option-comparison.yaml"
     )
@@ -111,14 +110,18 @@ def test_exploratory_campaign_covers_all_five_natural_prompts() -> None:
             )
         )
         activation = fixture["activation"]
-        assert activation["plugin_mention"].startswith("[@AI Software Architect]")
-        assert activation["skill_invocation"].startswith("$")
+        assert "plugin_mention" not in activation
+        assert activation["skill_invocation"] == "$ai-software-architect"
         assert fixture["prompt"]
         assert fixture["expected"]
         assert fixture["forbidden_actions"]
-        expected_outcome = COMPLETE_WORKFLOW_OUTCOMES.get(filename)
-        if expected_outcome is not None:
-            assert expected_outcome in fixture["expected"]
+        visible_shape = COMPLETE_WORKFLOW_EXPECTATIONS.get(filename)
+        if visible_shape is not None:
+            assert (
+                "return-user-facing-markdown-without-internal-control-markers"
+                in fixture["expected"]
+            )
+            assert visible_shape in fixture["expected"]
 
 
 def test_avoid_overengineering_fixture_requires_evidence_minimization() -> None:

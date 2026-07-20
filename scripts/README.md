@@ -9,18 +9,39 @@ These PowerShell scripts make the documented Codex plugin build and release
 commands repeatable. Run them from a PowerShell terminal in the repository root.
 They require Windows PowerShell 5.1 or later, `git`, and `uv`.
 
-Review scripts before running them, especially when they have changed. If the
-current execution policy permits local scripts, use the short commands below. If
-PowerShell reports that script execution is disabled, use the process-scoped form
-shown next; it does not change machine-wide or account-wide policy:
+## PowerShell Execution Policy
+
+Review scripts before running them, especially when they have changed. If
+PowerShell reports that running scripts is disabled, inspect the effective
+policies:
+
+```powershell
+Get-ExecutionPolicy -List
+```
+
+On a personal computer, prefer enabling signed remote scripts for only the
+current user:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+This normally does not require Administrator rights. It is safer and narrower
+than starting an elevated terminal and changing the default machine-wide scope.
+
+For a single reviewed invocation without a persistent account-wide change, use
+the process-scoped form:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-codex-plugin.ps1
 ```
 
 Apply the same prefix to the other script and put its parameters after the
-script path. An organization-managed policy may still prohibit this; follow the
-policy approved for that environment rather than changing it.
+script path. `Bypass` applies only to that new PowerShell process, but it also
+disables execution-policy checks there, so use it only for a script you have
+reviewed. An organization-managed `MachinePolicy` or `UserPolicy` may still
+prohibit either approach; do not override it—follow the administrator-approved
+policy for that environment.
 
 When `UV_CACHE_DIR` is not already configured, the scripts use the repository's
 ignored `.uv-cache/` directory. An explicitly configured cache is preserved.
@@ -67,8 +88,11 @@ Validate and copy the package:
 
 The script checks the source package, the plugin name, and the existing default
 personal-marketplace entry. It stages and validates a copy before replacing the
-old package, restores the previous package if replacement fails, and never edits
-`marketplace.json` or Codex's installed-plugin cache.
+old package in `~/plugins/ai-software-architect`, restores the previous package
+if replacement fails, and never edits `marketplace.json` or Codex's
+installed-plugin cache. Codex resolves the built-in Personal marketplace's
+`./plugins/...` source from the user profile even though its catalog is stored
+under `~/.agents/plugins/marketplace.json`.
 
 After it completes, use the Codex Desktop Plugins window to select **Install** or
 **Update**, review and activate the hooks, and start a new task. The script does

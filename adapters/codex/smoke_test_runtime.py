@@ -28,6 +28,35 @@ EXPECTED_TOOLS = {
 
 async def smoke_test(executable: Path) -> None:
     parameters = StdioServerParameters(command=str(executable.resolve()), args=[])
+    await _exercise_mcp(parameters)
+
+
+async def smoke_test_cache_safe_launcher(executable: Path) -> None:
+    plugin_root = executable.resolve().parents[3]
+    server = json.loads((plugin_root / ".mcp.json").read_text("utf-8"))[
+        "mcpServers"
+    ]["ai-software-architect-mcp"]
+    powershell = shutil.which(server["command"])
+    if powershell is None:
+        raise RuntimeError("the packaged MCP launcher requires Windows PowerShell")
+    with tempfile.TemporaryDirectory() as local_app_data:
+        environment = os.environ.copy()
+        environment.pop("PLUGIN_DATA", None)
+        environment.pop("PLUGIN_ROOT", None)
+        environment["LOCALAPPDATA"] = local_app_data
+        parameters = StdioServerParameters(
+            command=powershell,
+            args=server["args"],
+            cwd=plugin_root,
+            env=environment,
+        )
+        await _exercise_mcp(parameters)
+        runtime_root = Path(local_app_data) / "AI Software Architect" / "plugin-runtime"
+        if runtime_root.exists() and any(runtime_root.rglob("ai-architect-mcp.exe")):
+            raise RuntimeError("the cache-safe launcher left a session runtime behind")
+
+
+async def _exercise_mcp(parameters: StdioServerParameters) -> None:
     with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as errlog:
         async with stdio_client(parameters, errlog=cast(TextIO, errlog)) as (
             read_stream,
@@ -137,7 +166,7 @@ def smoke_test_hook(executable: Path) -> None:
         )
         response = json.loads(result.stdout)
         context = response["hookSpecificOutput"]["additionalContext"]
-        if "Route: complete architecture workflow" not in context:
+        if "Route: model-selected workflow" not in context:
             raise RuntimeError(f"hook routing smoke test failed: {response}")
         if result.stderr:
             raise RuntimeError(f"hook runtime wrote to stderr:\n{result.stderr}")
@@ -167,20 +196,15 @@ def smoke_test_hook(executable: Path) -> None:
             check=True,
         )
         shell_response = json.loads(shell_guard.stdout)
-        if (
-            shell_response.get("hookSpecificOutput", {}).get(
-                "permissionDecision"
-            )
-            != "deny"
-            or "does not run interpreters"
-            not in shell_response.get("hookSpecificOutput", {}).get(
-                "permissionDecisionReason",
-                "",
-            )
+        if shell_response.get("hookSpecificOutput", {}).get(
+            "permissionDecision"
+        ) != "deny" or "does not run interpreters" not in shell_response.get(
+            "hookSpecificOutput", {}
+        ).get(
+            "permissionDecisionReason",
+            "",
         ):
-            raise RuntimeError(
-                f"read-only shell guard smoke test failed: {shell_response}"
-            )
+            raise RuntimeError(f"read-only shell guard smoke test failed: {shell_response}")
         if shell_guard.stderr:
             raise RuntimeError(
                 f"read-only shell hook runtime wrote to stderr:\n{shell_guard.stderr}"
@@ -192,7 +216,8 @@ def smoke_test_hook(executable: Path) -> None:
             "hook_event_name": "Stop",
             "stop_hook_active": False,
             "last_assistant_message": (
-                "I recommend a modular monolith.\n\n"
+                "## Your decision\n"
+                "Please approve, revise, or ask for more information.\n\n"
                 "<!-- ai-architect-outcome: recommendation -->"
             ),
         }
@@ -214,24 +239,17 @@ def smoke_test_hook(executable: Path) -> None:
         outcome_response = json.loads(outcome_guard.stdout)
         if (
             outcome_response.get("decision") != "block"
-            or "approve, revise, more-information action marker"
+            or "remove internal control markers or HTML comments"
             not in outcome_response.get("reason", "")
         ):
-            raise RuntimeError(
-                f"complete-workflow outcome guard failed: {outcome_response}"
-            )
+            raise RuntimeError(f"visible-response marker guard failed: {outcome_response}")
         if outcome_guard.stderr:
             raise RuntimeError(
-                "complete-workflow outcome guard wrote to stderr:\n"
-                f"{outcome_guard.stderr}"
+                f"visible-response marker guard wrote to stderr:\n{outcome_guard.stderr}"
             )
 
         payload["turn_id"] = "smoke-turn-missing-skill"
-        payload["prompt"] = (
-            "[@AI Software Architect]"
-            "(plugin://ai-software-architect@personal) "
-            "Suggest design templates for my project."
-        )
+        payload["prompt"] = "[@AI Software Architect](plugin://ai-software-architect@personal)"
         missing_skill = subprocess.run(  # noqa: S603
             [
                 powershell,
@@ -248,24 +266,49 @@ def smoke_test_hook(executable: Path) -> None:
             check=True,
         )
         missing_response = json.loads(missing_skill.stdout)
-        if (
-            missing_response.get("decision") != "block"
-            or "$ai-software-architect" not in missing_response.get("reason", "")
-            or "$evaluate-architecture-options"
-            not in missing_response.get("reason", "")
-        ):
-            raise RuntimeError(
-                f"missing-skill hook smoke test failed: {missing_response}"
-            )
+        if missing_response.get(
+            "decision"
+        ) != "block" or "$ai-software-architect" not in missing_response.get("reason", ""):
+            raise RuntimeError(f"missing-skill hook smoke test failed: {missing_response}")
         if missing_skill.stderr:
             raise RuntimeError(
                 f"missing-skill hook runtime wrote to stderr:\n{missing_skill.stderr}"
             )
 
-        payload["turn_id"] = "smoke-turn-pattern-reference"
+        payload["turn_id"] = "smoke-turn-plugin-page-request"
         payload["prompt"] = (
-            "$evaluate-architecture-options Give an Abstract Factory Python example."
+            "[@AI Software Architect]"
+            "(plugin://ai-software-architect@personal) "
+            "Suggest suitable design patterns for my current project."
         )
+        plugin_page_request = subprocess.run(  # noqa: S603
+            [
+                powershell,
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                command,
+            ],
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+            env=environment,
+            timeout=10,
+            check=True,
+        )
+        plugin_page_response = json.loads(plugin_page_request.stdout)
+        plugin_page_context = plugin_page_response["hookSpecificOutput"]["additionalContext"]
+        if "Route: model-selected workflow" not in plugin_page_context:
+            raise RuntimeError(
+                f"plugin-page request hook smoke test failed: {plugin_page_response}"
+            )
+        if plugin_page_request.stderr:
+            raise RuntimeError(
+                f"plugin-page request hook runtime wrote to stderr:\n{plugin_page_request.stderr}"
+            )
+
+        payload["turn_id"] = "smoke-turn-pattern-reference"
+        payload["prompt"] = "$ai-software-architect Give an Abstract Factory Python example."
         pattern_reference = subprocess.run(  # noqa: S603
             [
                 powershell,
@@ -284,17 +327,16 @@ def smoke_test_hook(executable: Path) -> None:
         pattern_response = json.loads(pattern_reference.stdout)
         pattern_context = pattern_response["hookSpecificOutput"]["additionalContext"]
         if (
-            "<bundled-canonical-reference>" not in pattern_context
-            or "from typing import Protocol" not in pattern_context
-            or "Do not fetch another copy from the web" not in pattern_context
+            "smallest sufficient mode" not in pattern_context
+            or "references/gof-abstract-factory.md" not in pattern_context
+            or "do not answer from memory" not in pattern_context
         ):
             raise RuntimeError(
-                f"bundled pattern injection smoke test failed: {pattern_response}"
+                f"single-skill pattern-routing smoke test failed: {pattern_response}"
             )
         if pattern_reference.stderr:
             raise RuntimeError(
-                "pattern-reference hook runtime wrote to stderr:\n"
-                f"{pattern_reference.stderr}"
+                f"pattern-reference hook runtime wrote to stderr:\n{pattern_reference.stderr}"
             )
 
 
@@ -303,6 +345,7 @@ def main() -> None:
     parser.add_argument("executable", type=Path)
     args = parser.parse_args()
     asyncio.run(smoke_test(args.executable))
+    asyncio.run(smoke_test_cache_safe_launcher(args.executable))
     smoke_test_hook(args.executable)
 
 

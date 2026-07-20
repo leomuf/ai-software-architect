@@ -68,7 +68,7 @@ Unresolved infrastructure errors: `<none or details>`
 - [ ] exact candidate installed or updated through the Plugins window
 - [ ] current hook definitions reviewed and activated
 - [ ] displayed version matches the candidate
-- [ ] main and focused skills activate explicitly
+- [ ] the single `$ai-software-architect` skill invokes without an `@` plugin mention
 - [ ] expected hook and MCP behavior confirmed
 - [ ] candidate exercised from multiple tasks
 - [ ] first-attempt uninstall succeeded while Codex remained open

@@ -22,16 +22,31 @@ an explicit fallback.
       exploratory fixtures with `gpt-5.6-sol` at medium reasoning.
 - [ ] Confirm that the complete workflow still performs the clarification,
       repository review, and proportionality behaviors through host-native model
-      reasoning without language-specific hook routing, emits exactly one
-      `clarify`, `recommendation`, or `complete` outcome marker, and requires the
-      decision-action marker only for `recommendation`.
-- [ ] Confirm that the focused option skill renders its stable comparison contract,
-      including the language-neutral decision-action marker.
-- [ ] Confirm that a focused single-pattern request injects exactly one bundled
-      canonical reference and makes no MCP or web call.
+      reasoning without language-specific hook routing, returns only user-facing
+      Markdown, ends recommendations with visible decision guidance, and accepts
+      the immediately following clarification or approval reply without requiring
+      another skill invocation.
+- [ ] Confirm that the Composite's option-comparison mode renders its stable contract,
+      with no internal response markers or HTML comments.
+- [ ] Confirm that a single-pattern request loads only its bundled canonical
+      reference and makes no MCP or web call.
+- [ ] Ensure that a continued architecture comparison uses only bundled canonical
+      references and never searches or opens the public GitHub repository merely
+      to discover reference content or filenames.
+- [ ] Fix and regression-test canonical reference resolution in corrected
+      continuation responses; in particular, Dependency Injection must link to
+      `dependency-injection.md`, and a response must not escape with a second
+      reference defect after the one permitted Stop-hook correction.
+- [ ] Confirm that routine dependency reviews submit only bounded
+      `dependency_statements`; full source remains limited to an approved
+      architecture-boundary check.
+- [ ] Measure and reduce exploratory-response latency, especially comparison and
+      read-only-review workflows that currently take roughly 90–100 seconds.
+      Separate model latency, unnecessary browsing, MCP startup, and Stop-hook
+      correction cost before choosing an optimization.
 - [ ] Verify native Codex Desktop uninstall on the first attempt immediately after
       a multi-task campaign while Codex remains open, with no manual process
-      termination, 120-second retry delay, or plugin-cache editing; capture process
+      termination, 15-second retry delay, or plugin-cache editing; capture process
       ownership if the first attempt fails.
 - [ ] Run the clean-machine Windows x86-64 acceptance gate without Python, `uv`, or
       a first-run dependency download.
@@ -41,6 +56,18 @@ an explicit fallback.
 
 ## Forward compatibility
 
+- [ ] Add a compact architecture diagram (preferably Mermaid) to
+      `tools/python-mcp/README.md` showing how Codex starts the PowerShell
+      launcher, how the packaged MCP runtime is copied into the plugin data
+      directory, and how running the private copy prevents the versioned plugin
+      cache from being locked during uninstall or update.
+- [ ] Add a high-level Mermaid workflow diagram to the Codex section of `README.md`
+      and a detailed counterpart to the specification's **Codex control plane**
+      section. Show the user prompt, `UserPromptSubmit`, deterministic control
+      plane and continuation state, Composite skill, host-model reasoning,
+      reference catalog, optional MCP/native tools guarded by `PreToolUse`, `Stop`
+      validation and bounded correction, the final response, and approved writes
+      limited to `.ai-architect/` artifacts.
 - [ ] Test the plugin on at least two more small Python repositories with different
       structures.
 - [ ] Add a second-language exploratory pass, beginning with German clarification,

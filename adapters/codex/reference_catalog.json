@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "references": [
+    {
+      "name": "Clean Architecture",
+      "category": "Architecture",
+      "filename": "architecture-clean.md",
+      "aliases": []
+    },
+    {
+      "name": "Event-Driven Architecture",
+      "category": "Architecture",
+      "filename": "architecture-event-driven.md",
+      "aliases": []
+    },
+    {
+      "name": "Hexagonal Architecture",
+      "category": "Architecture",
+      "filename": "architecture-hexagonal.md",
+      "aliases": []
+    },
+    {
+      "name": "Layered Architecture",
+      "category": "Architecture",
+      "filename": "architecture-layered.md",
+      "aliases": []
+    },
+    {
+      "name": "Modular Monolith",
+      "category": "Architecture",
+      "filename": "architecture-modular-monolith.md",
+      "aliases": []
+    },
+    {
+      "name": "Ports and Adapters",
+      "category": "Architecture",
+      "filename": "architecture-ports-and-adapters.md",
+      "aliases": []
+    },
+    {
+      "name": "Service-Oriented Architecture",
+      "category": "Architecture",
+      "filename": "architecture-service-oriented.md",
+      "aliases": []
+    },
+    {
+      "name": "Vertical Slice Architecture",
+      "category": "Architecture",
+      "filename": "architecture-vertical-slice.md",
+      "aliases": []
+    },
+    {
+      "name": "Cache-Aside",
+      "category": "Data",
+      "filename": "data-cache-aside.md",
+      "aliases": []
+    },
+    {
+      "name": "Repository",
+      "category": "Data",
+      "filename": "data-repository.md",
+      "aliases": []
+    },
+    {
+      "name": "Unit of Work",
+      "category": "Data",
+      "filename": "data-unit-of-work.md",
+      "aliases": []
+    },
+    {
+      "name": "Dependency Injection",
+      "category": "Dependency",
+      "filename": "dependency-injection.md",
+      "aliases": []
+    },
+    {
+      "name": "Dependency Inversion",
+      "category": "Dependency",
+      "filename": "dependency-inversion.md",
+      "aliases": []
+    },
+    {
+      "name": "Abstract Factory",
+      "category": "GoF",
+      "filename": "gof-abstract-factory.md",
+      "aliases": []
+    },
+    {
+      "name": "Adapter",
+      "category": "GoF",
+      "filename": "gof-adapter.md",
+      "aliases": []
+    },
+    {
+      "name": "Bridge",
+      "category": "GoF",
+      "filename": "gof-bridge.md",
+      "aliases": []
+    },
+    {
+      "name": "Builder",
+      "category": "GoF",
+      "filename": "gof-builder.md",
+      "aliases": []
+    },
+    {
+      "name": "Chain of Responsibility",
+      "category": "GoF",
+      "filename": "gof-chain-of-responsibility.md",
+      "aliases": []
+    },
+    {
+      "name": "Command",
+      "category": "GoF",
+      "filename": "gof-command.md",
+      "aliases": []
+    },
+    {
+      "name": "Composite",
+      "category": "GoF",
+      "filename": "gof-composite.md",
+      "aliases": []
+    },
+    {
+      "name": "Decorator",
+      "category": "GoF",
+      "filename": "gof-decorator.md",
+      "aliases": []
+    },
+    {
+      "name": "Facade",
+      "category": "GoF",
+      "filename": "gof-facade.md",
+      "aliases": []
+    },
+    {
+      "name": "Factory Method",
+      "category": "GoF",
+      "filename": "gof-factory-method.md",
+      "aliases": []
+    },
+    {
+      "name": "Flyweight",
+      "category": "GoF",
+      "filename": "gof-flyweight.md",
+      "aliases": []
+    },
+    {
+      "name": "Interpreter",
+      "category": "GoF",
+      "filename": "gof-interpreter.md",
+      "aliases": []
+    },
+    {
+      "name": "Iterator",
+      "category": "GoF",
+      "filename": "gof-iterator.md",
+      "aliases": []
+    },
+    {
+      "name": "Mediator",
+      "category": "GoF",
+      "filename": "gof-mediator.md",
+      "aliases": []
+    },
+    {
+      "name": "Memento",
+      "category": "GoF",
+      "filename": "gof-memento.md",
+      "aliases": []
+    },
+    {
+      "name": "Observer",
+      "category": "GoF",
+      "filename": "gof-observer.md",
+      "aliases": []
+    },
+    {
+      "name": "Prototype",
+      "category": "GoF",
+      "filename": "gof-prototype.md",
+      "aliases": []
+    },
+    {
+      "name": "Proxy",
+      "category": "GoF",
+      "filename": "gof-proxy.md",
+      "aliases": []
+    },
+    {
+      "name": "Singleton",
+      "category": "GoF",
+      "filename": "gof-singleton.md",
+      "aliases": []
+    },
+    {
+      "name": "State",
+      "category": "GoF",
+      "filename": "gof-state.md",
+      "aliases": []
+    },
+    {
+      "name": "Strategy",
+      "category": "GoF",
+      "filename": "gof-strategy.md",
+      "aliases": []
+    },
+    {
+      "name": "Template Method",
+      "category": "GoF",
+      "filename": "gof-template-method.md",
+      "aliases": []
+    },
+    {
+      "name": "Visitor",
+      "category": "GoF",
+      "filename": "gof-visitor.md",
+      "aliases": []
+    },
+    {
+      "name": "Idempotency",
+      "category": "Integration",
+      "filename": "integration-idempotency.md",
+      "aliases": []
+    },
+    {
+      "name": "Idempotent Consumer",
+      "category": "Integration",
+      "filename": "integration-idempotent-consumer.md",
+      "aliases": []
+    },
+    {
+      "name": "Publish/Subscribe",
+      "category": "Integration",
+      "filename": "integration-publish-subscribe.md",
+      "aliases": []
+    },
+    {
+      "name": "Saga",
+      "category": "Integration",
+      "filename": "integration-saga.md",
+      "aliases": []
+    },
+    {
+      "name": "Transactional Outbox",
+      "category": "Integration",
+      "filename": "integration-transactional-outbox.md",
+      "aliases": []
+    },
+    {
+      "name": "Anti-Corruption Layer",
+      "category": "Modernization",
+      "filename": "modernization-anti-corruption-layer.md",
+      "aliases": []
+    },
+    {
+      "name": "Model-View-Controller",
+      "category": "Presentation",
+      "filename": "presentation-model-view-controller.md",
+      "aliases": [
+        "mvc"
+      ]
+    },
+    {
+      "name": "Circuit Breaker",
+      "category": "Resilience",
+      "filename": "resilience-circuit-breaker.md",
+      "aliases": []
+    },
+    {
+      "name": "Retry and Backoff",
+      "category": "Resilience",
+      "filename": "resilience-retry-and-backoff.md",
+      "aliases": []
+    },
+    {
+      "name": "Timeout and Deadline Propagation",
+      "category": "Resilience",
+      "filename": "resilience-timeout-and-deadline.md",
+      "aliases": []
+    }
+  ]
+}

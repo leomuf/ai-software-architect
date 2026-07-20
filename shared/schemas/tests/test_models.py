@@ -9,6 +9,7 @@ from ai_architect_schemas import (
     ArchitectureDecision,
     ArchitectureOptionComparison,
     ArtifactSecretScanResult,
+    DependencyAnalysisInput,
     DependencyStatementInput,
     EvidenceClaim,
     RepositoryAnalysisInput,
@@ -146,6 +147,34 @@ def test_dependency_statement_contract_preserves_text_and_rejects_duplicate_line
                     statement="import pathlib",
                 ),
             ]
+        )
+
+
+def test_codex_dependency_analysis_accepts_statements_and_rejects_source_files() -> None:
+    request = DependencyAnalysisInput(
+        dependency_statements=[
+            DependencyStatementInput(
+                relative_path="app.py",
+                start_line=3,
+                statement="import json",
+            )
+        ]
+    )
+    assert request.to_domain_input().source_files == []
+    with pytest.raises(ValidationError, match="Extra inputs"):
+        DependencyAnalysisInput.model_validate(
+            {
+                "dependency_statements": [
+                    {
+                        "relative_path": "app.py",
+                        "start_line": 3,
+                        "statement": "import json",
+                    }
+                ],
+                "source_files": [
+                    {"relative_path": "app.py", "content": "import json\n"}
+                ],
+            }
         )
 
 

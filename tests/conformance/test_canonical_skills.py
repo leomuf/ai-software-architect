@@ -9,6 +9,9 @@ from pathlib import Path
 
 import yaml
 
+from adapters.codex.control_plane import REFERENCE_SPECS
+from adapters.codex.reference_catalog import REFERENCE_CATALOG
+
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = ROOT / "shared" / "skills"
 ALLOWED_PREFIXES = (
@@ -140,12 +143,8 @@ def test_gof_python_examples_are_bounded_parseable_and_side_effect_free() -> Non
 
 def test_user_facing_option_comparison_contract() -> None:
     options = (SKILLS / "evaluate-architecture-options" / "SKILL.md").read_text("utf-8")
-    orchestration = (
-        SKILLS / "orchestrate-architecture-workflow" / "SKILL.md"
-    ).read_text("utf-8")
-    interview = (SKILLS / "conduct-architecture-interview" / "SKILL.md").read_text(
-        "utf-8"
-    )
+    orchestration = (SKILLS / "orchestrate-architecture-workflow" / "SKILL.md").read_text("utf-8")
+    interview = (SKILLS / "conduct-architecture-interview" / "SKILL.md").read_text("utf-8")
 
     assert "three to five credible options" in options
     assert "ordinal fit score" in options
@@ -163,7 +162,7 @@ def test_user_facing_option_comparison_contract() -> None:
         assert f"`{heading}`" in options
     assert "prioritized stack of complementary patterns" in options
     assert "asking the user to approve, revise, or request more information" in options
-    assert "<!-- ai-architect-actions: approve, revise, more-information -->" in options
+    assert "ordinary visible guidance rather than machine-readable comments" in options
     assert "language-neutral `offered_actions`" in options
     assert "generic Python implementation example" in options
     assert "reuse its `Python example`" in options
@@ -174,30 +173,36 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "A project-bound task or available tool is not by itself a reason to inspect" in (
         orchestration
     )
-    assert "This includes a recommendation to retain proportionate simplicity" in (
-        orchestration
-    )
+    assert "This includes a recommendation to retain proportionate simplicity" in (orchestration)
     assert "Never end a design recommendation without a visible approval" in orchestration
-    for outcome in ("clarify", "recommendation", "complete"):
-        assert f"<!-- ai-architect-outcome: {outcome} -->" in orchestration
-    assert "<!-- ai-architect-actions: approve, revise, more-information -->" in (
-        orchestration
-    )
-    assert "<!-- ai-architect-decision-shape: comparison -->" in orchestration
-    assert "<!-- ai-architect-decision-shape: single -->" in orchestration
-    assert "Never use `single` to present a stack of recommended patterns" in orchestration
-    assert "without interpreting localized prose" in orchestration
+    assert "Return only user-facing Markdown" in orchestration
+    assert "Never emit internal `ai-architect` control" in orchestration
+    assert "Every recommendation ends with `## Your decision`" in orchestration
+    assert "Never use a single" in orchestration
+    for marker in (
+        "ai-architect-outcome:",
+        "ai-architect-decision-shape:",
+        "ai-architect-actions:",
+    ):
+        assert marker not in orchestration
+    assert "does not infer" in orchestration
+    assert "the semantic workflow phase from natural-language keywords" in orchestration
     assert "Never call it merely to demonstrate tool availability" in orchestration
     assert "conflicting platform or interface statements" in interview
 
 
+def test_control_plane_reference_registry_matches_canonical_skill_routes() -> None:
+    options = (SKILLS / "evaluate-architecture-options" / "SKILL.md").read_text("utf-8")
+    routed_files = set(re.findall(r"\(references/([^)]+\.md)\)", options))
+    routed_files.discard("no-pattern.md")
+    registered_files = {filename for _, filename in REFERENCE_SPECS.values()}
+    assert registered_files == routed_files
+    assert all(entry.filename in routed_files for entry in REFERENCE_CATALOG.entries)
+
+
 def test_read_only_review_guardrails_are_explicit() -> None:
-    orchestration = (
-        SKILLS / "orchestrate-architecture-workflow" / "SKILL.md"
-    ).read_text("utf-8")
-    review = (SKILLS / "review-architecture-conformance" / "SKILL.md").read_text(
-        "utf-8"
-    )
+    orchestration = (SKILLS / "orchestrate-architecture-workflow" / "SKILL.md").read_text("utf-8")
+    review = (SKILLS / "review-architecture-conformance" / "SKILL.md").read_text("utf-8")
 
     for phrase in (
         "architecture advice and repository inspection as read-only",
@@ -230,7 +235,7 @@ def test_generated_codex_skill_frontloads_observed_regression_guards() -> None:
         "Architecture advice and repository inspection are read-only",
         "prepared coding handoff or an ordinary coding task",
         "python -m py_compile",
-        "open \"which pattern\" request",
+        'open "which pattern" request',
         "ordinal `NN/100` fit",
         "supporting patterns separately",
         "generic architecture guidance",
@@ -239,9 +244,11 @@ def test_generated_codex_skill_frontloads_observed_regression_guards() -> None:
         "A project-bound task or available tool is not by itself evidence",
         "Every design recommendation, including retaining a simple structure",
         "plugin distributes this capability",
-        "explicitly invokes `$ai-software-architect`",
+        "normal composer",
+        "substantive request launched from the plugin",
         "control-plane hook is defense in depth",
-        "does not infer semantic",
+        "does not select a",
+        "semantic mode or infer workflow phases",
         "accepts no workspace root and exposes no ADR-listing tool",
         "inspect `result.valid`",
     ):

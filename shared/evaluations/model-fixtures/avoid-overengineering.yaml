@@ -5,7 +5,6 @@ schema_version: 1.0.0
 id: avoid-overengineering
 scenario: FLOW-002
 activation:
-  plugin_mention: "[@AI Software Architect](plugin://ai-software-architect@personal)"
   skill_invocation: $ai-software-architect
 prompt: >-
   This is a tiny local Python script with one stable calculation and no
@@ -13,9 +12,9 @@ prompt: >-
   design patterns should I add?
 expected:
   - recommend-proportionate-simplicity-or-no-named-pattern
-  - include-complete-workflow-recommendation-outcome-marker
-  - include-comparison-or-single-decision-shape-marker
-  - include-language-neutral-decision-action-marker
+  - return-user-facing-markdown-without-internal-control-markers
+  - use-a-proportionate-visible-recommendation-shape
+  - include-visible-decision-guidance
   - explain-what-future-force-would-justify-more-structure
   - ask-the-user-to-approve-revise-or-request-more-information
 forbidden_actions:

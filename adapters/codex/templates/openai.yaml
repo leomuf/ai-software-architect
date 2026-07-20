@@ -3,8 +3,8 @@
 
 interface:
   display_name: "AI Software Architect"
-  short_description: "Architecture decisions before implementation"
-  default_prompt: "Use $ai-software-architect to design and approve the architecture before implementation."
+  short_description: "Suggest project-fit patterns and guide architecture decisions"
+  default_prompt: "Use $ai-software-architect to suggest project-fit patterns or guide a complete architecture workflow."
 
 policy:
   allow_implicit_invocation: false
@@ -12,7 +12,6 @@ policy:
 dependencies:
   tools:
     - type: "mcp"
-      value: "ai-software-architect-tools"
-      description: "Read-only local contract and repository evidence tools"
+      value: "ai-software-architect-mcp"
+      description: "AI Software Architect MCP: read-only architecture evidence and validation"
       transport: "stdio"
-

@@ -40,35 +40,67 @@ def validate(root: Path) -> None:
             raise ValueError(f"manifest asset is missing: {asset}")
     default_prompts = manifest["interface"].get("defaultPrompt", [])
     if not default_prompts or not all(
-        isinstance(prompt, str) and "$ai-software-architect" in prompt
+        isinstance(prompt, str)
+        and prompt.strip()
+        and "$ai-software-architect" not in prompt
+        and "plugin://ai-software-architect" not in prompt
         for prompt in default_prompts
     ):
-        raise ValueError("every plugin default prompt must explicitly invoke the main skill")
+        raise ValueError("plugin default prompts must contain task text without activation markers")
+    if not any(
+        "design pattern" in prompt.casefold() and "project" in prompt.casefold()
+        for prompt in default_prompts
+    ):
+        raise ValueError("plugin default prompts must include project-fit design-pattern guidance")
     skill_root = root / "skills" / "ai-software-architect"
+    packaged_skills = {path.name for path in (root / "skills").iterdir() if path.is_dir()}
+    if packaged_skills != {"ai-software-architect"}:
+        raise ValueError("the Codex package must expose exactly one user-facing skill")
     skill_text = (skill_root / "SKILL.md").read_text("utf-8")
     _, frontmatter, _ = skill_text.split("---", 2)
     metadata = yaml.safe_load(frontmatter)
     if metadata["name"] != "ai-software-architect" or metadata["license"] != "MIT":
         raise ValueError("generated skill metadata is invalid")
-    required_response_markers = {
-        "<!-- ai-architect-outcome: clarify -->",
-        "<!-- ai-architect-outcome: recommendation -->",
-        "<!-- ai-architect-outcome: complete -->",
-        "<!-- ai-architect-actions: approve, revise, more-information -->",
-    }
-    if not all(marker in skill_text for marker in required_response_markers):
-        raise ValueError("generated skill response-marker contract is incomplete")
+    forbidden_response_markers = (
+        "ai-architect-outcome:",
+        "ai-architect-decision-shape:",
+        "ai-architect-actions:",
+    )
+    if any(marker in skill_text for marker in forbidden_response_markers):
+        raise ValueError("generated skill must not expose internal response markers")
+    for phrase in (
+        "Return only user-facing Markdown",
+        "Every recommendation ends with",
+        "Do not emit internal control markers",
+    ):
+        if phrase not in skill_text:
+            raise ValueError("generated skill visible-response contract is incomplete")
     openai = yaml.safe_load((skill_root / "agents" / "openai.yaml").read_text("utf-8"))
     if openai["policy"]["allow_implicit_invocation"] is not False:
         raise ValueError("implicit invocation must remain disabled")
     mcp = json.loads((root / ".mcp.json").read_text("utf-8"))
-    server = mcp["mcpServers"]["ai-software-architect-tools"]
-    if set(server) != {"command", "args", "cwd"} or server["args"] != [] or server["cwd"] != ".":
+    server = mcp["mcpServers"]["ai-software-architect-mcp"]
+    expected_args = [
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "./scripts/start-mcp.ps1",
+    ]
+    if (
+        set(server) != {"command", "args", "cwd"}
+        or server["command"] != "powershell.exe"
+        or server["args"] != expected_args
+        or server["cwd"] != "."
+    ):
         raise ValueError(
-            "MCP startup must use a fixed executable from the plugin-root working directory"
+            "MCP startup must use the reviewed cache-safe PowerShell launcher"
         )
-    executable = root / server["command"].removeprefix("./")
-    if not executable.is_file() or executable.suffix.casefold() != ".exe":
+    launcher = root / "scripts" / "start-mcp.ps1"
+    executable = root / "runtime/windows-x86_64/ai-architect-mcp/ai-architect-mcp.exe"
+    if not launcher.is_file() or not executable.is_file():
         raise ValueError("bundled MCP executable is missing")
     hooks_path = root / "hooks" / "hooks.json"
     if not hooks_path.is_file():
@@ -90,9 +122,7 @@ def validate(root: Path) -> None:
                         "environment syntax"
                     )
                 if "%PLUGIN_ROOT%" in windows_command:
-                    raise ValueError(
-                        "cmd.exe environment syntax is invalid in a PowerShell hook"
-                    )
+                    raise ValueError("cmd.exe environment syntax is invalid in a PowerShell hook")
     text_files = (
         path
         for path in root.rglob("*")

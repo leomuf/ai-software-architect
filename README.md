@@ -23,6 +23,38 @@ The product is designed for multiple coding agents. One canonical set of skills,
 
 The first implemented adapter is an installable [Codex](https://openai.com/codex/) plugin. GitHub Copilot, Claude Code, Google Antigravity, and other coding-agent integrations are planned but are not yet available. See [Coding Agent Integrations](#coding-agent-integrations) for the status and intended approach for each host.
 
+## End-to-End Demo
+
+The reproducible [`Expense Insights` demo](demo/expense-insights/README.md)
+shows the complete architecture loop on a deliberately concentrated Python
+application:
+
+1. compare credible structures for one architecture decision;
+2. approve one recommendation;
+3. record an ADR, architecture contract, project context, and coding handoff;
+4. preserve application source unchanged; and
+5. review that source against the accepted architecture in a new Codex task.
+
+Use the exact [`demo prompts`](demo/expense-insights/DEMO_PROMPTS.md) to rerun
+the workflow.
+
+## Built with Codex and GPT-5.6
+
+AI Software Architect was designed, implemented, reviewed, and tested
+collaboratively in Codex using **GPT-5.6 Sol** as the primary reasoning model.
+Codex accelerated the conversion of the product specification into Pydantic
+contracts, deterministic Python tools, modular Agent Skills, Codex packaging,
+hook safety controls, documentation, and repeatable tests. GPT-5.6 supported
+the product, architecture, security, and portability decisions and was used
+during repeated exploratory plugin evaluations.
+
+GPT-5.6 also has a meaningful runtime role: when a user invokes the architect,
+the GPT-5.6 model selected in Codex performs the architecture reasoning and
+tool orchestration. The plugin supplies the method, progressively disclosed
+knowledge, response contracts, deterministic safeguards, and bounded local
+evidence tools. It does not call a separate OpenAI API or require another API
+key.
+
 ## Delivery Strategy: Host-Native Instead of a Separate Agent Runtime
 
 The project’s initial concept was a standalone autonomous software-architecture agent. For the first public release, we deliberately chose host-native plugins and adapters instead. This gives a broader audience a simpler installation path and lets people keep using the coding agent, model, credits, tools, sandbox, and permission workflow they already trust—without operating another agent runtime, supplying another model API key, or depending on a hosted service.
@@ -39,6 +71,7 @@ This is intentionally not an unsupervised background agent. The architect runs o
 ## Features
 
 - **Architecture-first reasoning:** discovers constraints, stakeholders, risks, and prioritized quality attributes before implementation.
+- **Project-fit pattern suggestions:** reviews the current project when evidence is needed, compares suitable design patterns and architecture styles, and recommends a proportionate option rather than a generic pattern list.
 - **Focused clarification:** asks a bounded number of questions only when the answers can materially change a decision.
 - **Credible option comparison:** evaluates three to five approaches for one decision when that many are credible, presents an ordinal `NN/100` fit with benefits, liabilities, assumptions, and links, and asks the user to make the final choice.
 - **Clear, trustworthy findings:** clearly distinguishes verified facts from assumptions and possibilities, and shows the evidence behind important conclusions.
@@ -51,7 +84,7 @@ This is intentionally not an unsupervised background agent. The architect runs o
 - **Modular Agent Skills:** separates interviewing, option evaluation, decision creation, coding handoff, and conformance review into reusable skills based on the open `SKILL.md` format.
 - **Progressive disclosure:** initially exposes only skill metadata, loads a workflow when activated, and reads only the architecture references relevant to the current decision.
 - **Ready-to-use Python examples:** every GoF pattern reference includes a compact, syntax-validated implementation example that is loaded only when the pattern is relevant or the user requests it.
-- **Deterministic local tools:** provides a small read-only Python STDIO MCP server for complete-contract validation, Python dependency evidence, architecture-boundary checks, and pre-write secret scanning.
+- **AI Software Architect MCP:** provides a small read-only Python STDIO server (`ai-software-architect-mcp`) for complete-contract validation, Python dependency evidence, architecture-boundary checks, and pre-write secret scanning.
 - **Portable source of truth:** stores accepted architecture state as reviewable Markdown and YAML rather than in a proprietary service.
 
 ## Architecture and Pattern Knowledge
@@ -78,6 +111,7 @@ ai-software-architect/
 ├── adapters/
 │   └── codex/                  # Codex Composite, control plane, packaging, and smoke tests
 ├── tests/                      # Schema, security, conformance, and packaging tests
+├── demo/                       # Reproducible end-to-end architecture workflow
 ├── specs/                      # Approved product and security specification
 ├── docs/                       # Release procedure and per-version evidence
 ├── scripts/                    # Repeatable PowerShell build and release helpers
@@ -103,7 +137,7 @@ The shared architecture method is independent of any one coding agent. Platform 
 
 ### OpenAI Codex — Implemented
 
-The Codex adapter is the current working product. It packages the main Composite workflow and a focused option-evaluation skill, a deterministic hook-based control plane, and a self-contained Windows x86-64 MCP runtime. Codex remains the agent runtime and uses the model and credits selected by the user.
+The Codex adapter is the current working product. It packages one public Composite skill, a deterministic hook-based control plane, and a self-contained Windows x86-64 MCP runtime. The Composite chooses focused pattern help, architecture comparison, or the complete architecture lifecycle from the request. Codex remains the agent runtime and uses the model and credits selected by the user.
 
 The plugin does not install or modify Codex custom-agent or subagent profiles. That keeps normal installation simple and avoids silently changing a user's agent configuration. Advanced users may combine the installed skills and tools with their own custom-agent setup, but this is optional and outside the plugin's installation contract.
 
@@ -117,21 +151,45 @@ The plugin does not install or modify Codex custom-agent or subagent profiles. T
 
 #### Quick Start
 
-Selecting the plugin with `@` makes its bundled capabilities available; it does not by itself run the architect workflow. Explicitly invoke the main skill:
+After installing the plugin, invoke its single skill directly in the Codex
+composer. Examples:
 
 ```text
+$ai-software-architect Suggest suitable design patterns for my current project.
+$ai-software-architect Give me Python examples of Abstract Factory.
 $ai-software-architect Compare suitable architectures for this project.
+$ai-software-architect Record the approved decision and prepare the coding handoff.
 ```
 
-For a direct pattern explanation or stored implementation example, invoke the focused skill:
+Choose the matching skill when Codex opens its completion menu. Codex may render
+the selected skill as a namespaced link such as
+`$ai-software-architect:ai-software-architect`; that is expected. You do **not**
+need to select `@AI Software Architect` first. The same invocation covers
+focused help and the complete lifecycle.
 
-```text
-$evaluate-architecture-options Show me the canonical Python Abstract Factory example.
-```
+The selected Codex model decides whether the request needs a focused explanation,
+an option comparison, or the complete workflow. Implicit invocation is
+intentionally disabled so ordinary coding requests do not silently become
+architecture sessions. New or changed plugin hooks are skipped until you review
+their definitions and activate them from the plugin page. Codex may show them as
+disabled rather than opening a separate approval prompt. The skill remains usable
+without hooks, but deterministic invocation guidance, tool restrictions, and
+option-rendering checks are then unavailable.
 
-Implicit skill invocation is intentionally disabled so ordinary coding requests do not silently become architecture sessions. New or changed plugin hooks are skipped until you review their definitions and activate them from the plugin page. Codex may show them as disabled rather than opening a separate approval prompt. The skills remain usable without hooks, but deterministic invocation guidance, focused reference injection, tool restrictions, and option-rendering checks are then unavailable.
+After the architect asks a clarification question or presents `Your decision`,
+reply naturally—for example, `1`, `approve`, or a new constraint. With the
+reviewed hooks active, the immediately following reply continues the same
+architecture workflow without repeating `$ai-software-architect`. The
+continuation is bounded to the next turn and is cancelled if you explicitly
+select another skill or plugin.
 
-If you select `@AI Software Architect` but forget the `$` invocation, a trusted control-plane hook does not guess which workflow you intended. It blocks the malformed prompt before it reaches the model or any plugin tool, then displays both valid commands so you can resend it correctly.
+The `@AI Software Architect` plugin selector remains available for discovering
+or inspecting the installed bundle, but it is not needed for normal use. Codex
+adds this selector automatically when you choose a prompt on the plugin page.
+Those examples therefore contain only the request text and do not repeat
+`$ai-software-architect`. A substantive `@AI Software Architect` request enters
+the same workflow; selecting the plugin without adding a request is blocked with
+short correction guidance.
 
 <a id="why-codex-asks-you-to-trust-the-hooks"></a>
 
@@ -139,40 +197,42 @@ If you select `@AI Software Architect` but forget the `$` invocation, a trusted 
 
 Codex does not necessarily open a proactive approval dialog for plugin hooks. New or changed non-managed hooks are marked for review and skipped until you explicitly trust their current definitions. In Codex Desktop, open the AI Software Architect plugin page, review the hooks, and use the available control to activate them. In the CLI, use `/hooks` to inspect and trust them. Codex records trust for the current hook definition, so a later change requires another review. This is a useful security boundary because a hook is local code that can observe a specific workflow event and return a bounded instruction to Codex. See the official [Codex hooks documentation](https://learn.chatgpt.com/docs/hooks).
 
-For AI Software Architect, the hooks are recommended because skills and prompts guide the selected model, while hooks add a small **deterministic safety and quality layer** around that reasoning. They prevent an accidental bare `@AI Software Architect` invocation from silently doing nothing, inject one explicitly matched bundled reference, keep repository inspection static, prevent the architect role from editing application code, stop architect tools that are structurally outside a focused skill route, verify the focused option-comparison rendering, and ensure a complete-workflow recommendation offers a clear next choice. They deliberately do not classify free-form architecture intent from language-specific keywords; the selected host model and canonical skills retain that responsibility.
+For AI Software Architect, the skill or an explicit plugin-page request guides the selected model, while hooks add a small **deterministic safety and quality layer** around that reasoning. They accept a substantive request after Codex's `@AI Software Architect` selector, prevent an accidental empty selector from silently doing nothing, keep one bounded clarification or decision follow-up active, resolve explicit canonical pattern names to bundled reference paths, keep repository inspection static, prevent the architect role from editing application code, verify option-comparison rendering when the response visibly uses that structure, and ensure a recommendation offers a clear next choice. They deliberately do not choose focused help versus the complete lifecycle or classify free-form architecture intent from language-specific keywords; the selected host model and canonical modules retain that responsibility.
 
 The three hooks have deliberately narrow responsibilities:
 
 | Hook | When it runs | What it does |
 |---|---|---|
-| `UserPromptSubmit` | After you submit a prompt | Distinguishes the real plugin URI from explicit `$` skill invocations, supplies a single matching bundled reference for the focused skill, or explains how to correct an incomplete `@` invocation. |
-| `PreToolUse` | Before a shell command, file patch, or AI Software Architect MCP tool runs | Blocks repository interpreters, test/build/package runners, mutating shell commands, and application-code patches during architect turns. Approved architecture artifacts remain patchable only under `.ai-architect/`. It also denies MCP operations that are structurally outside a focused route. It cannot grant extra filesystem or network permissions. |
-| `Stop` | Before Codex accepts an architect response | Checks the stable focused-comparison sections or one hidden complete-workflow outcome marker. A `recommendation` outcome must also offer approve, revise, or more information. It may request one complete corrected response, with a loop guard preventing repeated correction cycles. |
+| `UserPromptSubmit` | After you submit a prompt | Recognizes either the explicit `$ai-software-architect` invocation or a plugin-page selection followed by a substantive request, adds the one-skill routing and safety context, supplies exact bundled paths for explicitly named canonical references, resumes one bounded pending follow-up, and explains how to correct an empty `@` selection. |
+| `PreToolUse` | Before a shell command, file patch, or AI Software Architect MCP tool runs | Blocks repository interpreters, test/build/package runners, mutating shell commands, and application-code patches during architect turns. Approved architecture artifacts remain patchable only under `.ai-architect/`. It cannot grant extra filesystem or network permissions. |
+| `Stop` | Before Codex accepts an architect response | Checks stable visible comparison sections and rejects leaked internal response markers. It may request one complete corrected response, with a loop guard preventing repeated correction cycles. It does not infer the semantic workflow phase. |
 
 What happens locally:
 
 - Codex supplies the corresponding event payload; the implementation reads only the current prompt, selected tool name and arguments, or final response fields required for that check.
 - The hooks make no model calls and no network requests. Pattern examples are read from the plugin's bundled reference files.
 - They do not execute repository code and do not bypass Codex's sandbox, native permission prompts, or user approval.
-- They never persist prompts, responses, repository content, or tool arguments. Shell and patch arguments are inspected only in memory to classify forbidden execution or mutation and to validate patch target paths. Temporary turn state contains only a hashed session/turn key, the explicit route, and an optional bundled-reference identifier. Abandoned state is age- and count-bounded.
+- They never persist prompts, responses, repository content, or tool arguments. Shell and patch arguments are inspected only in memory to classify forbidden execution or mutation and to validate patch target paths. Temporary state contains only hashed session/turn or bounded-continuation keys, the explicit route, and optional bundled-reference paths. Abandoned state is age- and count-bounded.
 - If a hook fails unexpectedly, it **fails open with a visible warning** so that a local guard failure does not silently trap the user.
 - Each hook command has a five-second execution limit.
 
-The complete implementation is public and reviewable:
+The complete implementation is reviewable in the repository. These links work
+for people with repository access now and for everyone after the GitHub
+repository is made public:
 
 - [`hooks.json`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/templates/hooks.json) declares the three events, the exact local command, and their timeouts.
 - [`hook_entry.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/hook_entry.py) reads the bounded event payload, manages minimal temporary state, and returns the hook decision.
 - [`control_plane.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/control_plane.py) contains the pure routing, tool-denial, and response-validation rules.
-- [`test_codex_control_plane.py`](https://github.com/leomuf/ai-software-architect/blob/main/tests/packaging/test_codex_control_plane.py) verifies allowed and denied behavior, stored-reference injection, correction limits, and privacy boundaries.
+- [`test_codex_control_plane.py`](https://github.com/leomuf/ai-software-architect/blob/main/tests/packaging/test_codex_control_plane.py) verifies activation, allowed and denied behavior, one-skill routing boundaries, correction limits, and privacy constraints.
 - [`smoke_test_runtime.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/smoke_test_runtime.py) launches the packaged command exactly as Codex does and checks the hook and MCP surfaces before release.
 
-Activating these reviewed hooks therefore does not mean granting the architect unrestricted control. It authorizes the reviewed local checks above to run at those three Codex lifecycle points. The skills remain usable if hooks are not activated, but deterministic invocation guidance, focused tool restrictions, reference injection, and option-rendering checks will then be unavailable.
+Activating these reviewed hooks therefore does not mean granting the architect unrestricted control. It authorizes the reviewed local checks above to run at those three Codex lifecycle points. The skill remains usable if hooks are not activated, but deterministic invocation guidance, static-inspection restrictions, and option-rendering checks will then be unavailable.
 
 #### Plugin Lifecycle and Uninstall
 
-The normal uninstall path is **Codex → Plugins → Installed → AI Software Architect → Uninstall**. The packaged local-tool process is designed to release itself automatically. A release is not considered ready until this succeeds in Codex Desktop without asking users to edit the plugin cache or manually terminate processes.
+The normal uninstall path is **Codex → Plugins → Installed → AI Software Architect → Uninstall**. Each packaged local-tool process exits automatically after 15 seconds without an active call, including transports that Codex initialized but never used for a tool call. Active calls are never interrupted. A release is not considered ready until uninstall succeeds in Codex Desktop without asking users to edit the plugin cache or manually terminate processes.
 
-If a Codex host defect prevents uninstall, close tasks actively using the plugin, wait up to the reviewed 120-second idle shutdown interval, and retry once. Restart Codex if the host still retains the connection. Needing this retry is still a lifecycle defect for the current release gate, even when no permanent orphan remains. Please report it with the Codex version and operating system through the project's GitHub issue tracker.
+If uninstall is requested immediately after a local-tool call and Codex still retains that session, wait up to 15 seconds and retry once. Close tasks actively using the plugin only if the host still retains a connection; restart Codex as a last resort. Needing either workaround is still a lifecycle defect for the current release gate, even when no permanent orphan remains. Please report it with the Codex version and operating system through the project's GitHub issue tracker.
 
 ### GitHub Copilot — Planned
 
@@ -233,6 +293,27 @@ uv run python shared/evaluations/generate_acceptance.py
 ```
 
 ### Build the Codex Adapter
+
+> **PowerShell execution policy:** If PowerShell reports that script execution
+> is disabled, inspect the active policies with `Get-ExecutionPolicy -List`.
+> On a personal computer, the preferred user-scoped setting is:
+>
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+> ```
+>
+> This normally does not require Administrator rights and avoids changing the
+> machine-wide policy. Review scripts before running them. On an
+> organization-managed computer, do not override `MachinePolicy` or
+> `UserPolicy`; follow your administrator's approved policy instead. See
+> [`scripts/README.md`](scripts/README.md#powershell-execution-policy) for a
+> temporary, process-scoped alternative.
+
+The Codex MCP runtime also uses a small packaged PowerShell launcher with a
+process-scoped execution-policy bypass. It copies the reviewed, versioned runtime
+into Codex plugin data before starting it, so the long-lived process does not lock
+the versioned plugin cache and block uninstall. The launcher does not change the
+machine or user execution policy, download software, or execute project code.
 
 For a full local development build, create a self-contained Windows x86-64
 runtime, assign a unique cache-busted version, validate the package, and
@@ -337,8 +418,8 @@ The project assumes its public controls are known to an attacker and treats repo
 ### Additional Codex Adapter Controls
 
 - The Codex MCP surface exposes no filesystem root or ADR-listing operation. Dependency and boundary analysis parses only bounded Python content already read through Codex's native workspace permissions: compact static-import statements for fast scans or full source for stronger verification. Neither mode opens a path.
-- The architecture workflow activates only for an explicit `$ai-software-architect` or `$evaluate-architecture-options` invocation. A plugin `@` mention alone is blocked before model or MCP execution and persists no turn state. Valid architect turns store only a hashed turn key and route classification in Codex's plugin-data directory, never the user's prompt or repository content.
-- Trusted hooks keep architect inspection static by denying repository interpreters, test/build/package runners, mutating shell and Git commands, and application-code patches. Approved architecture artifacts are patchable only under `.ai-architect/`; focused option/reference turns remain entirely patch-free. The same hooks may deny structurally invalid focused-route MCP calls and request one corrected focused option rendering. Complete-workflow responses carry one hidden `clarify`, `recommendation`, or `complete` outcome marker; only `recommendation` also carries the stable decision-action marker. The hook checks these structures rather than interpreting localized prose. It fails open with a visible warning, avoids infinite retries, and does not replace Codex's sandbox, permissions, or semantic model reasoning.
+- The architecture workflow activates only for an explicit `$ai-software-architect` invocation. A plugin `@` mention alone is blocked before model or MCP execution and persists no turn state. Valid architect turns store only a hashed turn key and route classification in Codex's plugin-data directory, never the user's prompt or repository content.
+- Trusted hooks keep architect inspection static by denying repository interpreters, test/build/package runners, mutating shell and Git commands, and application-code patches. Approved architecture artifacts are patchable only under `.ai-architect/`. The same hooks may request one corrected option rendering when the response visibly contains an Alternatives section and reject leaked internal response markers. Architect answers contain only user-facing Markdown; the hook does not infer focused versus complete mode or `clarify`, `recommendation`, or `complete` from localized prose. It fails open with a visible warning, avoids infinite retries, and does not replace Codex's sandbox, permissions, or semantic model reasoning.
 
 These controls reduce risk but do not claim perfect prompt-injection prevention. See [SECURITY.md](SECURITY.md) for reporting and the [approved specification](specs/AISoftwareArchitect.md) for the complete threat model, architecture, schemas, and acceptance criteria.
 

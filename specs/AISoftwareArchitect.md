@@ -35,7 +35,7 @@ implementation_readiness_gates:
   - id: GATE-PLUGIN
     requirement: the assembled Codex plugin passes manifest, package, installation, and clean-uninstall tests
   - id: GATE-CONTROL-PLANE
-    requirement: explicit Codex activation, bundled-reference discovery, focused-route tool denial, bounded retry, focused rendering-contract tests, and complete-workflow outcome/action-marker tests pass without language-specific semantic routing
+    requirement: explicit Codex activation, one-skill model routing, universal static-inspection and application-code write denial, bounded retry, visible comparison-contract tests, and marker-free response tests pass without language-specific hook routing
   - id: GATE-WORKSPACE
     requirement: filesystem-scanning MCP tools use a trustworthy host root, while hosts without MCP roots use bounded source content or compact static-import statements read through native workspace tools
     fail_closed_result: disable MCP filesystem reads while retaining bounded filesystem-free analysis
@@ -121,7 +121,7 @@ Codex custom-agent profiles are valuable for advanced personal or project-specif
 The selected design is the strongest plugin-native architecture for this scope:
 
 - Agent Skills define architectural reasoning instructions, workflow phases, modular knowledge, and progressive disclosure.
-- Trusted hooks react to lifecycle events and deterministically reinforce activation, structural tool boundaries, focused rendering, and complete-workflow response outcomes.
+- Trusted hooks react to lifecycle events and deterministically reinforce activation, structural tool boundaries, focused rendering, and marker-free visible response structure.
 - The local STDIO MCP server supplies bounded deterministic evidence and validation, but performs no model reasoning.
 - The selected coding assistant remains the agent runtime and owns model reasoning, tool orchestration, permissions, and any runtime-created subagents.
 
@@ -625,11 +625,6 @@ dist/                               # generated and gitignored
                         openai.yaml
                     references/
                     assets/
-                evaluate-architecture-options/
-                    SKILL.md
-                    agents/
-                        openai.yaml
-                    references/
             runtime/
                 <supported-platform>/
 ```
@@ -774,7 +769,7 @@ Architecture styles and broader topics use the same focused-file principle. Temp
 
 Each of the 23 GoF reference files MUST contain one compact, Pythonic implementation example and MAY contain a second example only when it demonstrates a materially different variant. Examples MUST use only the Python standard library, avoid filesystem, network, subprocess, dynamic-code, and other external side effects, and remain small enough to explain the pattern rather than an application framework. Deterministic tests MUST extract every fenced Python example and parse it with Python's AST, reject non-standard-library imports, and reject prohibited side-effect operations. Generic example requests reuse the canonical snippet and explain its pattern roles; project-specific requests adapt it and label the adaptation. Progressive disclosure still applies: requesting Abstract Factory loads its focused reference and example, not the other 22 GoF files. Embedded examples improve consistency and reduce fresh code-generation effort, but they still consume model input and output tokens when loaded and rendered.
 
-Generic architecture guidance, pattern explanations, and implementation-example requests MUST use the routed skill references directly and MUST NOT call MCP tools. MCP calls are permitted only when the requested task actually needs deterministic repository evidence, architecture-artifact inspection, contract or boundary validation, or generated-artifact secret scanning. The availability of a tool is not by itself a reason to call it.
+Generic architecture guidance, pattern explanations, and implementation-example requests MUST use the routed skill references directly and MUST NOT call MCP tools. Loading the exact routed reference is a hard gate before a named-pattern explanation or generic example: the model MUST NOT substitute an example generated from memory, and it MUST disclose an unavailable reference rather than inventing one. The Codex hook MAY add exact bundled-reference paths when an explicit, unambiguous canonical name appears in an activated prompt; this is deterministic resource resolution, not semantic workflow selection. MCP calls are permitted only when the requested task actually needs deterministic repository evidence, architecture-artifact inspection, contract or boundary validation, or generated-artifact secret scanning. The availability of a tool is not by itself a reason to call it.
 
 `presentation-model-view-controller.md` covers MVC as a presentation and application-architecture pattern rather than one of the 23 cataloged GoF patterns. The GoF book discusses Smalltalk MVC as an example composed from patterns, but MVC is not itself a GoF catalog entry. The reference MUST distinguish server-side MVC from client-side interpretations, prevent business logic from accumulating in controllers or views, explain when a framework controller does not imply a complete MVC design, and compare MVVM, MVP, Presentation Model, and component-based UI architecture as alternatives. Separate MVVM and MVP references are deferred until UI architecture becomes a broader product focus.
 
@@ -826,20 +821,20 @@ skill_routing:
 
 Cross-skill activation MAY use a documented host mechanism only when an integration test proves that mechanism is reliable. Correctness MUST NOT depend on one skill being able to programmatically activate a sibling skill unless the host explicitly supports that contract. A canonical skill MUST NOT escape its root with relative paths to read another skill.
 
-For the Codex MVP, the adapter MUST generate one explicit user-facing skill named `ai-software-architect`. Its `SKILL.md` combines the concise orchestration and five modular workflow procedures, while canonical references and assets are copied into its own flat, directly routed resource directories. This generated Composite is necessary because Codex skill discovery and invocation do not constitute a guaranteed skill-to-skill composition API. The Composite MUST remain within the Agent Skills guidance for concise instructions, MUST load references only when a routing condition requires them, and MUST be regenerated rather than edited. Canonical modular skills remain independently valid for reuse by hosts that support modular composition.
+For the Codex MVP, the adapter MUST generate and package exactly one explicit user-facing skill named `ai-software-architect`. Its `SKILL.md` combines the concise orchestration and five modular workflow procedures, while canonical references and assets are copied into its own flat, directly routed resource directories. The selected Codex model uses that Composite to choose the smallest sufficient mode from the prompt: focused pattern help, option comparison, or the complete architecture lifecycle. This generated Composite is necessary because Codex skill discovery and invocation do not constitute a guaranteed skill-to-skill composition API. The Composite MUST remain within the Agent Skills guidance for concise instructions, MUST load references only when a routing condition requires them, and MUST be regenerated rather than edited. Canonical modular skills remain independently valid internal source modules and remain reusable by hosts that support modular composition; the Codex package MUST NOT expose them as additional user-callable skills.
 
 The Codex plugin MUST NOT contain or write a top-level `.codex/agents/` custom-agent package and MUST NOT register `[agents]` configuration. Directories named `agents` inside a skill contain host-specific skill metadata such as `openai.yaml`; they are not Codex custom-agent or subagent definitions. Host-created subagents MAY be requested through explicit user or applicable skill instructions, but that runtime delegation is not a plugin-installed agent profile.
 
 The generated Codex `agents/openai.yaml` MUST set `policy.allow_implicit_invocation: false` for the MVP. Users explicitly invoke the architect skill, preventing ordinary coding requests from silently entering an architecture workflow. That file MAY declare the bundled MCP dependency and UI metadata but MUST NOT duplicate security policy or domain knowledge.
 
-Codex has two distinct entry concepts. An `@` plugin mention selects or makes the installable bundle available; it is not the architect workflow contract. The user MUST explicitly invoke `$ai-software-architect` for the complete workflow or `$evaluate-architecture-options` for a direct pattern comparison, explanation, or stored example. Every plugin default prompt MUST contain the appropriate `$` invocation. The adapter and exploratory-test harness MUST NOT describe a bare `plugin://` URI as explicit skill activation.
+Codex has two distinct entry concepts. The normal and recommended composer workflow is to invoke the single installed skill directly with `$ai-software-architect`; the selected model then chooses focused help or the complete lifecycle from the request. Codex MAY render the selected skill as a namespaced Markdown link to the installed `SKILL.md`; this remains an explicit skill invocation. The user does not need to select the plugin separately with `@`. The plugin page's "Try now" flow adds the `@` plugin selection automatically, so every plugin default prompt MUST contain task text only and MUST NOT repeat the plugin or skill activation marker. A plugin selection followed by a substantive request enters the same Composite workflow. A bare `plugin://` selection without a request is incomplete and routes to correction guidance.
 
 ### Modular workflow skills
 
 Workflow skills define repeatable activities:
 
 - `conduct-architecture-interview` discovers stakeholders, constraints, forces, and quality attributes.
-- `evaluate-architecture-options` selects only relevant architecture and pattern references, compares alternatives, and may recommend no named pattern.
+- `evaluate-architecture-options` suggests and compares only relevant project-fit architecture and pattern references, compares them with no-pattern alternatives, and may recommend no named pattern.
 - `create-architecture-decisions` prepares proposed and accepted ADR content plus the architecture contract.
 - `prepare-coding-handoff` translates accepted decisions into an implementation plan without redoing the analysis.
 - `review-architecture-conformance` classifies evidence-linked implementation findings.
@@ -1379,6 +1374,23 @@ class InlineRepositoryAnalysisInput(StrictModel):
         return self
 
 
+class DependencyAnalysisInput(StrictModel):
+    dependency_statements: list[DependencyStatementInput] = Field(
+        min_length=1, max_length=MAX_DEPENDENCY_STATEMENTS
+    )
+    languages: list[Literal["python"]] = Field(
+        default_factory=lambda: ["python"], min_length=1, max_length=1
+    )
+
+    @model_validator(mode="after")
+    def validate_dependency_statements(self) -> Self:
+        RepositoryAnalysisInput(
+            dependency_statements=self.dependency_statements,
+            languages=self.languages,
+        )
+        return self
+
+
 class BoundaryCheckInput(RepositoryAnalysisInput):
     contract_yaml: str = Field(min_length=1, max_length=500_000)
 
@@ -1507,7 +1519,7 @@ class WorkflowState(StrictModel):
 - `EvidenceClaim` separates confirmed facts, static indications, runtime observations, assumptions, and unverified possibilities. Confirmed facts, static indications, and runtime observations require at least one cited evidence item. This prevents an environment or dependency assertion from being serialized as an observed fact without recording what supports it; semantic review still reconciles contradictions between individually valid claims.
 - `@model_validator(mode="after")` enforces relationships between fields after their individual types and constraints are valid. Examples include requiring an accepted ADR to select one of its considered options, requiring terminal workflow states to have no current node, and keeping result flags consistent with their error or finding lists.
 - `ArchitectureOptionComparison` defines the complete structured choice contract: one decision scope, explicit scoring criteria, two to five genuine alternatives, categorized canonical references, ordinal fit, rationale, benefit, liability, assumption, a referenced recommendation, supporting-pattern roles, localized visible decision guidance, and language-neutral `offered_actions`. Three to five alternatives remain the default; a smaller set requires a rationale. The model prevents duplicate or dangling option identifiers and requires the canonical actions `approve`, `revise`, and `more-information`. Codex validates the complete model only when structured output is requested. Its Stop hook separately parses and validates only fields that are deterministically represented in the focused Markdown rendering; it MUST NOT fabricate omitted evidence, criteria, or supporting-pattern data merely to make the complete model validate.
-- MCP input models such as `CompleteContractValidationInput`, `SourceFileInput`, `DependencyStatementInput`, `InlineRepositoryAnalysisInput`, `InlineBoundaryCheckInput`, and `ArtifactSecretScanInput` define the exact accepted Codex request shape for each tool. They reject unknown fields, wrong types, excessive content, duplicate normalized paths or line locations, and unbounded collections before domain logic runs. The Codex surface accepts exactly one filesystem-free evidence mode: `source_files` for bounded exact content already read through host-native workspace tools or `dependency_statements` for compact, line-preserving static-import evidence. The internal domain and CLI may retain verified-root readers for future hosts, but no Codex MCP tool exposes a root argument.
+- MCP input models such as `CompleteContractValidationInput`, `SourceFileInput`, `DependencyStatementInput`, `DependencyAnalysisInput`, `InlineBoundaryCheckInput`, and `ArtifactSecretScanInput` define the exact accepted Codex request shape for each tool. They reject unknown fields, wrong types, excessive content, duplicate normalized paths or line locations, and unbounded collections before domain logic runs. The Codex `analyze_python_dependencies` surface accepts only compact, line-preserving `dependency_statements`; it never accepts full source and therefore cannot trigger a whole-file data-transfer approval. `check_python_architecture_boundaries` may accept `source_files` for bounded exact content when an approved contract requires higher-assurance AST verification, subject to host approval. The internal domain and CLI may retain verified-root and inline-source readers for future hosts, but no Codex MCP tool exposes a root argument.
 - MCP result models provide the same guarantee in the opposite direction: every tool returns a bounded, predictable structure that the host can validate and interpret without guessing.
 
 `fit_score` is an ordinal `0–100` comparison aid within one analysis, not a probability, certainty claim, calibrated percentage, or cross-project metric. The user-facing result renders it as `NN/100`, states its scoring criteria, supports every score with `fit_rationale`, exposes uncertainty, and MUST NOT choose an option solely because it has the highest number.
@@ -1587,7 +1599,7 @@ The first release is an installable Codex plugin containing:
 - generated JSON schemas and output templates derived from the canonical sources;
 - a small local Python STDIO MCP server for deterministic validation and inspection;
 - generated Codex-specific metadata, plugin metadata, and local installation support;
-  - a short-lived, user-trusted Codex control-plane hook for explicit invocation guidance, single-reference injection, static-inspection enforcement, application-code patch denial, focused-route MCP-call denial, and bounded focused-rendering validation;
+  - a short-lived, user-trusted Codex control-plane hook for explicit invocation guidance, static-inspection enforcement, application-code patch denial, and bounded visible-rendering validation without semantic prompt classification;
 - MCP configuration that lets Codex launch the server through its normal lifecycle.
 
 The user runs the architect with the selected Codex model and Codex credits. The plugin itself makes no model API calls.
@@ -1606,21 +1618,21 @@ Skills remain the canonical reasoning workflow. The Codex adapter adds a small d
 codex_control_plane:
   activation_markers:
     - $ai-software-architect
-    - $evaluate-architecture-options
   plugin_selection_markers:
     - plugin://ai-software-architect
   user_prompt_submit:
-    responsibility: block a missing skill invocation, add explicit-skill context, and inject one filename-matched bundled reference for the focused skill
+    responsibility: block a missing skill invocation, add one-skill routing and safety context, resolve explicit canonical reference names, and resume one bounded pending follow-up
   pre_tool_use:
-    responsibility: deny repository execution, mutating shell commands, application-code patches, and AI Software Architect MCP operations that are structurally outside the explicitly invoked focused skill
+    responsibility: deny repository execution, mutating shell commands, and application-code patches
   stop:
-    responsibility: validate the focused option-comparison rendering and request at most one correction
+    responsibility: validate visible option-comparison rendering and request at most one correction
   persisted_state:
     location: PLUGIN_DATA
     content:
       - hashed-session-and-turn-key
+      - hashed-session-continuation-key
       - route
-      - optional-reference-slug
+      - canonical-reference-paths
     prohibited:
       - user-prompt
       - repository-content
@@ -1628,46 +1640,36 @@ codex_control_plane:
   failure_mode: fail-open-with-visible-warning
 ```
 
-The classifier MUST use only explicit host and package facts: the real plugin URI, the two `$` skill markers, and reference filenames already present in the installed focused skill. A plugin URI without either `$` skill routes to `missing_skill_invocation`; `UserPromptSubmit` blocks that malformed prompt and displays both valid invocations without persisting turn state. A plain-text mention such as documentation that quotes `@AI Software Architect` is not sufficient activation evidence. `$ai-software-architect` always enters the complete architecture workflow, where the selected host model and canonical skills determine the semantic phase. `$evaluate-architecture-options` injects one bundled reference when exactly one filename-derived reference alias matches, enters the stable option-comparison rendering when multiple references match, and otherwise leaves clarification, explanation, or comparison to the focused skill and selected model. The hook MUST NOT infer clarification, review, proportionality, platform conflicts, or other semantic intent from English or any other natural-language keyword list.
+The classifier MUST use only explicit host facts: the real plugin URI and the `$ai-software-architect` marker. A plugin URI followed by a substantive request enters the same Composite route as direct skill invocation. A plugin URI without a request routes to `missing_skill_invocation`; `UserPromptSubmit` blocks that incomplete prompt and explains that the user can add a request or invoke the skill directly, without persisting turn state. A plain-text mention such as documentation that quotes `@AI Software Architect` is not sufficient activation evidence. Every activated prompt enters the same Composite route, where the selected host model and canonical modules decide whether the smallest sufficient response is focused help, comparison, clarification, recording, handoff, or review. The hook MUST NOT infer those semantic modes from pattern names, English keywords, or any other natural-language list because ordinary terms such as state, repository, strategy, or adapter can appear outside pattern requests. It MAY resolve an explicit unambiguous canonical reference name to its bundled relative path and add a hard read-before-answer instruction without deciding whether the response is an explanation, example, comparison, or complete workflow.
 
-The control plane MUST remain inactive for ordinary prompts containing neither the plugin URI nor an explicit architect skill invocation. A `missing_skill_invocation` is stopped at `UserPromptSubmit`, before tool selection. During every active architect turn, `PreToolUse` MUST inspect shell and patch arguments only in memory: it denies repository interpreters, test/build/package runners, mutating shell and Git commands, and patches outside `.ai-architect/`. Focused option-evaluation and single-reference routes deny every patch, including architecture artifacts. The complete workflow may patch only approved architecture artifacts under `.ai-architect/`; it never writes application code. These deterministic checks complement the skill's default read-only policy and deliberately keep the architect role static even if a model attempts an unnecessary compile or test command.
+The control plane MUST remain inactive for ordinary prompts containing neither the plugin URI nor the explicit architect skill invocation, except for one bounded continuation immediately after an active response visibly requests clarification or a user decision. That session-scoped continuation is consumed by the next prompt, renewed only when the next architect response again requests input, expires within one hour, and is cancelled when the user explicitly invokes another skill or plugin. This lets replies such as `1`, `approve`, or a constraint continue the architecture workflow without repeating the skill name. An incomplete plugin selection is stopped at `UserPromptSubmit`, before tool selection. During every active architect turn, `UserPromptSubmit` supplies a compact generated index of every canonical reference name, category, and bundled filename plus the exact artifact-template paths used during `record_and_handoff`. This removes any need to search the public repository while preserving progressive disclosure of reference bodies. `PreToolUse` MUST inspect supported shell, patch, and web-tool arguments only in memory: it denies repository interpreters, test/build/package runners, mutating shell and Git commands, supported web lookup for bundled canonical references, and patches outside `.ai-architect/`. Codex built-in web search is not guaranteed to pass through plugin `PreToolUse`, so correctness MUST rely on the supplied authoritative index rather than hook interception alone. Absolute patch targets are allowed only when normalization proves that they resolve beneath the active workspace's `.ai-architect/` directory. The Composite route may patch only approved architecture artifacts under `.ai-architect/`; it never writes application code. These deterministic checks complement the skill's default read-only policy and deliberately keep the architect role static even if a model attempts an unnecessary compile, test, or reference-search command.
 
-A single-reference focused route denies all AI Software Architect MCP calls because the trusted bundled reference already supplies the requested knowledge. Every focused option-evaluation route denies contract validation, generated-artifact scanning, and architecture-boundary checking; bounded Python dependency evidence may still be used when the user actually supplied project scope. The complete workflow retains access to all four tools and relies on the canonical skill phase rules plus the narrow MCP schemas. The hook MUST NOT claim coverage of hosted tools or replace the host sandbox, permissions, or model reasoning. An explicit request to implement or execute application code belongs in the prepared coding handoff or an ordinary coding task, not inside the architect role.
+The Composite route retains access to all four tools and relies on the canonical module rules plus the narrow MCP schemas. For focused help, the skill instructs the model to load only the directly linked bundled reference and not inspect the repository, call MCP, or create artifacts unless project evidence is explicitly required. The hook cannot prove that semantic mode without fragile natural-language inference; this is the documented trade-off for one simple public invocation. The hook MUST NOT claim coverage of hosted tools or replace the host sandbox, permissions, or model reasoning. An explicit request to implement or execute application code belongs in the prepared coding handoff or an ordinary coding task, not inside the architect role.
 
-The `Stop` hook validates two small rendering contracts. For a focused option comparison, it checks the six stable ordered headings, two to five parseable alternative rows, canonical category labels, ordinal `NN/100` fit, links for named options, one recommendation that names a compared option, nonempty evidence and supporting-pattern sections, visible decision guidance, and the language-neutral HTML action marker `approve, revise, more-information`. The rendering parser returns exactly the fields it observed and validates each alternative with `ComparedArchitectureOption`; it does not claim to construct a complete `ArchitectureOptionComparison`.
+The `Stop` hook validates small, stable, user-facing rendering contracts. For a focused option comparison, it checks the six stable ordered headings, two to five parseable alternative rows, canonical category labels and exact public links, an explicit statement that fit is ordinal, ordinal `NN/100` values, one recommendation that names a compared option, categorized and canonically linked first mentions of named supporting patterns, nonempty evidence and supporting-pattern sections, and visible decision guidance. The rendering parser returns exactly the fields it observed and validates each alternative with `ComparedArchitectureOption`; it does not claim to construct a complete `ArchitectureOptionComparison`.
 
-Every complete-workflow final response declares exactly one hidden outcome marker. `clarify` means material user input is required, `recommendation` means an architecture decision awaits the user, and `complete` means no architecture decision is pending. Before drafting a recommendation, the host-native model MUST declare exactly one decision shape. `comparison` applies to an open request to choose architecture or design-pattern options and activates the same strict six-section rendering validator used by the focused comparison route. `single` applies only when the user explicitly requests one highest-leverage improvement or when supplied constraints make one proportionate simplicity decision sufficient; it MUST NOT be used to present a stack of recommended patterns. A recommendation MUST place its decision-shape marker immediately before exactly one decision-action marker, followed by visible, localized guidance to approve, revise, or request more information and then the recommendation outcome marker. The other outcomes MUST NOT include decision-shape or action markers.
+Every complete-workflow final response contains only user-facing Markdown. Internal outcome, decision-shape, and action markers are forbidden because Codex may render HTML comments visibly. The selected host model and canonical skills retain responsibility for deciding whether the response clarifies, recommends, or completes work; the hook MUST NOT infer that semantic phase from localized prose.
 
-For a `single` recommendation, all recommendation headings and content MUST precede the decision-shape and action markers. Only the final visible user-decision prompt may appear between those markers and the outcome marker; another Markdown heading there is a deterministic rendering violation.
+An open request to choose architecture or design-pattern options uses the strict six-section rendering contract. A single recommendation applies only when the user explicitly requests one highest-leverage improvement or when supplied constraints make one proportionate simplicity decision sufficient; it MUST NOT present a stack of recommended patterns. Every recommendation ends with `## Your decision` and visible, localized guidance to approve, revise, or request more information. All recommendation headings and content MUST precede that final section.
 
 ```yaml
 complete_workflow_response:
-  outcome_marker:
-    syntax: "<!-- ai-architect-outcome: OUTCOME -->"
-    allowed_outcomes:
-      - clarify
-      - recommendation
-      - complete
-    exactly_one: true
+  format: user-facing-markdown-only
+  internal_control_markers: forbidden
+  clarification:
+    visible_focused_question: required
   recommendation:
-    decision_shape_marker:
-      syntax: "<!-- ai-architect-decision-shape: SHAPE -->"
-      allowed_shapes:
-        - comparison
-        - single
-      exactly_one: true
-    action_marker: "<!-- ai-architect-actions: approve, revise, more-information -->"
-    visible_localized_decision_guidance: required
-    ordering:
-      - decision-shape-marker
-      - action-marker
-      - visible-localized-decision-guidance
-      - recommendation-outcome-marker
-  non_recommendation:
-    action_marker: forbidden
+    supported_shapes: [comparison, single]
+    final_heading: "## Your decision"
+    visible_localized_choices: [approve, revise, more-information]
+  completion:
+    visible_result: required
+  stop_hook:
+    validates: stable-visible-structure
+    semantic_outcome_classification: false
 ```
 
-These stable markers let visible content be localized without searching English or any other natural-language prose. They do not determine which semantic phase is correct: that remains host-model reasoning governed by the canonical skill. Single-reference explanations are not policed by `Stop`. A rendering failure generates one complete replacement request whose reason repeats the exact ordered headings, six-column Alternatives header, category/link rule, and ordinal-fit rule; `stop_hook_active` and turn-state removal prevent an infinite retry.
+Single-reference explanations are not semantically policed by `Stop`; exact reference hints plus the hard skill gate make the expected resource explicit without trying to judge natural-language content. For a complete workflow, the hook applies strict comparison validation when the visible `## Alternatives` section is present, validates a visible final decision section when present, and rejects any leaked internal `ai-architect` marker. It deliberately cannot prove that a semantically required recommendation was chosen or that localized prose offers the correct choices; those remain skill and host-model responsibilities. A rendering failure generates one complete replacement request whose reason repeats the exact ordered headings, six-column Alternatives header, category/link rule, and ordinal-fit rule; `stop_hook_active` prevents an infinite retry. Valid clarification and decision responses retain only a bounded session continuation record; all turn records are removed after completion.
 
 Codex requires users to review and trust non-managed plugin hooks. Therefore the skill MUST remain usable when hooks are disabled, untrusted, unsupported, or fail. Hook validation improves observed reliability but is not a security boundary or proof of semantic architectural quality. The README and installation testing MUST disclose the trust step and verify both trusted-hook and no-hook behavior.
 
@@ -1750,7 +1752,7 @@ This development environment does not alter the installed-product contract. uv a
 
 ## Python STDIO MCP Server
 
-The MVP MCP server provides a small, deterministic tool surface. It MUST target Python 3.11 or later, use a supported official Python MCP SDK and Pydantic v2, and pin both through the reproducible lock file. A different SDK requires an accepted ADR documenting the incompatibility and security review. The host launches the configured STDIO process when the plugin's MCP tools are needed and owns normal shutdown; the server also exits when stdin reaches EOF, when its parent disappears, or after a bounded idle interval with no active tool call. The project MUST NOT install a persistent background daemon or listen on a network port.
+The MVP MCP server provides a small, deterministic tool surface. It MUST target Python 3.11 or later, use a supported official Python MCP SDK and Pydantic v2, and pin both through the reproducible lock file. A different SDK requires an accepted ADR documenting the incompatibility and security review. The host launches the configured STDIO process when the plugin's MCP tools are needed and owns normal shutdown; the server also exits when stdin reaches EOF or when its parent disappears. It MUST NOT terminate merely because a user pauses before approving a decision, because Codex may retain the closed transport instead of relaunching it. The project MUST NOT install a persistent background daemon or listen on a network port.
 
 The server and CLI call the same side-effect-light domain functions:
 
@@ -1788,7 +1790,7 @@ Both the MCP server and CLI MUST call the same domain functions. This avoids dup
 
 ```yaml
 mcp_server:
-  name: ai-software-architect-tools
+  name: ai-software-architect-mcp
   language: python
   minimum_python: "3.11"
   sdk:
@@ -1802,7 +1804,10 @@ mcp_server:
     owner: host-managed-child-process
     eof_exit: required
     parent-death-exit: required
-    bounded-idle-self-reaping: required
+    bounded-idle-self-reaping:
+      required: true
+      seconds: 15
+      includes_initialized-unused-transports: true
     active-call-interruption: deny
   startup:
     command_form: fixed-executable-and-argument-array
@@ -1824,7 +1829,7 @@ mcp_server:
       - python
     python_parser: standard-library-ast-without-execution
     fast_mode: host-selected-static-import-statements
-    strong_mode: verified-workspace-or-full-source-ast
+    strong_mode: approved-full-source-boundary-check
     unsupported_language_action: skip-and-report
   tools:
     - name: validate_complete_architecture_contract
@@ -1833,7 +1838,7 @@ mcp_server:
       output: ContractValidationResult
     - name: analyze_python_dependencies
       access: read-only
-      input: InlineRepositoryAnalysisInput
+      input: DependencyAnalysisInput
       output: DependencyGraphEvidence
     - name: check_python_architecture_boundaries
       access: read-only
@@ -1845,17 +1850,19 @@ mcp_server:
       output: ArtifactSecretScanResult
 ```
 
-The Build Week release targets Windows x86-64 and bundles a self-contained PyInstaller one-directory runtime built in CI from the reviewed Python source and locked dependencies. One-directory form avoids the permanent parent/child bootloader pair created by one-file mode, reduces cold-start extraction work, and makes each logical host launch correspond to one runtime process. At this specification review, the [official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) documents v1 as the stable line and v2 as a pre-release transition; the MVP therefore locks an exact stable v1 release below v2. Moving to v2 requires a separate dependency ADR after stable availability plus protocol, structured-output, lifecycle, packaging, and security regression tests. The installed plugin MUST NOT create a virtual environment, invoke `pip`, fetch a package, or require a system Python installation on first run. Later operating-system and architecture packages require the same clean-machine lifecycle and security tests before they are advertised. The `.mcp.json` command MUST point only to the executable inside the installed, immutable plugin runtime directory using path semantics verified against the current Codex plugin runtime; it MUST set `cwd` to `"."` so Codex resolves the executable from the installed plugin root rather than the analyzed repository, and it MUST NOT point into the analyzed repository or depend on shell or environment expansion.
+The Build Week release targets Windows x86-64 and bundles a self-contained PyInstaller one-directory runtime built in CI from the reviewed Python source and locked dependencies. One-directory form avoids the permanent parent/child bootloader pair created by one-file mode and reduces cold-start extraction work. At this specification review, the [official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) documents v1 as the stable line and v2 as a pre-release transition; the MVP therefore locks an exact stable v1 release below v2. Moving to v2 requires a separate dependency ADR after stable availability plus protocol, structured-output, lifecycle, packaging, and security regression tests. The installed plugin MUST NOT create a virtual environment, invoke `pip`, fetch a package, or require a system Python installation on first run. Later operating-system and architecture packages require the same clean-machine lifecycle and security tests before they are advertised.
 
-Codex's documented plugin lifecycle launches a bundled MCP server, but it does not guarantee that the child process receives the active project root through MCP `roots/list`. Integration testing confirmed that an active single-root project was not forwarded to this plugin's MCP server. The Codex adapter therefore removes filesystem roots and workspace-bound ADR discovery from its MCP schema entirely. It inspects architecture artifacts through host-native read-only tools and supplies only bounded source text or static import statements to the deterministic Python tools. A path proposed by the model, repository content, or an individual tool argument is never a trust anchor.
+On Windows, Codex can retain a running MCP executable opened directly from its versioned plugin cache, preventing that cache from being deleted during uninstall. The `.mcp.json` entry therefore invokes the packaged `scripts/start-mcp.ps1` through the fixed Windows PowerShell executable and argument array. Codex resolves `cwd: "."` to the installed plugin root, allowing the fixed relative `-File` argument to locate the reviewed launcher without relying on hook-only `PLUGIN_ROOT` or `PLUGIN_DATA` variables. The launcher uses `-NoProfile`, `-NonInteractive`, and process-scoped `-ExecutionPolicy Bypass`; it never changes the user's configured execution policy. For each server session it copies only the already-packaged, versioned one-directory runtime into a random directory under `%LOCALAPPDATA%/AI Software Architect/plugin-runtime/<plugin-version>/`, changes its own current directory out of the plugin cache, and executes that private copy over inherited STDIO. After the child exits, it removes that session copy. This keeps the long-lived executable and process current directory outside the uninstallable plugin cache while preserving the exact packaged runtime and requiring no network access, package manager, repository command, or application source execution. The package smoke test removes `PLUGIN_ROOT` and `PLUGIN_DATA`, starts the launcher with the plugin root as Codex-resolved `cwd`, exercises the MCP tools, and verifies that no session executable remains afterward. The MCP configuration MUST NOT point into the analyzed repository or construct a command from repository or user input.
 
-The agent inspects `.ai-architect/` with host-native read-only tools and MUST NOT claim that no ADR or contract exists unless that location was actually inspected. `analyze_python_dependencies` and `check_python_architecture_boundaries` retain two filesystem-free modes. Full-source mode accepts bounded `SourceFileInput` records containing workspace-relative paths and exact source text already read through host-native workspace tools. Fast statement mode accepts bounded `DependencyStatementInput` records containing a workspace-relative Python path, the original starting line, and exactly one syntactically complete static `import` or `from ... import ...` statement. The server MUST parse both modes with Python's AST without execution and preserve original line evidence.
+Codex's documented plugin lifecycle launches a bundled MCP server, but it does not guarantee that the child process receives the active project root through MCP `roots/list`. Integration testing confirmed that an active single-root project was not forwarded to this plugin's MCP server. The Codex adapter therefore removes filesystem roots and workspace-bound ADR discovery from its MCP schema entirely. It inspects architecture artifacts through host-native read-only tools, supplies only bounded static import statements to dependency analysis, and supplies bounded source text only to an explicitly needed boundary check. A path proposed by the model, repository content, or an individual tool argument is never a trust anchor.
 
-Fast statement mode is intended for routine dependency orientation where smaller tool payloads reduce host-model latency and token use. It MUST warn that the host selected the statements and that omitted or dynamic imports were not evaluated. It MUST NOT support arbitrary executable statements, multiple statements per record, or claim repository completeness. Full-source or verified-workspace mode MUST be used when dynamic-import detection, full syntax context, security-sensitive boundary verification, or release-gating assurance matters.
+The agent inspects `.ai-architect/` with host-native read-only tools and MUST NOT claim that no ADR or contract exists unless that location was actually inspected. `analyze_python_dependencies` accepts only bounded `DependencyStatementInput` records containing a workspace-relative Python path, the original starting line, and exactly one syntactically complete static `import` or `from ... import ...` statement. This prevents a routine dependency review from attempting to transfer a complete source file through MCP. `check_python_architecture_boundaries` retains statement mode and an approved full-source mode containing bounded `SourceFileInput` records with workspace-relative paths and exact source text already read through host-native workspace tools. The server MUST parse both evidence representations with Python's AST without execution and preserve original line evidence.
+
+Fast statement mode is required for routine dependency orientation because its smaller payload avoids unnecessary local-source data-transfer approval and reduces host-model latency and token use. It MUST warn that the host selected the statements and that omitted or dynamic imports were not evaluated. It MUST NOT support arbitrary executable statements, multiple statements per record, or claim repository completeness. Full-source mode is limited to security-sensitive or release-gating boundary verification against an approved architecture contract. If the host cannot obtain interactive approval for that larger transfer, the architect MUST disclose the resulting verification limitation.
 
 Both filesystem-free modes MUST reject absolute, traversal, hidden, protected, duplicate, non-Python, null-containing, oversized, or mixed-mode inputs before parsing. They MUST never open a path, infer a repository root, or echo supplied content. Every result MUST disclose limitations caused by host selection. `validate_complete_architecture_contract` and `scan_generated_architecture_artifact` remain pathless. Contract validation requires the explicit literal scope `complete-candidate-contract`, and the host MUST inspect `result.valid`; transport completion alone MUST NOT be described as successful validation.
 
-STDIO lifecycle handling is defense in depth. The MCP protocol assigns normal shutdown to the client, but a host defect, crash, or retained connection can otherwise leave the packaged executable running and lock the plugin cache on Windows. The server therefore uses the official SDK STDIO lifecycle with a narrow stream-ownership adapter that leaves process-owned standard handles available to the PyInstaller runtime during shutdown, tracks active calls, and self-terminates after a bounded idle interval only when no call is active. It also terminates when the parent process disappears. The production timeout is bounded and may be shortened in tests through a dedicated environment value; invalid or unsafe values fall back to the reviewed default.
+STDIO lifecycle handling is defense in depth. The MCP protocol assigns normal shutdown to the client, but a host defect or crash can otherwise leave packaged processes alive and cause Codex to reject plugin removal. The server therefore uses the official SDK STDIO lifecycle with a narrow stream-ownership adapter that leaves process-owned standard handles available to the PyInstaller runtime during shutdown. It exits when stdin closes, terminates when its parent process disappears, and self-reaps after 15 seconds without an active call. The timeout also applies to transports Codex initialized but never used for a tool call; integration testing showed that these otherwise accumulate and still block uninstall. It never interrupts an active call. Later tool calls may start a fresh stateless server process; architecture decisions and continuation state are not stored in MCP process memory.
 
 Release validation MUST exercise the actual supported Codex Desktop build, not only an SDK test client. It starts multiple fresh tasks, confirms one operating-system process per logical one-directory runtime launch, waits beyond the self-reaping interval, verifies that stale processes and memory do not accumulate, and uninstalls the plugin successfully on the first attempt while Codex remains open. The test then reinstalls and reactivates the plugin. If clean uninstall still fails because the host retains a process, the release MUST omit the persistent Codex MCP integration and ship the architecture skills without it until the host lifecycle passes this gate; users MUST NOT be expected to edit plugin caches or kill processes during normal uninstall.
 
@@ -2104,7 +2111,7 @@ The public repository MUST use a secure development and release process:
 - Build releases from reviewed tags in CI, publish checksums, and SHOULD publish signed provenance or attestations when supported.
 - Generate a software bill of materials for each bundled executable and keep `THIRD_PARTY_NOTICES.md` consistent with all redistributed dependencies and their licenses.
 - Do not download or execute code from a mutable branch at plugin runtime.
-- Define the plugin's MCP startup as a fixed executable plus argument array. It MUST NOT use a shell command string, environment interpolation, package-runner shorthand that fetches unpinned code, or repository-controlled executable paths.
+- Define the plugin's MCP startup as fixed `powershell.exe` plus a reviewed `-File` argument array that runs only the packaged cache-safe launcher from Codex's plugin-root-resolved working directory. It MUST NOT depend on hook-only environment variables, interpolate repository or user input, use package-runner shorthand that fetches unpinned code, or run a repository-controlled executable path.
 - Keep the startup command and requested permissions visible to the user during installation or configuration.
 - Author architecture and pattern references in original language. Cite authoritative sources, track content provenance, and do not copy book, article, or vendor-documentation text into the MIT-licensed corpus without compatible permission.
 - Secret-scanner tests MUST construct nonfunctional synthetic values in an isolated temporary directory at test time; no real credential or reusable private key may be committed as a fixture.
@@ -2241,7 +2248,9 @@ Feature: Agent Skills standard and progressive disclosure
   Scenario: Reuse a progressively disclosed GoF Python example
     Given the user asks for a Python implementation example of "Abstract Factory"
     When "evaluate-architecture-options" routes to "references/gof-abstract-factory.md"
+    Then the Codex control plane may add that exact bundled reference path without selecting a semantic mode
     Then that reference supplies one or two fenced Python examples
+    And the agent reproduces the canonical example instead of generating a replacement from memory
     And every example parses as Python without non-standard-library dependencies
     And no example performs filesystem, network, subprocess, or dynamic-code operations
     And the agent loads no unrelated GoF reference
@@ -2249,11 +2258,11 @@ Feature: Agent Skills standard and progressive disclosure
     And it calls no MCP tool for the generic example request
 
   @PLUGIN-001
-  Scenario: Generate the Codex Composite and focused option skill
+  Scenario: Generate one public Codex Composite skill
     Given all canonical workflow skills and resources have passed validation
     When the Codex adapter builds the "ai-software-architect" plugin
-    Then the package contains one explicit user-facing Composite skill
-    And it contains a focused explicit "evaluate-architecture-options" skill
+    Then the package contains exactly one explicit user-facing Composite skill
+    And canonical modular skills remain internal source modules
     And its workflow does not depend on activating a sibling skill
     And its Codex metadata disables implicit invocation
     And users need no separately installed custom-agent or subagent profile
@@ -2270,17 +2279,29 @@ Feature: Agent Skills standard and progressive disclosure
     And the validator verifies the required plugin layout and real manifest values
 
   @PLUGIN-003
-  Scenario: Codex plugin selection and skill invocation remain distinct
-    Given the AI Software Architect plugin is installed and selected with an "@" mention
-    When an architecture request omits both explicit "$" skill invocations
+  Scenario: Direct skill invocation and plugin-page prompts share one workflow
+    Given the AI Software Architect plugin is installed
+    When the user directly selects "$ai-software-architect" without an "@" plugin mention
+    Then the architecture workflow may begin
+    And a namespaced Codex skill link remains a valid explicit invocation
+    And every plugin default prompt contains task text without a plugin or skill activation marker
+    Given Codex adds the installed plugin's "@" selection from the plugin page
+    When the default prompt contains a substantive architecture request
+    Then the same architecture workflow may begin without a duplicated skill name
+    Given the installed plugin is selected with an "@" mention
+    When the selection contains no substantive request
     Then the control plane routes to "missing_skill_invocation"
-    And it explains how to invoke "$ai-software-architect" or "$evaluate-architecture-options"
+    And it explains how to add a request or invoke "$ai-software-architect"
     And the user prompt is blocked before model or MCP execution
     And no turn state is persisted
-    When the user resends the request with "$ai-software-architect"
-    Then the architecture workflow may begin
-    And every plugin default prompt includes that skill invocation
     And ordinary prompts without an architect activation marker do not enter the control plane
+    Given an active architect response visibly requests clarification or a user decision
+    When the user answers in the next turn without repeating the skill invocation
+    Then one bounded session continuation keeps the architecture workflow active
+    And invoking another explicit skill or plugin cancels that continuation
+    And an approved project-bound material decision enters "record_and_handoff"
+    But an original no-create or no-modify restriction remains effective
+    And approval never authorizes application-code changes
 
 Feature: Host-native architectural reasoning
 
@@ -2339,27 +2360,30 @@ Feature: Architecture workflow routing
     And every alternative states its main benefit, main liability, and material assumption
     And the fit score is described as ordinal rather than a probability
     And complementary supporting patterns are listed separately from competing alternatives
-    And the first mention of each named pattern links to its canonical public reference when the host supports Markdown links
+    And the first mention of each named option or supporting pattern uses its category and canonical public reference when the host supports Markdown links
     And the user is asked to approve, revise, or request more information
     And structured output validates as ArchitectureOptionComparison when requested
     And the focused Codex Markdown rendering preserves only fields it actually parsed
     And the agent does not import, execute, compile, launch, test, or build repository code
 
   @FLOW-005
-  Scenario: Codex control plane enforces deterministic focused-skill boundaries
-    Given the focused option-evaluation skill was explicitly invoked
+  Scenario: Codex control plane enforces universal one-skill boundaries
+    Given "$ai-software-architect" was explicitly invoked
     And the user has trusted the plugin control-plane hooks
-    When that focused route proposes complete-contract validation
-    Then the pre-tool hook denies the structurally invalid call before execution
-    When the first final response omits the stable comparison rendering
+    When the skill requests focused help, comparison, or the complete lifecycle
+    Then the selected host model and Composite choose that semantic mode
+    And the hook does not classify the mode from natural-language keywords
+    But it may resolve an explicit canonical reference name to an exact bundled path
+    When a visible Alternatives section omits the stable comparison rendering
     Then the stop hook requests one complete replacement
     And a second stop does not create an infinite retry
     When the complete workflow returns a recommendation
-    Then it emits exactly one "recommendation" outcome marker
-    And it includes the language-neutral decision-action marker
+    Then it returns only user-facing Markdown
+    And it ends with visible decision guidance
     When the complete workflow instead clarifies or finishes without a pending decision
-    Then it emits the matching "clarify" or "complete" outcome marker
-    And it omits the decision-action marker
+    Then it returns the visible question or completed result without a machine marker
+    When any response leaks an internal AI Architect control marker
+    Then the stop hook requests one marker-free replacement
     But the complete architecture workflow remains semantic host-model reasoning
 
 Feature: Durable architecture state
@@ -2467,12 +2491,12 @@ Feature: Local deterministic MCP tools
     And a deterministic test verifies that prefix
 
   @MCP-005
-  Scenario: Stronger inline dependency verification is required
+  Scenario: Stronger inline boundary verification is required
     Given Codex has not supplied a trustworthy workspace binding
-    And dynamic imports, full AST context, or a release-gating boundary conclusion matters
-    When the agent requests deterministic Python dependency evidence
+    And an approved contract requires full AST context for a release-gating boundary conclusion
+    When the agent requests deterministic Python boundary evidence
     Then it reads only relevant approved Python files through host-native workspace tools
-    And calls "analyze_python_dependencies" with bounded workspace-relative "source_files"
+    And calls "check_python_architecture_boundaries" with bounded workspace-relative "source_files"
     And omits "dependency_statements"
     And the MCP server parses the supplied source without opening a path
     And the result discloses that host file selection may be incomplete
@@ -2481,7 +2505,7 @@ Feature: Local deterministic MCP tools
   Scenario: Stale Codex MCP sessions cannot block plugin uninstall
     Given the one-directory MCP runtime was launched by several Codex tasks
     And no MCP tool call remains active
-    When stdin closes, the parent exits, or the bounded idle interval expires
+    When stdin closes or the parent exits
     Then every affected runtime process exits within the lifecycle grace period
     And no one-file bootloader parent remains
     And Codex can uninstall the plugin on the first attempt without manual process termination

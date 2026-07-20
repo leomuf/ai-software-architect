@@ -1,5 +1,5 @@
 {
-  "description": "Recommended local guardrails for explicit architect skills: correct incomplete plugin invocation, inject one matched bundled reference, keep architect inspection static and application code unchanged, restrict structurally invalid focused-route tool use, validate focused option rendering, and check a hidden complete-workflow outcome marker. No model calls or network calls; review the public source at https://github.com/leomuf/ai-software-architect#why-codex-asks-you-to-trust-the-hooks.",
+  "description": "Recommended local guardrails for AI Software Architect: accept direct skill or substantive plugin-page requests, correct an empty plugin selection, resolve explicit canonical reference names, continue one bounded clarification or decision reply, keep architect inspection static and application code unchanged, validate stable visible option rendering when present, and reject leaked internal response markers. Semantic mode remains a host-model responsibility. No model calls or network calls; exact hook definitions are included in the package, and source and tests are linked from the plugin page when repository access is available.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -16,7 +16,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^(Bash|apply_patch|Edit|Write|.*(validate_complete_architecture_contract|scan_generated_architecture_artifact|analyze_python_dependencies|check_python_architecture_boundaries).*)$",
+        "matcher": "^(Bash|apply_patch|Edit|Write|WebSearch|web_search|search_query|web__run|.*(validate_complete_architecture_contract|scan_generated_architecture_artifact|analyze_python_dependencies|check_python_architecture_boundaries).*)$",
         "hooks": [
           {
             "type": "command",

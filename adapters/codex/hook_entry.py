@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 from dataclasses import asdict
@@ -15,6 +16,13 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from adapters.codex.continuation import (
+        ApprovalTransition,
+        ContinuationManager,
+        PendingInteraction,
+        SessionContinuation,
+        WorkflowPhase,
+    )
     from adapters.codex.control_plane import (
         MISSING_INVOCATION_GUIDANCE,
         CodexTurnContext,
@@ -23,10 +31,18 @@ try:
         developer_context,
         final_response_violations,
         tool_denial_reason,
+        with_reference_hints,
     )
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
+    from continuation import (  # type: ignore[import-not-found, no-redef]
+        ApprovalTransition,
+        ContinuationManager,
+        PendingInteraction,
+        SessionContinuation,
+        WorkflowPhase,
+    )
     from control_plane import (  # type: ignore[import-not-found, no-redef]
         MISSING_INVOCATION_GUIDANCE,
         CodexTurnContext,
@@ -35,40 +51,16 @@ except ModuleNotFoundError as exc:
         developer_context,
         final_response_violations,
         tool_denial_reason,
+        with_reference_hints,
     )
 
 MAX_HOOK_INPUT_BYTES = 1_000_000
-MAX_BUNDLED_REFERENCE_BYTES = 200_000
 MAX_STATE_AGE_SECONDS = 86_400
+MAX_CONTINUATION_AGE_SECONDS = 3_600
 MAX_STATE_FILES = 512
 
 
-def _reference_root(plugin_root: Path) -> Path:
-    return (
-        plugin_root
-        / "skills"
-        / "evaluate-architecture-options"
-        / "references"
-    ).resolve()
-
-
-def _available_reference_slugs(plugin_root: Path | None) -> tuple[str, ...]:
-    if plugin_root is None:
-        return ()
-    reference_root = _reference_root(plugin_root)
-    try:
-        return tuple(
-            sorted(
-                path.stem
-                for path in reference_root.glob("*.md")
-                if path.is_file() and path.resolve().parent == reference_root
-            )
-        )
-    except OSError:
-        return ()
-
-
-def _state_path(payload: dict[str, Any], plugin_data: Path) -> Path:
+def _turn_state_path(payload: dict[str, Any], plugin_data: Path) -> Path:
     session_id = payload.get("session_id")
     turn_id = payload.get("turn_id")
     if not isinstance(session_id, str) or not session_id:
@@ -77,15 +69,17 @@ def _state_path(payload: dict[str, Any], plugin_data: Path) -> Path:
         raise ValueError("hook turn_id is unavailable")
     identity = f"{session_id}\0{turn_id}"
     digest = hashlib.sha256(identity.encode("utf-8", errors="replace")).hexdigest()
-    return plugin_data / "control-plane" / f"{digest}.json"
+    return plugin_data / "control-plane" / f"turn-{digest}.json"
 
 
-def _write_context(
-    payload: dict[str, Any],
-    context: CodexTurnContext,
-    plugin_data: Path,
-) -> None:
-    path = _state_path(payload, plugin_data)
+def _session_id(payload: dict[str, Any]) -> str:
+    session_id = payload.get("session_id")
+    if not isinstance(session_id, str) or not session_id:
+        raise ValueError("hook session_id is unavailable")
+    return session_id
+
+
+def _write_json_context(path: Path, context: CodexTurnContext) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".tmp")
     temporary.write_text(
@@ -94,6 +88,14 @@ def _write_context(
         newline="\n",
     )
     temporary.replace(path)
+
+
+def _write_context(
+    payload: dict[str, Any],
+    context: CodexTurnContext,
+    plugin_data: Path,
+) -> None:
+    _write_json_context(_turn_state_path(payload, plugin_data), context)
     _cleanup_stale_contexts(plugin_data)
 
 
@@ -102,21 +104,71 @@ def _read_context(
     plugin_data: Path,
 ) -> CodexTurnContext:
     try:
-        raw = json.loads(_state_path(payload, plugin_data).read_text("utf-8"))
+        raw = json.loads(_turn_state_path(payload, plugin_data).read_text("utf-8"))
         return CodexTurnContext(
             active=raw["active"],
             route=CodexTurnRoute(raw["route"]),
-            reference_slug=raw.get("reference_slug"),
+            reference_paths=tuple(raw.get("reference_paths", ())),
         )
-    except (FileNotFoundError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+    except (
+        OSError,
+        KeyError,
+        TypeError,
+        ValueError,
+        json.JSONDecodeError,
+    ):
         return CodexTurnContext(active=False, route=CodexTurnRoute.INACTIVE)
 
 
 def _remove_context(payload: dict[str, Any], plugin_data: Path) -> None:
     try:
-        _state_path(payload, plugin_data).unlink(missing_ok=True)
+        _turn_state_path(payload, plugin_data).unlink(missing_ok=True)
     except (OSError, ValueError):
         pass
+
+
+def _pending_continuation(
+    message: str,
+    context: CodexTurnContext,
+) -> SessionContinuation | None:
+    visible = message.rstrip()
+    if "## Your decision" in visible:
+        return SessionContinuation(
+            context=context,
+            interaction=PendingInteraction.DECISION,
+            phase=WorkflowPhase.APPROVE,
+            approval_transition=ApprovalTransition.RECORD_AND_HANDOFF,
+        )
+    if visible.endswith("?"):
+        return SessionContinuation(
+            context=context,
+            interaction=PendingInteraction.CLARIFICATION,
+            phase=WorkflowPhase.CLARIFY,
+            approval_transition=ApprovalTransition.RESUME_DESIGN,
+        )
+    return None
+
+
+def _continuation_instruction(continuation: SessionContinuation) -> str:
+    if continuation.interaction == PendingInteraction.DECISION:
+        return (
+            "The preceding response requested a decision. Interpret the user's reply "
+            "host-natively and in any language. If the user approves, do not merely "
+            "acknowledge approval: transition to `record_and_handoff`, safely create "
+            "and validate the approved ADR, architecture contract, context, and coding "
+            "handoff when this is a project-bound material decision. Architecture "
+            "artifact writes under `.ai-architect/` are authorized by approval unless "
+            "the original request explicitly prohibited creating or modifying files. "
+            "Approval never authorizes application-code changes. If the original turn "
+            "was read-only or projectless, preserve that restriction and plainly "
+            "explain why artifacts were not persisted. If the user revises or rejects "
+            "the proposal, return to design and persist nothing."
+        )
+    return (
+        "The preceding response requested clarification. Interpret this reply as the "
+        "answer, retain the clarified constraints, and resume the smallest sufficient "
+        "architecture workflow without requiring another skill invocation."
+    )
 
 
 def _cleanup_stale_contexts(
@@ -143,55 +195,53 @@ def _cleanup_stale_contexts(
                 pass
 
 
-def _bundled_reference_context(
-    context: CodexTurnContext,
-    plugin_root: Path | None,
-) -> str:
-    if context.reference_slug is None or plugin_root is None:
-        return ""
-    reference_root = _reference_root(plugin_root)
-    reference_path = (reference_root / f"{context.reference_slug}.md").resolve()
-    if reference_path.parent != reference_root:
-        raise ValueError("bundled reference escaped its reference directory")
-    raw = reference_path.read_bytes()
-    if len(raw) > MAX_BUNDLED_REFERENCE_BYTES:
-        raise ValueError("bundled reference exceeds the bounded context size")
-    reference_text = raw.decode("utf-8")
-    return (
-        "\n\nThe trusted bundled canonical reference is included below. Use its "
-        "Python example verbatim when the user's generic request does not require "
-        "domain adaptation. Do not fetch another copy from the web.\n"
-        "<bundled-canonical-reference>\n"
-        + reference_text
-        + "\n</bundled-canonical-reference>"
-    )
-
-
 def handle_user_prompt_submit(
     payload: dict[str, Any],
     plugin_data: Path,
-    plugin_root: Path | None = None,
+    _plugin_root: Path | None = None,
 ) -> dict[str, Any]:
     prompt = payload.get("prompt")
-    context = classify_prompt(
-        prompt if isinstance(prompt, str) else "",
-        _available_reference_slugs(plugin_root),
+    prompt_text = prompt if isinstance(prompt, str) else ""
+    context = with_reference_hints(classify_prompt(prompt_text), prompt_text)
+    continuation: SessionContinuation | None = None
+    continuations = ContinuationManager(
+        plugin_data,
+        max_age_seconds=MAX_CONTINUATION_AGE_SECONDS,
     )
     if not context.active:
-        return {}
+        has_other_activation = (
+            re.search(r"\$[a-z0-9][a-z0-9-]*", prompt_text, flags=re.IGNORECASE)
+            is not None
+            or "plugin://" in prompt_text.casefold()
+        )
+        if has_other_activation:
+            continuations.cancel(_session_id(payload))
+            return {}
+        continuation = continuations.consume(_session_id(payload))
+        if continuation is None:
+            return {}
+        context = continuation.context
     if context.route == CodexTurnRoute.MISSING_SKILL_INVOCATION:
+        continuations.cancel(_session_id(payload))
         _cleanup_stale_contexts(plugin_data)
         return {
             "decision": "block",
             "reason": MISSING_INVOCATION_GUIDANCE,
         }
+    if continuation is None:
+        continuations.cancel(_session_id(payload))
     _write_context(payload, context, plugin_data)
     return {
         "hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit",
-            "additionalContext": (
-                developer_context(context)
-                + _bundled_reference_context(context, plugin_root)
+            "additionalContext": developer_context(
+                context,
+                continued=continuation is not None,
+                continuation_instruction=(
+                    _continuation_instruction(continuation)
+                    if continuation is not None
+                    else ""
+                ),
             ),
         }
     }
@@ -206,6 +256,11 @@ def handle_pre_tool_use(
         context,
         payload.get("tool_name"),
         payload.get("tool_input"),
+        workspace=(
+            Path(payload["cwd"])
+            if isinstance(payload.get("cwd"), str) and payload["cwd"]
+            else None
+        ),
     )
     if reason is None:
         return {}
@@ -225,16 +280,31 @@ def handle_stop(
     context = _read_context(payload, plugin_data)
     if not context.active:
         return {}
+    message = payload.get("last_assistant_message")
+    message_text = message if isinstance(message, str) else ""
+    continuations = ContinuationManager(
+        plugin_data,
+        max_age_seconds=MAX_CONTINUATION_AGE_SECONDS,
+    )
     if payload.get("stop_hook_active") is True:
+        pending = _pending_continuation(message_text, context)
+        if pending is not None:
+            continuations.open(_session_id(payload), pending)
+        else:
+            continuations.cancel(_session_id(payload))
         _remove_context(payload, plugin_data)
         return {}
-    message = payload.get("last_assistant_message")
     violations = final_response_violations(
         context,
-        message if isinstance(message, str) else "",
+        message_text,
     )
-    _remove_context(payload, plugin_data)
     if not violations:
+        _remove_context(payload, plugin_data)
+        pending = _pending_continuation(message_text, context)
+        if pending is not None:
+            continuations.open(_session_id(payload), pending)
+        else:
+            continuations.cancel(_session_id(payload))
         return {}
     return {
         "decision": "block",

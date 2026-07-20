@@ -504,6 +504,28 @@ class InlineRepositoryAnalysisInput(StrictModel):
         )
 
 
+class DependencyAnalysisInput(StrictModel):
+    """Codex-safe dependency input containing static imports, never full source."""
+
+    dependency_statements: list[DependencyStatementInput] = Field(
+        min_length=1, max_length=MAX_DEPENDENCY_STATEMENTS
+    )
+    languages: list[Literal["python"]] = Field(
+        default_factory=_default_languages, min_length=1, max_length=1
+    )
+
+    @model_validator(mode="after")
+    def validate_dependency_statements(self) -> Self:
+        _validate_inline_analysis_content([], self.dependency_statements)
+        return self
+
+    def to_domain_input(self) -> RepositoryAnalysisInput:
+        return RepositoryAnalysisInput(
+            dependency_statements=self.dependency_statements,
+            languages=self.languages,
+        )
+
+
 class BoundaryCheckInput(RepositoryAnalysisInput):
     contract_yaml: str = Field(min_length=1, max_length=500_000)
 

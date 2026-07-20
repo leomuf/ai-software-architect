@@ -1,6 +1,6 @@
 ---
 name: evaluate-architecture-options
-description: Compare credible architecture styles, design patterns, integration approaches, and no-pattern alternatives against explicit forces. Use when an architecture interview has enough context to evaluate structural choices, dependencies, data access, messaging, resilience, modernization, or presentation design.
+description: Suggest and compare project-fit architecture styles, design patterns, integration approaches, and no-pattern alternatives against explicit forces. Use when enough context is available to evaluate structural choices, dependencies, data access, messaging, resilience, modernization, or presentation design.
 license: MIT
 ---
 <!--
@@ -56,14 +56,12 @@ Use this compact response template exactly for an open selection:
 - [Category] [Linked name] — <its non-competing role>
 
 ## Your decision
-<!-- ai-architect-decision-shape: comparison -->
-<!-- ai-architect-actions: approve, revise, more-information -->
 Please approve, revise, or request more information before I continue.
 ```
 
-Shape the same content as `ArchitectureOptionComparison` when a structured output is requested, including the language-neutral `offered_actions` values `approve`, `revise`, and `more-information`. Validate that complete shape in host-native structured-output mode; do not call an MCP tool merely to validate a recommendation. The HTML action marker in the Markdown template is not displayed to the user; it lets a trusted Codex Stop hook verify the offered actions without searching localized prose for English words.
+Shape the same content as `ArchitectureOptionComparison` when a structured output is requested, including the language-neutral `offered_actions` values `approve`, `revise`, and `more-information`. Validate that complete shape in host-native structured-output mode; do not call an MCP tool merely to validate a recommendation. In Markdown, express those choices as ordinary visible guidance rather than machine-readable comments.
 
-Before sending the answer, perform the same deterministic rendering self-check used by the Codex control plane: all six headings appear in order, two to five genuine alternatives are rendered (normally three to five when that many are credible), category labels and canonical links are present, one compared option is recommended, and the final section contains the action marker plus visible decision guidance. When this focused skill is invoked directly, a trusted Codex Stop hook may request one complete corrected rendering.
+Before sending the answer, perform the same deterministic rendering self-check used by the Codex control plane: all six headings appear in order, two to five genuine alternatives are rendered (normally three to five when that many are credible), category labels and canonical links are present, one compared option is recommended, and the final section contains visible decision guidance. Do not emit internal control markers or HTML comments; Codex may display them to the user. When the Codex Composite routes here for a comparison, a trusted Stop hook may request one complete corrected rendering.
 
 1. Start from recorded constraints, risks, stakeholders, and ranked quality attributes.
 2. For an open-ended architecture or pattern-selection request, form three to five credible options within each material decision scope. Never pad the comparison with an option that does not address the same decision; when fewer than three credible alternatives exist, present the smaller set and explain why.
@@ -85,10 +83,12 @@ Before sending the answer, perform the same deterministic rendering self-check u
 
 ## Implementation example requests
 
-- When the user asks for a generic Python implementation example of a GoF pattern, load only that routed `gof-*.md` reference and reuse its `Python example`. Explain briefly how the example's participants map to the pattern.
-- In Codex, a user may explicitly invoke `$evaluate-architecture-options` for a direct pattern or implementation-example request. When `$ai-software-architect` is already active, use the Composite's own copied reference and do not attempt sibling-skill activation.
+- Treat loading the routed reference as a hard gate before answering a named-pattern explanation or implementation-example request. Do not answer from model memory. If the reference cannot be loaded, disclose that limitation instead of synthesizing an example.
+- When the user asks for a generic Python implementation example of a GoF pattern, load only that routed `gof-*.md` reference and reuse its `Python example` verbatim. Explain briefly how the example's participants map to the pattern.
+- In Codex, users invoke only `$ai-software-architect`. The Composite routes pattern explanations, implementation examples, and comparisons to this canonical module and uses its copied references without attempting sibling-skill activation.
 - Reproduce the canonical example when a generic example is sufficient. For a repository-specific request, adapt the example to the user's domain and clearly identify the adaptation instead of presenting the canonical snippet as project-ready code.
 - Do not load unrelated pattern files or synthesize additional variants unless the user asks for them or a materially different variant is necessary.
+- Construct canonical public links from the routed filenames below. Do not browse or search the public repository merely to verify those deterministic links.
 - Do not call an MCP tool for a generic pattern explanation, implementation example, or architecture-guidance request. Use the routed skill reference directly. Call deterministic MCP tools only when the requested task actually requires repository evidence, architecture-artifact inspection, contract or boundary validation, or generated-artifact secret scanning.
 
 ## Direct reference routing

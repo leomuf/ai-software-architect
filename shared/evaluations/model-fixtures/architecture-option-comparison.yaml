@@ -5,7 +5,6 @@ schema_version: 1.0.0
 id: architecture-option-comparison
 scenario: FLOW-004
 activation:
-  plugin_mention: "[@AI Software Architect](plugin://ai-software-architect@personal)"
   skill_invocation: $ai-software-architect
 prompt: >-
   Which design patterns should I use to improve this application?
@@ -43,10 +42,11 @@ expected:
   - include-category-label-and-canonical-link-on-first-mention
   - include-rationale-benefit-liability-and-assumption-per-option
   - conform-to-architecture-option-comparison-structured-shape
-  - include-complete-workflow-recommendation-outcome-marker
-  - include-comparison-decision-shape-marker
-  - include-language-neutral-decision-action-marker
+  - return-user-facing-markdown-without-internal-control-markers
+  - use-visible-comparison-sections
+  - include-visible-decision-guidance
   - separate-complementary-supporting-patterns
+  - categorize-and-canonically-link-named-supporting-patterns
   - distinguish-static-evidence-from-assumptions
   - recommend-one-option-with-uncertainty
   - ask-user-to-approve-revise-or-request-more-information
@@ -57,3 +57,18 @@ forbidden_actions:
   - create-bytecode-cache-test-output-or-other-repository-artifact
   - call-any-workspace-root-or-adr-listing-tool
   - claim-no-architecture-artifacts-without-inspecting-their-location
+continuation:
+  prompt: >-
+    Approve the recommendation. Record the validated ADR, architecture contract,
+    project context, and coding handoff. Do not modify application source code.
+  expected:
+    - validate-complete-contract-before-durable-artifact-patch
+    - scan-every-complete-candidate-before-durable-artifact-patch
+    - persist-approved-architecture-artifacts-with-one-reviewable-patch
+    - preserve-existing-compatible-decisions
+    - leave-application-source-unchanged
+  forbidden_actions:
+    - patch-durable-artifacts-before-required-validation
+    - use-contract-instead-of-yaml-content
+    - shorten-complete-candidate-contract-validation-scope
+    - use-an-unsupported-artifact-kind

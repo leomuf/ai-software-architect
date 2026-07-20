@@ -50,7 +50,9 @@ Feature: Agent Skills standard and progressive disclosure
   Scenario: Reuse a progressively disclosed GoF Python example
     Given the user asks for a Python implementation example of "Abstract Factory"
     When "evaluate-architecture-options" routes to "references/gof-abstract-factory.md"
+    Then the Codex control plane may add that exact bundled reference path without selecting a semantic mode
     Then that reference supplies one or two fenced Python examples
+    And the agent reproduces the canonical example instead of generating a replacement from memory
     And every example parses as Python without non-standard-library dependencies
     And no example performs filesystem, network, subprocess, or dynamic-code operations
     And the agent loads no unrelated GoF reference
@@ -58,11 +60,11 @@ Feature: Agent Skills standard and progressive disclosure
     And it calls no MCP tool for the generic example request
 
   @PLUGIN-001
-  Scenario: Generate the Codex Composite and focused option skill
+  Scenario: Generate one public Codex Composite skill
     Given all canonical workflow skills and resources have passed validation
     When the Codex adapter builds the "ai-software-architect" plugin
-    Then the package contains one explicit user-facing Composite skill
-    And it contains a focused explicit "evaluate-architecture-options" skill
+    Then the package contains exactly one explicit user-facing Composite skill
+    And canonical modular skills remain internal source modules
     And its workflow does not depend on activating a sibling skill
     And its Codex metadata disables implicit invocation
     And users need no separately installed custom-agent or subagent profile
@@ -79,17 +81,29 @@ Feature: Agent Skills standard and progressive disclosure
     And the validator verifies the required plugin layout and real manifest values
 
   @PLUGIN-003
-  Scenario: Codex plugin selection and skill invocation remain distinct
-    Given the AI Software Architect plugin is installed and selected with an "@" mention
-    When an architecture request omits both explicit "$" skill invocations
+  Scenario: Direct skill invocation and plugin-page prompts share one workflow
+    Given the AI Software Architect plugin is installed
+    When the user directly selects "$ai-software-architect" without an "@" plugin mention
+    Then the architecture workflow may begin
+    And a namespaced Codex skill link remains a valid explicit invocation
+    And every plugin default prompt contains task text without a plugin or skill activation marker
+    Given Codex adds the installed plugin's "@" selection from the plugin page
+    When the default prompt contains a substantive architecture request
+    Then the same architecture workflow may begin without a duplicated skill name
+    Given the installed plugin is selected with an "@" mention
+    When the selection contains no substantive request
     Then the control plane routes to "missing_skill_invocation"
-    And it explains how to invoke "$ai-software-architect" or "$evaluate-architecture-options"
+    And it explains how to add a request or invoke "$ai-software-architect"
     And the user prompt is blocked before model or MCP execution
     And no turn state is persisted
-    When the user resends the request with "$ai-software-architect"
-    Then the architecture workflow may begin
-    And every plugin default prompt includes that skill invocation
     And ordinary prompts without an architect activation marker do not enter the control plane
+    Given an active architect response visibly requests clarification or a user decision
+    When the user answers in the next turn without repeating the skill invocation
+    Then one bounded session continuation keeps the architecture workflow active
+    And invoking another explicit skill or plugin cancels that continuation
+    And an approved project-bound material decision enters "record_and_handoff"
+    But an original no-create or no-modify restriction remains effective
+    And approval never authorizes application-code changes
 
 Feature: Host-native architectural reasoning
 
@@ -148,27 +162,30 @@ Feature: Architecture workflow routing
     And every alternative states its main benefit, main liability, and material assumption
     And the fit score is described as ordinal rather than a probability
     And complementary supporting patterns are listed separately from competing alternatives
-    And the first mention of each named pattern links to its canonical public reference when the host supports Markdown links
+    And the first mention of each named option or supporting pattern uses its category and canonical public reference when the host supports Markdown links
     And the user is asked to approve, revise, or request more information
     And structured output validates as ArchitectureOptionComparison when requested
     And the focused Codex Markdown rendering preserves only fields it actually parsed
     And the agent does not import, execute, compile, launch, test, or build repository code
 
   @FLOW-005
-  Scenario: Codex control plane enforces deterministic focused-skill boundaries
-    Given the focused option-evaluation skill was explicitly invoked
+  Scenario: Codex control plane enforces universal one-skill boundaries
+    Given "$ai-software-architect" was explicitly invoked
     And the user has trusted the plugin control-plane hooks
-    When that focused route proposes complete-contract validation
-    Then the pre-tool hook denies the structurally invalid call before execution
-    When the first final response omits the stable comparison rendering
+    When the skill requests focused help, comparison, or the complete lifecycle
+    Then the selected host model and Composite choose that semantic mode
+    And the hook does not classify the mode from natural-language keywords
+    But it may resolve an explicit canonical reference name to an exact bundled path
+    When a visible Alternatives section omits the stable comparison rendering
     Then the stop hook requests one complete replacement
     And a second stop does not create an infinite retry
     When the complete workflow returns a recommendation
-    Then it emits exactly one "recommendation" outcome marker
-    And it includes the language-neutral decision-action marker
+    Then it returns only user-facing Markdown
+    And it ends with visible decision guidance
     When the complete workflow instead clarifies or finishes without a pending decision
-    Then it emits the matching "clarify" or "complete" outcome marker
-    And it omits the decision-action marker
+    Then it returns the visible question or completed result without a machine marker
+    When any response leaks an internal AI Architect control marker
+    Then the stop hook requests one marker-free replacement
     But the complete architecture workflow remains semantic host-model reasoning
 
 Feature: Durable architecture state
@@ -276,12 +293,12 @@ Feature: Local deterministic MCP tools
     And a deterministic test verifies that prefix
 
   @MCP-005
-  Scenario: Stronger inline dependency verification is required
+  Scenario: Stronger inline boundary verification is required
     Given Codex has not supplied a trustworthy workspace binding
-    And dynamic imports, full AST context, or a release-gating boundary conclusion matters
-    When the agent requests deterministic Python dependency evidence
+    And an approved contract requires full AST context for a release-gating boundary conclusion
+    When the agent requests deterministic Python boundary evidence
     Then it reads only relevant approved Python files through host-native workspace tools
-    And calls "analyze_python_dependencies" with bounded workspace-relative "source_files"
+    And calls "check_python_architecture_boundaries" with bounded workspace-relative "source_files"
     And omits "dependency_statements"
     And the MCP server parses the supplied source without opening a path
     And the result discloses that host file selection may be incomplete
@@ -290,7 +307,7 @@ Feature: Local deterministic MCP tools
   Scenario: Stale Codex MCP sessions cannot block plugin uninstall
     Given the one-directory MCP runtime was launched by several Codex tasks
     And no MCP tool call remains active
-    When stdin closes, the parent exits, or the bounded idle interval expires
+    When stdin closes or the parent exits
     Then every affected runtime process exits within the lifecycle grace period
     And no one-file bootloader parent remains
     And Codex can uninstall the plugin on the first attempt without manual process termination
