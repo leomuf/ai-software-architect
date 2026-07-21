@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from adapters.codex.evaluations.models import (
 from adapters.codex.evaluations.runner import (
     DEFAULT_MANIFEST,
     _codex_command,
+    _installed_plugin_version,
     _parse_events,
     main,
 )
@@ -127,6 +129,65 @@ def test_codex_command_is_ephemeral_only_without_a_continuation() -> None:
     assert continuation[-3:] == ["resume", "thread-123", "Approve it."]
 
 
+def test_installed_plugin_version_uses_enabled_personal_plugin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = {
+        "installed": [
+            {
+                "pluginId": "ai-software-architect@personal",
+                "version": "0.2.0",
+                "installed": True,
+                "enabled": True,
+            }
+        ]
+    }
+
+    def fake_run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        assert command == [
+            "codex",
+            "plugin",
+            "list",
+            "--marketplace",
+            "personal",
+            "--json",
+        ]
+        return subprocess.CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    assert _installed_plugin_version("codex") == "0.2.0"
+
+
+def test_expected_plugin_version_mismatch_fails_before_evaluation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from adapters.codex.evaluations import runner
+
+    output = tmp_path / "campaign"
+    monkeypatch.setattr(runner, "_codex_version", lambda _: "codex-cli test")
+    monkeypatch.setattr(runner, "_installed_plugin_version", lambda _: "0.2.0")
+
+    exit_code = main(
+        [
+            "--manifest",
+            str(DEFAULT_MANIFEST),
+            "--output-directory",
+            str(output),
+            "--codex-command",
+            "codex",
+            "--expected-plugin-version",
+            "0.1.0",
+        ]
+    )
+
+    assert exit_code == 2
+    assert not output.exists()
+    assert "Expected AI Software Architect 0.1.0" in capsys.readouterr().err
+
+
 def test_dry_run_plans_the_campaign_without_invoking_codex(tmp_path: Path) -> None:
     output = tmp_path / "campaign"
 
@@ -146,4 +207,5 @@ def test_dry_run_plans_the_campaign_without_invoking_codex(tmp_path: Path) -> No
     assert {result["status"] for result in report["results"]} == {
         EvaluationStatus.PLANNED.value
     }
+    assert report["installed_plugin_version"] is None
     assert not (output / "workspaces").exists()

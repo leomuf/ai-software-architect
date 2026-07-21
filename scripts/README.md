@@ -149,7 +149,7 @@ five shared fixtures with the Codex-specific adapter:
 .\scripts\run-codex-exploratory-evaluations.ps1
 ```
 
-The runner defaults to `gpt-5.6` with medium reasoning to keep the initial release
+The runner defaults to `gpt-5.6-sol` with medium reasoning to keep the initial release
 evaluation comparable. This is a maintainer test baseline, not a runtime plugin
 requirement. When investigating a failed evaluation, you can rerun a single test
 scenario, choose a different model, or save the results in a separate folder for
@@ -158,11 +158,17 @@ comparison:
 ```powershell
 .\scripts\run-codex-exploratory-evaluations.ps1 `
   -Fixture architecture-option-comparison `
-  -Model "gpt-5.6" `
+  -Model "gpt-5.6-sol" `
   -ReasoningEffort medium `
-  -PluginVersion 0.1.0 `
+  -ExpectedPluginVersion 0.1.0 `
   -OutputDirectory .tmp\evaluations\release-candidate
 ```
+
+For a real run, the runner asks Codex for the installed and enabled personal
+plugin version and records it automatically. `-ExpectedPluginVersion` is an
+optional release safety check: a mismatch stops the campaign before model calls.
+It never installs, disables, or switches plugin versions. The former
+`-PluginVersion` spelling remains a backward-compatible PowerShell alias.
 
 Validate fixture discovery and report generation without invoking Codex or using
 model credits:
@@ -173,7 +179,11 @@ model credits:
 
 The command writes `report.json`, `SUMMARY.md`, JSONL events, stderr, final
 responses, isolated synthetic repositories, and repository-change evidence below
-`.tmp/evaluations/`. These generated files are ignored by Git. A
+`.tmp/evaluations/` or the selected output directory. These generated files are
+ignored by Git. If the campaign fails, the PowerShell entry point prints the
+affected fixture and phase, failed checks, underlying Codex or stderr messages,
+and direct paths to the full report and summary before exiting. During execution,
+live `[current/total]` messages identify the active fixture and phase. A
 `manual-review` result means the deterministic safeguards passed; it is not a
 semantic pass. Review every expected and forbidden behavior before release.
 

@@ -34,6 +34,7 @@ from adapters.codex.evaluations.models import (
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_MANIFEST = ROOT / "shared" / "evaluations" / "verification-manifest.yaml"
 INTERNAL_MARKER = "<!-- ai-architect-"
+PLUGIN_ID = "ai-software-architect@personal"
 
 
 def _snapshot(root: Path) -> dict[str, str]:
@@ -229,6 +230,54 @@ def _codex_version(executable: str) -> str:
     return completed.stdout.strip()
 
 
+def _installed_plugin_version(executable: str) -> str:
+    completed = subprocess.run(  # noqa: S603
+        [
+            executable,
+            "plugin",
+            "list",
+            "--marketplace",
+            "personal",
+            "--json",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or f"exit code {completed.returncode}"
+        raise OSError(f"Unable to inspect installed Codex plugins: {detail}")
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Codex returned an invalid JSON plugin list.") from exc
+
+    installed = payload.get("installed")
+    if not isinstance(installed, list):
+        raise ValueError("Codex plugin list did not contain an installed-plugin collection.")
+    matches = [
+        plugin
+        for plugin in installed
+        if isinstance(plugin, dict) and plugin.get("pluginId") == PLUGIN_ID
+    ]
+    if len(matches) != 1:
+        raise ValueError(
+            f"Expected exactly one installed {PLUGIN_ID} entry; found {len(matches)}."
+        )
+    plugin = matches[0]
+    if plugin.get("installed") is not True or plugin.get("enabled") is not True:
+        raise ValueError(
+            f"{PLUGIN_ID} must be installed and enabled before running evaluations."
+        )
+    version = plugin.get("version")
+    if not isinstance(version, str) or not version.strip():
+        raise ValueError(f"Codex did not report a version for {PLUGIN_ID}.")
+    return version.strip()
+
+
 def _load_campaign(manifest: Path, selected: set[str]) -> list[tuple[Path, EvaluationFixture]]:
     raw = yaml.safe_load(manifest.read_text(encoding="utf-8"))
     configured = raw.get("exploratory_campaign", [])
@@ -251,7 +300,9 @@ def _summary(report: CampaignReport) -> str:
         f"- Model: `{report.model}`",
         f"- Reasoning effort: `{report.reasoning_effort}`",
         f"- Codex CLI: `{report.codex_version}`",
-        f"- Expected plugin version: `{report.expected_plugin_version or 'not-recorded'}`",
+        "- Installed plugin version: "
+        f"`{report.installed_plugin_version or 'not-checked (dry run)'}`",
+        f"- Expected plugin version: `{report.expected_plugin_version or 'not-specified'}`",
         f"- Started: `{report.started_at.isoformat()}`",
         "",
         "| Fixture | Scenario | Status | Phases |",
@@ -275,16 +326,38 @@ def _summary(report: CampaignReport) -> str:
 
 def run_campaign(args: argparse.Namespace) -> CampaignReport:
     started = datetime.now(UTC)
+    campaign_started = time.monotonic()
     selected = set(args.fixture or [])
     fixtures = _load_campaign(args.manifest, selected)
-    codex_version = "not-checked (dry run)" if args.dry_run else _codex_version(args.codex_command)
+    if args.dry_run:
+        codex_version = "not-checked (dry run)"
+        installed_plugin_version = None
+    else:
+        codex_version = _codex_version(args.codex_command)
+        installed_plugin_version = _installed_plugin_version(args.codex_command)
+        if (
+            args.expected_plugin_version is not None
+            and installed_plugin_version != args.expected_plugin_version
+        ):
+            raise ValueError(
+                f"Expected AI Software Architect {args.expected_plugin_version}, but Codex has "
+                f"{installed_plugin_version} installed and enabled. Install the intended release "
+                "candidate before running the evaluations."
+            )
     args.output_directory.mkdir(parents=True, exist_ok=False)
     results: list[FixtureResult] = []
+    fixture_count = len(fixtures)
 
-    for _, fixture in fixtures:
+    print(f"Loaded {fixture_count} exploratory fixture(s).", flush=True)
+    if installed_plugin_version is not None:
+        print(f"Installed plugin version: {installed_plugin_version}.", flush=True)
+
+    for fixture_index, (_, fixture) in enumerate(fixtures, start=1):
+        progress = f"[{fixture_index}/{fixture_count}] {fixture.id} ({fixture.scenario})"
         workspace = args.output_directory / "workspaces" / fixture.id
         evidence = args.output_directory / "evidence" / fixture.id
         if args.dry_run:
+            print(f"{progress}: planned (dry run).", flush=True)
             results.append(
                 FixtureResult(
                     fixture_id=fixture.id,
@@ -298,6 +371,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
         try:
             _prepare_workspace(fixture, workspace)
             initial_prompt = f"{fixture.activation.skill_invocation} {fixture.prompt}"
+            print(f"{progress}: running initial phase...", flush=True)
             initial = _run_phase(
                 name="initial",
                 command=_codex_command(
@@ -315,28 +389,39 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                 forbidden_actions=fixture.forbidden_actions,
                 timeout_seconds=args.timeout_seconds,
             )
+            print(
+                f"{progress}: initial phase finished in "
+                f"{initial.duration_seconds:.1f}s (exit {initial.exit_code}).",
+                flush=True,
+            )
             phases = [initial]
             if fixture.continuation is not None and initial.thread_id and initial.exit_code == 0:
                 continuation = fixture.continuation
-                phases.append(
-                    _run_phase(
-                        name="continuation",
-                        command=_codex_command(
-                            executable=args.codex_command,
-                            model=args.model,
-                            reasoning_effort=args.reasoning_effort,
-                            prompt=continuation.prompt,
-                            sandbox="workspace-write",
-                            ephemeral=False,
-                            resume_thread=initial.thread_id,
-                        ),
-                        workspace=workspace,
-                        evidence=evidence,
-                        policy=continuation.verification,
-                        expected=continuation.expected,
-                        forbidden_actions=continuation.forbidden_actions,
-                        timeout_seconds=args.timeout_seconds,
-                    )
+                print(f"{progress}: running approval continuation...", flush=True)
+                continuation_result = _run_phase(
+                    name="continuation",
+                    command=_codex_command(
+                        executable=args.codex_command,
+                        model=args.model,
+                        reasoning_effort=args.reasoning_effort,
+                        prompt=continuation.prompt,
+                        sandbox="workspace-write",
+                        ephemeral=False,
+                        resume_thread=initial.thread_id,
+                    ),
+                    workspace=workspace,
+                    evidence=evidence,
+                    policy=continuation.verification,
+                    expected=continuation.expected,
+                    forbidden_actions=continuation.forbidden_actions,
+                    timeout_seconds=args.timeout_seconds,
+                )
+                phases.append(continuation_result)
+                print(
+                    f"{progress}: continuation finished in "
+                    f"{continuation_result.duration_seconds:.1f}s "
+                    f"(exit {continuation_result.exit_code}).",
+                    flush=True,
                 )
             missing_continuation = fixture.continuation is not None and not initial.thread_id
             status = (
@@ -359,6 +444,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                     ),
                 )
             )
+            print(f"{progress}: {status.value}.", flush=True)
         except (OSError, subprocess.SubprocessError, ValueError) as exc:
             results.append(
                 FixtureResult(
@@ -370,6 +456,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                     error=str(exc),
                 )
             )
+            print(f"{progress}: infrastructure-error: {exc}", file=sys.stderr, flush=True)
             if not args.continue_on_failure:
                 break
 
@@ -378,7 +465,8 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
         completed_at=datetime.now(UTC),
         codex_command=args.codex_command,
         codex_version=codex_version,
-        expected_plugin_version=args.plugin_version,
+        installed_plugin_version=installed_plugin_version,
+        expected_plugin_version=args.expected_plugin_version,
         model=args.model,
         reasoning_effort=args.reasoning_effort,
         results=results,
@@ -389,6 +477,8 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
     (args.output_directory / "SUMMARY.md").write_text(
         _summary(report), encoding="utf-8", newline="\n"
     )
+    elapsed = time.monotonic() - campaign_started
+    print(f"Campaign finished in {elapsed:.1f}s.", flush=True)
     return report
 
 
@@ -398,8 +488,13 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--fixture", action="append", help="Run one fixture ID; repeat as needed")
     parser.add_argument("--output-directory", type=Path, required=True)
     parser.add_argument("--codex-command", default="codex")
-    parser.add_argument("--model", default="gpt-5.6")
-    parser.add_argument("--plugin-version")
+    parser.add_argument("--model", default="gpt-5.6-sol")
+    parser.add_argument(
+        "--expected-plugin-version",
+        "--plugin-version",
+        dest="expected_plugin_version",
+        help="Fail before evaluation if the enabled personal plugin has another version.",
+    )
     parser.add_argument(
         "--reasoning-effort",
         choices=("low", "medium", "high", "xhigh"),

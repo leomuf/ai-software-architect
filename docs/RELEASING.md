@@ -279,24 +279,27 @@ After installing the exact candidate and activating its reviewed hooks, run:
 
 ```powershell
 .\scripts\run-codex-exploratory-evaluations.ps1 `
-  -PluginVersion 0.1.0 `
-  -Model gpt-5.6 `
+  -ExpectedPluginVersion 0.1.0 `
+  -Model gpt-5.6-sol `
   -ReasoningEffort medium
 ```
 
 Store the generated output path in the release evidence. The runner creates one
 isolated synthetic Git repository per fixture, captures Codex JSONL and final
 responses, checks deterministic policies, and exercises the approval continuation.
+It records the installed and enabled personal plugin version reported by Codex;
+the expected-version argument fails before model calls if another version is active.
+It does not install or switch plugin versions.
 It does not perform semantic grading. A `manual-review` status requires a human to
 assess every expected and forbidden behavior before recording the gate as passed.
 
-The `gpt-5.6` and medium settings below pin the initial release-evaluation baseline
+The `gpt-5.6-sol` and medium settings below pin the initial release-evaluation baseline
 for comparable evidence. They do not constrain the model a user may select when
 running the installed plugin.
 
 For the initial beta:
 
-- use `gpt-5.6` with medium reasoning;
+- use `gpt-5.6-sol` with medium reasoning;
 - let the runner isolate each independent fixture and preserve the one session
   needed for the approval continuation;
 - install the exact release-candidate plugin, then invoke

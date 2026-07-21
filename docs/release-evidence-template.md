@@ -19,7 +19,8 @@ local paths.
 | Plugin provenance hash | `<hash>` |
 | Package SHA-256 | `<hash>` |
 | Codex version | `<version>` |
-| Model and reasoning effort | `gpt-5.6`, medium |
+| Installed plugin version | `<version detected by the evaluation runner>` |
+| Model and reasoning effort | `gpt-5.6-sol`, medium |
 | Operating system | Windows x86-64 `<version>` |
 | Evaluator | `<name>` |
 | Evaluation date | `<YYYY-MM-DD>` |

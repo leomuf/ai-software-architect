@@ -23,9 +23,9 @@ an explicit fallback.
       the exact package and provenance hashes in the `v0.1.0` release evidence.
 - [ ] Install the exact `v0.1.0` candidate through its extracted repository
       marketplace, review and activate the hooks, and rerun the five exploratory
-      fixtures with `scripts/run-codex-exploratory-evaluations.ps1`, `gpt-5.6`,
-      and medium reasoning. Preserve the generated report and complete its manual
-      semantic review.
+      fixtures with `scripts/run-codex-exploratory-evaluations.ps1
+      -ExpectedPluginVersion 0.1.0`, `gpt-5.6-sol`, and medium reasoning. Preserve
+      the generated report and complete its manual semantic review.
 - [ ] Confirm the exact candidate's clarification continuation, approved artifact
       persistence, static repository review, focused-reference loading,
       proportional no-pattern result, visible decision guidance, and absence of
