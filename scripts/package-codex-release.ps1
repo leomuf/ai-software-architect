@@ -134,7 +134,15 @@ if ($LASTEXITCODE -ne 0) {
     throw "tar.exe failed to create '$ArchivePath' from '$BundleRoot' with exit code $LASTEXITCODE."
 }
 
-$ArchiveHash = (Get-FileHash -LiteralPath $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+$HashAlgorithm = [Security.Cryptography.SHA256]::Create()
+$ArchiveStream = [IO.File]::OpenRead($ArchivePath)
+try {
+    $ArchiveHashBytes = $HashAlgorithm.ComputeHash($ArchiveStream)
+} finally {
+    $ArchiveStream.Dispose()
+    $HashAlgorithm.Dispose()
+}
+$ArchiveHash = ([BitConverter]::ToString($ArchiveHashBytes) -replace "-", "").ToLowerInvariant()
 Set-Content -LiteralPath $ChecksumPath `
     -Value "$ArchiveHash  $($BundleName).zip`n" -Encoding ascii
 
