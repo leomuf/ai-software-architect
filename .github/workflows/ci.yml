@@ -35,5 +35,4 @@ jobs:
       - run: uv run pytest -q
       - run: uv run python adapters/codex/build_plugin.py --build-runtime
       - run: uv run python adapters/codex/validate_plugin.py dist/codex/ai-software-architect
-      - run: uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/windows-x86_64/ai-architect-mcp.exe
-
+      - run: uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/windows-x86_64/ai-architect-runtime/ai-architect-runtime.exe
