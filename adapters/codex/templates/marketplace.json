@@ -1,0 +1,20 @@
+{
+  "name": "ai-software-architect-release",
+  "interface": {
+    "displayName": "AI Software Architect Release"
+  },
+  "plugins": [
+    {
+      "name": "ai-software-architect",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ai-software-architect"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

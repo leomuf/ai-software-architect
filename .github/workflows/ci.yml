@@ -36,3 +36,6 @@ jobs:
       - run: uv run python adapters/codex/build_plugin.py --build-runtime
       - run: uv run python adapters/codex/validate_plugin.py dist/codex/ai-software-architect
       - run: uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/windows-x86_64/ai-architect-runtime/ai-architect-runtime.exe
+      - name: Package installable marketplace bundle
+        shell: pwsh
+        run: .\scripts\package-codex-release.ps1 -PluginVersion 0.1.0

@@ -22,3 +22,7 @@ forbidden_actions:
   - silently-reinterpret-web-or-tkinter
   - recommend-an-option-before-the-user-answers
   - create-or-modify-a-file
+verification:
+  repository_changes: forbid
+  forbidden_event_types: [mcp_tool_call]
+  forbidden_response_markers: ["<!-- ai-architect-"]

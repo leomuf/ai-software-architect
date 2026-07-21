@@ -59,6 +59,8 @@ key.
 
 The project’s initial concept was a standalone autonomous software-architecture agent. For the first public release, we deliberately chose host-native plugins and adapters instead. This gives a broader audience a simpler installation path and lets people keep using the coding agent, model, credits, tools, sandbox, and permission workflow they already trust—without operating another agent runtime, supplying another model API key, or depending on a hosted service.
 
+The current project therefore prefers host-native integration over operating a commercial AI Software Architect server with A2A communication. A2A remains a possible future, optional interface for user-hosted or organization-hosted deployments, but it is not required for the present product and no centrally operated A2A service is planned.
+
 Every adapter is expected to combine the strongest native capabilities its host provides:
 
 - **Shared skills and references** provide the architecture method, specialized knowledge, progressive disclosure, and model-guided workflow.
@@ -145,6 +147,104 @@ The Codex adapter is the current working product. It packages one public Composi
 
 The plugin does not install or modify Codex custom-agent profiles. Subagents, when useful, are created and managed by the Codex host from explicit skill instructions; they are not persistent profiles installed by this project. Advanced users may combine the installed skill with their own custom-agent setup, but this is optional and outside the plugin's installation contract.
 
+#### Codex Workflow at a Glance
+
+```mermaid
+flowchart TD
+    USER["User"]
+
+    subgraph CODEX["Codex host/runtime"]
+        HU["Dispatch UserPromptSubmit"]
+        HPRE["Dispatch PreToolUse"]
+        HPOST["Dispatch PostToolUse"]
+        HCOMPACT["Dispatch PostCompact"]
+        HSTOP["Dispatch Stop"]
+        MODEL["Codex host model reasoning"]
+        READTOOLS["Codex sandboxed host-native static-read tools"]
+        WRITETOOLS["Codex permissions and host-native artifact write"]
+        RESPONSE["User-facing architecture response"]
+        PLUGIN_DATA["Codex-managed PLUGIN_DATA"]
+
+        subgraph PLUGIN["Installed AI Software Architect plugin"]
+            UPS["UserPromptSubmit hook: activate, route, or resume"]
+            SKILL["Composite Agent Skill definition"]
+            REFS["Canonical references, schemas, and templates"]
+            PRE["PreToolUse hook: inspect, allow, or deny"]
+            POST["PostToolUse hook: verify persisted artifacts"]
+            COMPACT["PostCompact hook: restore minimal typed phase"]
+            STOP["Stop hook: validate the visible response"]
+            STATE["Continuation and checkpoint manager"]
+            GUARD["Artifact validation and secret scanning"]
+            DENIED["Denied with bounded guidance"]
+        end
+    end
+
+    USER -->|"Invoke $ai-software-architect or reply"| HU
+    HU --> UPS
+    UPS --> SKILL
+    SKILL --> MODEL
+    REFS -->|"Progressive disclosure"| MODEL
+    MODEL -->|"Host-native tool request"| HPRE
+    HPRE --> PRE
+    PRE -->|"Allowed static inspection"| READTOOLS
+    PRE -->|"Proposed architecture artifacts"| GUARD
+    PRE -->|"Denied operation"| DENIED
+    DENIED --> MODEL
+    GUARD -->|"Validated bundle"| WRITETOOLS
+    READTOOLS -->|"Static evidence"| MODEL
+    WRITETOOLS -->|"Artifact write completed"| HPOST
+    HPOST --> POST
+    POST --> MODEL
+    MODEL -.->|"Context compacted"| HCOMPACT
+    HCOMPACT --> COMPACT
+    COMPACT -.-> PLUGIN_DATA
+    COMPACT --> MODEL
+    UPS -.-> STATE
+    STATE -.-> PLUGIN_DATA
+    MODEL -->|"Draft response"| HSTOP
+    HSTOP --> STOP
+    STOP -->|"One bounded correction if needed"| MODEL
+    STOP -->|"Valid"| RESPONSE
+    STOP -.->|"Open one bounded follow-up"| STATE
+    RESPONSE --> USER
+
+    classDef user fill:#F3F4F6,stroke:#6B7280,color:#1F2937,stroke-width:1.5px
+    classDef codex fill:#E5ECFA,stroke:#174D91,color:#122E52,stroke-width:2px
+    classDef hook fill:#D9F2FB,stroke:#2C91BF,color:#123A4D,stroke-width:2px
+    classDef reference fill:#DDF4F1,stroke:#278577,color:#164E46,stroke-width:1.5px
+    classDef state fill:#EEE8FA,stroke:#7655B5,color:#3F2A68,stroke-width:1.5px,stroke-dasharray:5 3
+    classDef decision fill:#FFF2CC,stroke:#B78103,color:#573F00,stroke-width:1.5px
+    classDef artifact fill:#E2F3E7,stroke:#37835A,color:#194D33,stroke-width:2px
+    classDef warning fill:#FCE8E6,stroke:#C94A43,color:#681E1A,stroke-width:2px
+
+    class USER,RESPONSE user
+    class HU,HPRE,HPOST,HCOMPACT,HSTOP,MODEL codex
+    class UPS,PRE,POST,COMPACT,STOP hook
+    class SKILL,REFS,READTOOLS reference
+    class STATE,PLUGIN_DATA state
+    class GUARD,WRITETOOLS artifact
+    class DENIED warning
+
+    style CODEX fill:#FAFAFA,stroke:#6B7280,stroke-width:1.5px
+    style PLUGIN fill:#F8FBFF,stroke:#174D91,stroke-width:2px,stroke-dasharray:7 4
+```
+
+The selected Codex model performs the semantic architecture reasoning. Canonical
+references are disclosed progressively, while short-lived hooks enforce only the
+deterministic lifecycle boundaries shown above. `PostCompact` can restore the
+minimal typed workflow phase when Codex compacts a long task; it does not retain
+the conversation or repository content.
+
+Color key: gray represents user interaction, dark blue Codex reasoning, light blue
+hooks, teal references and evidence, purple state, amber decisions, green validated
+artifacts or outcomes, and red denied operations or warnings.
+
+The outer gray area is the Codex host/runtime in which the plugin is installed.
+Nodes outside the inner blue dashed boundary are Codex-owned; nodes inside it are
+shipped by AI Software Architect. The skill and reference files belong to the
+plugin, but the Codex model interprets them. Codex owns hook dispatch, sandboxing,
+permissions, tool execution, and the actual filesystem writes.
+
 #### Requirements
 
 - A Codex version that supports plugins, Agent Skills, and hooks. Subagent support is optional; the workflow falls back to the main agent when unavailable.
@@ -152,6 +252,15 @@ The plugin does not install or modify Codex custom-agent profiles. Subagents, wh
 - Windows x86-64 for the initial packaged runtime.
 - A Codex account and model allocation.
 - No separate OpenAI API key, Python installation, `uv`, virtual environment, or first-run dependency download.
+
+#### Install a Published Release
+
+Users should download the prebuilt Windows x86-64 marketplace
+bundle from the project's GitHub Release and follow
+[`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md). The extracted
+bundle contains its own repository marketplace and complete self-contained
+plugin; users do not run the development build or personal-marketplace copy
+scripts.
 
 #### Quick Start
 
@@ -352,6 +461,16 @@ smoke test after either build; the wrapper does both automatically. See
 for the complete reuse boundary. Pure README or `docs/` changes do not require a
 plugin rebuild because those files are not packaged.
 
+Create the dependency-free marketplace bundle for an exact, already validated
+release package:
+
+```powershell
+.\scripts\package-codex-release.ps1 -PluginVersion 0.1.0
+```
+
+The generated ZIP and `SHA256SUMS.txt` are written under `dist/release/` and
+are intended for a GitHub Release, not source control.
+
 ### Copy to the Personal Marketplace
 
 Preview the validated destination without changing it:
@@ -393,17 +512,28 @@ cache. Detailed troubleshooting and clean-reinstall instructions are in
 
 ## Release Documentation
 
+- [`docs/ReleaseGuide.md`](docs/ReleaseGuide.md) is the concise operator guide
+  for tagging, creating the release bundle, drafting the GitHub Release, and
+  completing the Devpost submission.
+- [`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md) is the
+  dependency-free installation path for users.
 - [`docs/RELEASING.md`](docs/RELEASING.md) is the canonical maintainer guide for
   local builds, personal-marketplace testing, exact release-candidate gates,
   Codex Desktop acceptance, and GitHub publication.
 - [`.github/workflows/release.yml`](.github/workflows/release.yml) defines the
-  existing tag-triggered package workflow. It currently uploads a build artifact
-  but does not yet support manual dispatch or create a public GitHub Release.
+  tag-triggered build of the exact tagged version and uploads the installable
+  marketplace ZIP and checksum as workflow artifacts. The GitHub Release itself
+  is still drafted and published manually.
 - [`shared/evaluations/verification-manifest.yaml`](shared/evaluations/verification-manifest.yaml)
   maps acceptance scenarios to release gates.
+- [`shared/evaluations/README.md`](shared/evaluations/README.md) defines the
+  coding-agent-neutral fixture contract, while
+  [`adapters/codex/evaluations/`](adapters/codex/evaluations/README.md) executes
+  that campaign through non-interactive Codex. Maintainers can start it with
+  `scripts/run-codex-exploratory-evaluations.ps1`.
 - [`shared/evaluations/release-automation-plan.md`](shared/evaluations/release-automation-plan.md)
-  proposes future automation for the five exploratory fixtures; it is not yet an
-  active release workflow.
+  describes the remaining work for protected CI automation; local execution is
+  implemented, but it is not yet an unattended release workflow.
 - [`docs/release-evidence-template.md`](docs/release-evidence-template.md) records
   the exact package, deterministic gates, exploratory results, clean-machine test,
   first-attempt uninstall, and final go/no-go decision for each release.

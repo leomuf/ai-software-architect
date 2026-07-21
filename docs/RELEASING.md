@@ -44,8 +44,11 @@ process-scoped alternative is documented in
 | Changes intended for users | [`CHANGELOG.md`](../CHANGELOG.md) |
 | Pull-request and `main` validation | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 | Tag-triggered package build | [`.github/workflows/release.yml`](../.github/workflows/release.yml) |
+| Concise GitHub and Devpost release procedure | [`ReleaseGuide.md`](ReleaseGuide.md) |
+| Dependency-free installation | [`INSTALL_CODEX_PLUGIN.md`](INSTALL_CODEX_PLUGIN.md) |
 | Scenario-to-gate mapping | [`shared/evaluations/verification-manifest.yaml`](../shared/evaluations/verification-manifest.yaml) |
 | Five exploratory fixtures | [`shared/evaluations/model-fixtures/`](../shared/evaluations/model-fixtures/) |
+| Codex exploratory runner | [`adapters/codex/evaluations/`](../adapters/codex/evaluations/README.md) |
 | Future exploratory-test automation | [`shared/evaluations/release-automation-plan.md`](../shared/evaluations/release-automation-plan.md) |
 | Per-release evidence | Copy [`release-evidence-template.md`](release-evidence-template.md) to `docs/releases/<version>.md` |
 
@@ -57,24 +60,23 @@ The existing `Release artifact` workflow is defined in
 It currently:
 
 1. starts automatically when a tag matching `v*` is pushed;
-2. builds the Windows x86-64 plugin;
-3. validates the assembled package;
-4. creates a ZIP and SHA-256 checksum; and
-5. uploads them as GitHub Actions artifacts.
+2. derives the plugin version from that tag;
+3. builds the self-contained Windows x86-64 plugin with that exact version;
+4. validates and smoke-tests the assembled package;
+5. creates an installable repository marketplace ZIP and SHA-256 checksum; and
+6. uploads them as GitHub Actions artifacts.
 
 It currently does **not**:
 
 - support `workflow_dispatch` for a manual run;
-- derive or validate the plugin version from the Git tag;
 - execute all deterministic CI gates;
-- create a build attestation despite declaring attestation permissions;
+- create a build attestation;
 - create a public GitHub Release; or
 - attach the ZIP and checksum to a GitHub Release.
 
-Until those gaps are implemented, do not treat the tag workflow artifact as a
-publishable release by itself. In particular, the current workflow builds the
-version stored in `adapters/codex/templates/plugin.json`; it does not pass the tag
-version through `--plugin-version`.
+The uploaded artifact is a release candidate until the remaining manual gates
+pass and a maintainer attaches the inner release ZIP and checksum to a reviewed
+GitHub Release. Follow [`ReleaseGuide.md`](ReleaseGuide.md) for that procedure.
 
 ## Version Policy
 
@@ -244,9 +246,10 @@ Run from a clean candidate commit:
 
 The script verifies that the candidate tree is clean, checks and synchronizes the
 lockfile, regenerates and compares derived artifacts, runs linting, type checks,
-and tests, and performs a full build, package validation, and runtime smoke test.
-All checks must succeed. Gates B-E remain explicit manual procedures because they
-require human inspection, the Codex model and Desktop UI, or a clean machine.
+and tests, performs a full build, package validation, and runtime smoke test,
+then creates the dependency-free marketplace ZIP and checksum. All checks
+must succeed. Gates B-E remain explicit manual procedures because they require
+human inspection, the Codex model and Desktop UI, or a clean machine.
 
 ### Gate B: Package Inspection
 
@@ -272,10 +275,26 @@ Run all fixtures named by
 4. `abstract-factory-example.yaml`
 5. `avoid-overengineering.yaml`
 
+After installing the exact candidate and activating its reviewed hooks, run:
+
+```powershell
+.\scripts\run-codex-exploratory-evaluations.ps1 `
+  -PluginVersion 0.1.0 `
+  -Model gpt-5.6 `
+  -ReasoningEffort medium
+```
+
+Store the generated output path in the release evidence. The runner creates one
+isolated synthetic Git repository per fixture, captures Codex JSONL and final
+responses, checks deterministic policies, and exercises the approval continuation.
+It does not perform semantic grading. A `manual-review` status requires a human to
+assess every expected and forbidden behavior before recording the gate as passed.
+
 For the initial beta:
 
-- use `gpt-5.6-sol` with medium reasoning;
-- use a new Codex task for each independent fixture;
+- use `gpt-5.6` with medium reasoning;
+- let the runner isolate each independent fixture and preserve the one session
+  needed for the approval continuation;
 - install the exact release-candidate plugin, then invoke
   `$ai-software-architect` directly for every fixture; do not add an `@` plugin
   mention;
@@ -338,15 +357,14 @@ The intended future automated flow is:
 1. merge the approved candidate commit;
 2. confirm required CI and CodeQL checks;
 3. create the annotated tag, for example `v0.1.0-beta.1`;
-4. build and attest the immutable package from that tag;
+4. build the immutable package from that tag and record its checksum and provenance;
 5. create a GitHub prerelease;
 6. attach the ZIP, checksum, provenance/evidence summary, and release notes; and
 7. verify installation from the published distribution path.
 
-Until `.github/workflows/release.yml` creates the GitHub Release and validates the
-tag-derived version, build the exact candidate manually and publish only after its
-recorded gates pass. Do not publish the current tag-workflow artifact without
-confirming its manifest version and release evidence.
+Until `.github/workflows/release.yml` creates the GitHub Release, publish its
+tag-versioned artifact manually only after the recorded gates pass. Confirm the
+manifest version and release evidence before publishing.
 
 ## Release Decision
 

@@ -23,3 +23,7 @@ forbidden_actions:
   - validate-an-architecture-contract
   - invent-distributed-system-requirements
   - recommend-a-pattern-stack
+verification:
+  repository_changes: forbid
+  forbidden_event_types: [mcp_tool_call]
+  forbidden_response_markers: ["<!-- ai-architect-"]

@@ -22,3 +22,7 @@ forbidden_actions:
   - synthesize-an-unrequested-example
   - substitute-a-model-memory-example-for-the-canonical-example
   - link-to-a-nonexistent-composite-skill-public-reference
+verification:
+  repository_changes: forbid
+  forbidden_event_types: [mcp_tool_call]
+  forbidden_response_markers: ["<!-- ai-architect-"]

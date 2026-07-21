@@ -7,8 +7,10 @@ SPDX-License-Identifier: MIT
 
 ## Status
 
-This document records a proposal for possible future implementation. No automated
-model-evaluation release workflow is currently implemented.
+The shared fixture contract, local Codex JSONL runner, deterministic checks, and
+PowerShell entry point are implemented. Protected unattended model execution and
+semantic grading in CI remain future work; no automated model-evaluation release
+workflow is currently enabled.
 
 The current manual release procedure is documented in
 [`../../docs/RELEASING.md`](../../docs/RELEASING.md). Record candidate results from
@@ -18,9 +20,9 @@ manual Codex Desktop lifecycle gate.
 
 ## Objective
 
-Run the five canonical exploratory tests automatically for each release candidate,
-capture auditable evidence, and prevent a release when a critical AI Software
-Architect behavior regresses.
+Build on the local five-fixture runner to execute release candidates in a protected
+environment, capture auditable evidence, and prevent a release when a critical AI
+Software Architect behavior regresses.
 
 The existing campaign is defined in
 [`verification-manifest.yaml`](verification-manifest.yaml) and uses these fixtures:
@@ -31,19 +33,21 @@ The existing campaign is defined in
 4. `abstract-factory-example.yaml`
 5. `avoid-overengineering.yaml`
 
-Each fixture already records a natural user prompt, expected behavior, and forbidden
-actions. The current deterministic test suite validates those definitions but does
-not yet execute them with Codex.
+Each fixture records a natural user prompt, expected behavior, forbidden actions,
+and deterministic repository/event/response policies. The local runner executes
+them with Codex and produces evidence, but semantic review remains manual.
 
 ## Recommended Release Gates
 
 Use two complementary gates because non-interactive Codex execution cannot fully
 reproduce Codex Desktop behavior.
 
-### Gate 1: Automated model-evaluation campaign
+### Gate 1: Local model-evaluation campaign
 
-Run all five fixtures through non-interactive Codex. This gate evaluates the plugin's
-reasoning workflow, hooks, tool usage, responses, and repository side effects.
+Run all five fixtures through non-interactive Codex with
+`scripts/run-codex-exploratory-evaluations.ps1`. This gate captures the plugin's
+reasoning workflow, hooks, tool usage, responses, and repository side effects for
+deterministic checks and explicit semantic review.
 
 ### Gate 2: Short manual Codex Desktop smoke test
 
@@ -52,9 +56,9 @@ Before publishing the release:
 1. Install or update the exact release candidate.
 2. Review the exact hook definitions and activate them.
 3. Run one representative complete-workflow prompt.
-4. Confirm the expected hook and MCP behavior.
+4. Confirm the expected short-lived hook behavior and absence of optional MCP use.
 5. Uninstall successfully on the first attempt while Codex remains open.
-6. Confirm that no plugin cache entry or MCP process remains.
+6. Confirm that no plugin cache entry or plugin runtime process remains.
 
 The manual gate remains necessary for installation UI, hook-review UI, task
 integration, restart behavior, and native uninstall lifecycle coverage.
@@ -68,11 +72,12 @@ For each release candidate:
 
 1. Check out the exact candidate commit.
 2. Run deterministic tests, schema validation, skill validation, and static analysis.
-3. Build the plugin with a cache-busted version and immutable provenance.
-4. Create an isolated `CODEX_HOME` and clean test repository for each fixture.
-5. Install the assembled plugin into that isolated Codex environment.
+3. Build the plugin with the exact release version and immutable provenance.
+4. Create an isolated Codex environment and synthetic Git repository for each fixture.
+5. Install the assembled plugin into that isolated environment.
 6. Verify the exact plugin and hook hashes before allowing hooks to run.
-7. Invoke each prompt using `codex exec --json --ephemeral` with:
+7. Invoke each independent prompt using `codex exec --json --ephemeral`; retain only
+   the bounded session required by an explicit continuation fixture, with:
    - a pinned Codex CLI version;
    - a pinned supported model;
    - medium reasoning effort;
@@ -98,7 +103,7 @@ Record at least:
 - fixture identifier;
 - final response;
 - relevant hook decisions;
-- MCP tools called and their bounded arguments;
+- host tool calls and their bounded arguments;
 - commands and file changes;
 - repository status before and after the run;
 - duration and token usage;
@@ -118,7 +123,7 @@ include:
 
 - no internal `ai-architect` response marker is exposed;
 - a rendered comparison includes its stable visible sections and decision guidance;
-- no forbidden MCP tool was called;
+- no forbidden MCP event was observed;
 - no repository code was executed during a read-only review;
 - no unexpected file or bytecode cache was created;
 - a focused pattern example used the bundled reference without web or MCP access;
@@ -181,7 +186,8 @@ A release candidate is ready only when:
 - all deterministic project tests pass;
 - all five exploratory fixtures execute;
 - no critical deterministic assertion fails;
-- semantic grading meets the approved threshold;
+- manual semantic review passes, or configured semantic grading meets the approved
+  threshold;
 - no result is an unresolved infrastructure error;
 - the evaluation report identifies the exact model and plugin versions;
 - the manual Codex Desktop smoke test passes, including first-attempt uninstall.
@@ -193,10 +199,10 @@ variance.
 
 ## Suggested Implementation Phases
 
-1. Build a local fixture runner and machine-readable report without CI credentials.
-2. Execute the campaign locally through `codex exec` and stabilize deterministic
-   assertions.
-3. Add the structured semantic grader and establish a reviewed baseline.
+1. Maintain the implemented local fixture runner and machine-readable report.
+2. Establish reviewed local baselines for its deterministic assertions and semantic
+   review checklist.
+3. Add an optional structured semantic grader without weakening deterministic gates.
 4. Move the runner to a protected, ephemeral Windows release environment.
 5. Add the protected release trigger and artifact reporting.
 6. Retain the short manual Codex Desktop lifecycle gate until Desktop automation is

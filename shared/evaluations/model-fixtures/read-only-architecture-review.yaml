@@ -28,3 +28,7 @@ forbidden_actions:
   - import-execute-compile-launch-test-or-build-repository-code
   - create-a-repository-artifact
   - report-the-active-composite-skill-unavailable-because-its-installation-path-is-hidden
+verification:
+  repository_changes: forbid
+  forbidden_event_types: [mcp_tool_call]
+  forbidden_response_markers: ["<!-- ai-architect-"]

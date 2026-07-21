@@ -9,8 +9,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
-  attestations: write
 
 jobs:
   build:
@@ -27,16 +25,23 @@ jobs:
           enable-cache: false
       - run: uv sync --locked --all-packages
       - run: uv run python tools/generate_third_party_notices.py
-      - run: uv run python adapters/codex/build_plugin.py --build-runtime
+      - name: Build exact tagged plugin
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          uv run python adapters/codex/build_plugin.py --build-runtime --plugin-version $version
       - run: uv run python adapters/codex/validate_plugin.py dist/codex/ai-software-architect
-      - shell: pwsh
-        run: tar.exe -a -c -f ai-software-architect-windows-x86_64.zip -C dist/codex ai-software-architect
-      - shell: pwsh
-        run: (Get-FileHash ai-software-architect-windows-x86_64.zip -Algorithm SHA256).Hash + "  ai-software-architect-windows-x86_64.zip" | Set-Content SHA256SUMS.txt
+      - name: Smoke-test packaged runtime
+        run: uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/windows-x86_64/ai-architect-runtime/ai-architect-runtime.exe
+      - name: Create installable marketplace bundle
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          .\scripts\package-codex-release.ps1 -PluginVersion $version
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ai-software-architect-windows-x86_64
+          name: ai-software-architect-${{ github.ref_name }}-windows-x86_64
           path: |
-            ai-software-architect-windows-x86_64.zip
-            SHA256SUMS.txt
+            dist/release/*.zip
+            dist/release/SHA256SUMS.txt
           if-no-files-found: error

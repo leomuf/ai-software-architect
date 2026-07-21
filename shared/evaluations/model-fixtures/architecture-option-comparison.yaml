@@ -58,6 +58,10 @@ forbidden_actions:
   - create-bytecode-cache-test-output-or-other-repository-artifact
   - start-an-optional-mcp-transport
   - claim-no-architecture-artifacts-without-inspecting-their-location
+verification:
+  repository_changes: forbid
+  forbidden_event_types: [mcp_tool_call]
+  forbidden_response_markers: ["<!-- ai-architect-"]
 continuation:
   prompt: >-
     Approve the recommendation. Record the validated ADR, architecture contract,
@@ -74,3 +78,7 @@ continuation:
     - patch-durable-artifacts-before-required-validation
     - start-an-optional-mcp-transport
     - infer-contract-list-item-shapes-from-model-memory
+  verification:
+    repository_changes: architecture-artifacts-only
+    forbidden_event_types: [mcp_tool_call]
+    forbidden_response_markers: ["<!-- ai-architect-"]

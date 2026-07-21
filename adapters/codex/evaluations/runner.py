@@ -1,0 +1,432 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+"""Run shared exploratory fixtures through non-interactive Codex."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import shutil
+import subprocess
+import sys
+import time
+from collections.abc import Sequence
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, Literal
+
+import yaml
+
+from adapters.codex.evaluations.grading import grade_phase
+from adapters.codex.evaluations.models import (
+    AssertionStatus,
+    CampaignReport,
+    EvaluationFixture,
+    EvaluationStatus,
+    FixtureResult,
+    PhaseResult,
+    VerificationPolicy,
+    load_fixture,
+)
+
+ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_MANIFEST = ROOT / "shared" / "evaluations" / "verification-manifest.yaml"
+INTERNAL_MARKER = "<!-- ai-architect-"
+
+
+def _snapshot(root: Path) -> dict[str, str]:
+    snapshot: dict[str, str] = {}
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or ".git" in path.relative_to(root).parts:
+            continue
+        relative = path.relative_to(root).as_posix()
+        snapshot[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return snapshot
+
+
+def _changes(before: dict[str, str], after: dict[str, str]) -> list[str]:
+    return sorted(
+        path
+        for path in before.keys() | after.keys()
+        if before.get(path) != after.get(path)
+    )
+
+
+def _prepare_workspace(fixture: EvaluationFixture, workspace: Path) -> None:
+    workspace.mkdir(parents=True, exist_ok=False)
+    for relative, content in fixture.repository.items():
+        destination = workspace / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(content, encoding="utf-8", newline="\n")
+    if not fixture.repository:
+        (workspace / "README.md").write_text(
+            f"# Isolated evaluation workspace: {fixture.id}\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+    git = shutil.which("git")
+    if git is None:
+        raise OSError("Git was not found in PATH.")
+    subprocess.run(  # noqa: S603
+        [git, "init", "--quiet"],
+        cwd=workspace,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _parse_events(stdout: str) -> tuple[list[dict[str, Any]], set[str], str | None, str | None]:
+    events: list[dict[str, Any]] = []
+    event_types: set[str] = set()
+    thread_id: str | None = None
+    final_response: str | None = None
+    for line in stdout.splitlines():
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            event_types.add("invalid-jsonl")
+            continue
+        if not isinstance(event, dict):
+            event_types.add("invalid-jsonl")
+            continue
+        events.append(event)
+        event_type = str(event.get("type", "unknown"))
+        event_types.add(event_type)
+        if event_type == "thread.started" and isinstance(event.get("thread_id"), str):
+            thread_id = event["thread_id"]
+        item = event.get("item")
+        if isinstance(item, dict):
+            item_type = str(item.get("type", "unknown"))
+            event_types.add(item_type)
+            if event_type == "item.completed" and item_type == "agent_message":
+                text = item.get("text")
+                if isinstance(text, str):
+                    final_response = text
+    return events, event_types, thread_id, final_response
+
+
+def _codex_command(
+    *,
+    executable: str,
+    model: str,
+    reasoning_effort: str,
+    prompt: str,
+    sandbox: str,
+    ephemeral: bool,
+    resume_thread: str | None = None,
+) -> list[str]:
+    command = [
+        executable,
+        "exec",
+        "--json",
+        "--sandbox",
+        sandbox,
+        "--model",
+        model,
+        "--config",
+        f'model_reasoning_effort="{reasoning_effort}"',
+    ]
+    if ephemeral:
+        command.append("--ephemeral")
+    if resume_thread:
+        command.extend(["resume", resume_thread])
+    command.append(prompt)
+    return command
+
+
+def _run_phase(
+    *,
+    name: Literal["initial", "continuation"],
+    command: list[str],
+    workspace: Path,
+    evidence: Path,
+    policy: VerificationPolicy,
+    expected: list[str],
+    forbidden_actions: list[str],
+    timeout_seconds: int,
+) -> PhaseResult:
+    before = _snapshot(workspace)
+    started = time.monotonic()
+    completed = subprocess.run(  # noqa: S603
+        command,
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout_seconds,
+        check=False,
+    )
+    duration = time.monotonic() - started
+    _, event_types, thread_id, final_response = _parse_events(completed.stdout)
+    changed = _changes(before, _snapshot(workspace))
+
+    evidence.mkdir(parents=True, exist_ok=True)
+    event_file = evidence / f"{name}.jsonl"
+    event_file.write_text(completed.stdout, encoding="utf-8", newline="\n")
+    stderr_file = evidence / f"{name}.stderr.txt"
+    stderr_file.write_text(completed.stderr, encoding="utf-8", newline="\n")
+    response_file: Path | None = None
+    if final_response is not None:
+        response_file = evidence / f"{name}.response.md"
+        response_file.write_text(final_response + "\n", encoding="utf-8", newline="\n")
+
+    assertions = grade_phase(
+        exit_code=completed.returncode,
+        final_response=final_response,
+        event_types=event_types,
+        repository_changes=changed,
+        policy=policy,
+    )
+    return PhaseResult(
+        name=name,
+        exit_code=completed.returncode,
+        duration_seconds=round(duration, 3),
+        thread_id=thread_id,
+        final_response_file=response_file.name if response_file else None,
+        event_log_file=event_file.name,
+        stderr_file=stderr_file.name,
+        event_types=sorted(event_types),
+        repository_changes=changed,
+        assertions=assertions,
+        manual_review=[
+            *(f"expected:{item}" for item in expected),
+            *(f"forbidden:{item}" for item in forbidden_actions),
+        ],
+    )
+
+
+def _fixture_status(phases: list[PhaseResult]) -> EvaluationStatus:
+    if any(phase.exit_code != 0 or "invalid-jsonl" in phase.event_types for phase in phases):
+        return EvaluationStatus.INFRASTRUCTURE_ERROR
+    if any(
+        assertion.status == AssertionStatus.FAIL
+        for phase in phases
+        for assertion in phase.assertions
+    ):
+        return EvaluationStatus.DETERMINISTIC_FAILURE
+    return EvaluationStatus.MANUAL_REVIEW
+
+
+def _codex_version(executable: str) -> str:
+    completed = subprocess.run(  # noqa: S603
+        [executable, "--version"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=10,
+        check=False,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or f"exit code {completed.returncode}"
+        raise OSError(f"Unable to execute Codex CLI: {detail}")
+    return completed.stdout.strip()
+
+
+def _load_campaign(manifest: Path, selected: set[str]) -> list[tuple[Path, EvaluationFixture]]:
+    raw = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    configured = raw.get("exploratory_campaign", [])
+    fixtures: list[tuple[Path, EvaluationFixture]] = []
+    for raw_path in configured:
+        path = ROOT / str(raw_path)
+        fixture = load_fixture(path)
+        if not selected or fixture.id in selected:
+            fixtures.append((path, fixture))
+    missing = selected - {fixture.id for _, fixture in fixtures}
+    if missing:
+        raise ValueError("Unknown fixture identifiers: " + ", ".join(sorted(missing)))
+    return fixtures
+
+
+def _summary(report: CampaignReport) -> str:
+    lines = [
+        "# Codex Exploratory Evaluation Summary",
+        "",
+        f"- Model: `{report.model}`",
+        f"- Reasoning effort: `{report.reasoning_effort}`",
+        f"- Codex CLI: `{report.codex_version}`",
+        f"- Expected plugin version: `{report.expected_plugin_version or 'not-recorded'}`",
+        f"- Started: `{report.started_at.isoformat()}`",
+        "",
+        "| Fixture | Scenario | Status | Phases |",
+        "|---|---|---|---:|",
+    ]
+    for result in report.results:
+        lines.append(
+            f"| `{result.fixture_id}` | `{result.scenario}` | "
+            f"{result.status.value} | {len(result.phases)} |"
+        )
+    lines.extend(
+        [
+            "",
+            "`manual-review` means deterministic safeguards passed; a human must still review",
+            "the fixture's semantic expected and forbidden behaviors before approving the release.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def run_campaign(args: argparse.Namespace) -> CampaignReport:
+    started = datetime.now(UTC)
+    selected = set(args.fixture or [])
+    fixtures = _load_campaign(args.manifest, selected)
+    codex_version = "not-checked (dry run)" if args.dry_run else _codex_version(args.codex_command)
+    args.output_directory.mkdir(parents=True, exist_ok=False)
+    results: list[FixtureResult] = []
+
+    for _, fixture in fixtures:
+        workspace = args.output_directory / "workspaces" / fixture.id
+        evidence = args.output_directory / "evidence" / fixture.id
+        if args.dry_run:
+            results.append(
+                FixtureResult(
+                    fixture_id=fixture.id,
+                    scenario=fixture.scenario,
+                    status=EvaluationStatus.PLANNED,
+                    workspace=str(workspace),
+                    phases=[],
+                )
+            )
+            continue
+        try:
+            _prepare_workspace(fixture, workspace)
+            initial_prompt = f"{fixture.activation.skill_invocation} {fixture.prompt}"
+            initial = _run_phase(
+                name="initial",
+                command=_codex_command(
+                    executable=args.codex_command,
+                    model=args.model,
+                    reasoning_effort=args.reasoning_effort,
+                    prompt=initial_prompt,
+                    sandbox="read-only",
+                    ephemeral=fixture.continuation is None,
+                ),
+                workspace=workspace,
+                evidence=evidence,
+                policy=fixture.verification,
+                expected=fixture.expected,
+                forbidden_actions=fixture.forbidden_actions,
+                timeout_seconds=args.timeout_seconds,
+            )
+            phases = [initial]
+            if fixture.continuation is not None and initial.thread_id and initial.exit_code == 0:
+                continuation = fixture.continuation
+                phases.append(
+                    _run_phase(
+                        name="continuation",
+                        command=_codex_command(
+                            executable=args.codex_command,
+                            model=args.model,
+                            reasoning_effort=args.reasoning_effort,
+                            prompt=continuation.prompt,
+                            sandbox="workspace-write",
+                            ephemeral=False,
+                            resume_thread=initial.thread_id,
+                        ),
+                        workspace=workspace,
+                        evidence=evidence,
+                        policy=continuation.verification,
+                        expected=continuation.expected,
+                        forbidden_actions=continuation.forbidden_actions,
+                        timeout_seconds=args.timeout_seconds,
+                    )
+                )
+            missing_continuation = fixture.continuation is not None and not initial.thread_id
+            status = (
+                EvaluationStatus.INFRASTRUCTURE_ERROR
+                if missing_continuation
+                else _fixture_status(phases)
+            )
+            results.append(
+                FixtureResult(
+                    fixture_id=fixture.id,
+                    scenario=fixture.scenario,
+                    status=status,
+                    workspace=str(workspace),
+                    phases=phases,
+                    error=(
+                        "Continuation could not run because the initial phase "
+                        "returned no thread ID."
+                        if missing_continuation
+                        else None
+                    ),
+                )
+            )
+        except (OSError, subprocess.SubprocessError, ValueError) as exc:
+            results.append(
+                FixtureResult(
+                    fixture_id=fixture.id,
+                    scenario=fixture.scenario,
+                    status=EvaluationStatus.INFRASTRUCTURE_ERROR,
+                    workspace=str(workspace),
+                    phases=[],
+                    error=str(exc),
+                )
+            )
+            if not args.continue_on_failure:
+                break
+
+    report = CampaignReport(
+        started_at=started,
+        completed_at=datetime.now(UTC),
+        codex_command=args.codex_command,
+        codex_version=codex_version,
+        expected_plugin_version=args.plugin_version,
+        model=args.model,
+        reasoning_effort=args.reasoning_effort,
+        results=results,
+    )
+    (args.output_directory / "report.json").write_text(
+        report.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    (args.output_directory / "SUMMARY.md").write_text(
+        _summary(report), encoding="utf-8", newline="\n"
+    )
+    return report
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--fixture", action="append", help="Run one fixture ID; repeat as needed")
+    parser.add_argument("--output-directory", type=Path, required=True)
+    parser.add_argument("--codex-command", default="codex")
+    parser.add_argument("--model", default="gpt-5.6")
+    parser.add_argument("--plugin-version")
+    parser.add_argument(
+        "--reasoning-effort",
+        choices=("low", "medium", "high", "xhigh"),
+        default="medium",
+    )
+    parser.add_argument("--timeout-seconds", type=int, default=600)
+    parser.add_argument("--continue-on-failure", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = _parser().parse_args(argv)
+    if args.timeout_seconds < 1:
+        raise SystemExit("--timeout-seconds must be positive")
+    try:
+        report = run_campaign(args)
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        print(f"Evaluation runner error: {exc}", file=sys.stderr)
+        return 2
+    print(args.output_directory / "SUMMARY.md")
+    failing = {
+        EvaluationStatus.DETERMINISTIC_FAILURE,
+        EvaluationStatus.INFRASTRUCTURE_ERROR,
+    }
+    return 1 if any(result.status in failing for result in report.results) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

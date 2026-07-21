@@ -98,6 +98,29 @@ After it completes, use the Codex Desktop Plugins window to select **Install** o
 **Update**, review and activate the hooks, and start a new task. The script does
 not automate those user-controlled actions.
 
+## Package an Installable Release
+
+After building and validating an exact release version, wrap it in a local
+repository marketplace that users can install without Python, `uv`, or project
+dependencies:
+
+```powershell
+.\scripts\package-codex-release.ps1 -PluginVersion 0.1.0
+```
+
+The script checks that the assembled manifest version matches the requested
+version, copies the plugin into a release-only marketplace layout, adds the
+dependency-free installation guide, creates the Windows x86-64 ZIP, and writes
+its SHA-256 checksum. It does not rebuild or revalidate the plugin runtime.
+
+Generated output is written under `dist/release/` and remains ignored by Git.
+Publish the ZIP and `SHA256SUMS.txt` as assets of the matching GitHub Release.
+The versioned source inputs are:
+
+- `adapters/codex/templates/marketplace.json`;
+- `docs/INSTALL_CODEX_PLUGIN.md`; and
+- `scripts/package-codex-release.ps1`.
+
 ## Run Deterministic Release-Candidate Gates
 
 From a clean candidate commit:
@@ -108,10 +131,47 @@ From a clean candidate commit:
 
 This checks the lockfile, synchronizes dependencies, verifies generated files,
 runs linting, type checks, and tests, and performs a full build with package and
-runtime validation. It stops immediately if tracked, staged, or untracked source
+runtime validation. It also creates the dependency-free marketplace ZIP
+and checksum. It stops immediately if tracked, staged, or untracked source
 changes are present.
 
 The script does not replace manual package inspection, the five exploratory Codex
 fixtures, Codex Desktop install/update/uninstall acceptance, or clean-machine
 acceptance. Follow the remaining gates in
 [`docs/RELEASING.md`](../docs/RELEASING.md).
+
+## Run Codex Exploratory Evaluations
+
+Install the exact plugin candidate, review and activate its hooks, and then run the
+five shared fixtures with the Codex-specific adapter:
+
+```powershell
+.\scripts\run-codex-exploratory-evaluations.ps1
+```
+
+The default is `gpt-5.6` with medium reasoning. Select one fixture or change the
+output location when diagnosing a failure:
+
+```powershell
+.\scripts\run-codex-exploratory-evaluations.ps1 `
+  -Fixture architecture-option-comparison `
+  -PluginVersion 0.1.0 `
+  -OutputDirectory .tmp\evaluations\release-candidate
+```
+
+Validate fixture discovery and report generation without invoking Codex or using
+model credits:
+
+```powershell
+.\scripts\run-codex-exploratory-evaluations.ps1 -DryRun
+```
+
+The command writes `report.json`, `SUMMARY.md`, JSONL events, stderr, final
+responses, isolated synthetic repositories, and repository-change evidence below
+`.tmp/evaluations/`. These generated files are ignored by Git. A
+`manual-review` result means the deterministic safeguards passed; it is not a
+semantic pass. Review every expected and forbidden behavior before release.
+
+See the [Codex runner documentation](../adapters/codex/evaluations/README.md) and
+the [shared fixture contract](../shared/evaluations/README.md) for the architectural
+separation.

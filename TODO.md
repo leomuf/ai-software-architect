@@ -16,64 +16,43 @@ an explicit fallback.
 
 ## Release blockers
 
-- [ ] Build and install the cleaned control-plane package with a cache-busted version
-      supplied during assembly, before provenance hashes are generated.
-- [ ] Review and activate the current hooks in Codex Desktop and rerun the five
-      exploratory fixtures with `gpt-5.6-sol` at medium reasoning.
-- [ ] Confirm that the complete workflow still performs the clarification,
-      repository review, and proportionality behaviors through host-native model
-      reasoning without language-specific hook routing, returns only user-facing
-      Markdown, ends recommendations with visible decision guidance, and accepts
-      the immediately following clarification or approval reply without requiring
-      another skill invocation.
-- [ ] Confirm that the Composite's option-comparison mode renders its stable contract,
-      with no internal response markers or HTML comments.
-- [ ] Confirm that a single-pattern request loads only its bundled canonical
-      reference and makes no MCP or web call.
-- [ ] Ensure that a continued architecture comparison uses only bundled canonical
-      references and never searches or opens the public GitHub repository merely
-      to discover reference content or filenames.
-- [ ] Fix and regression-test canonical reference resolution in corrected
-      continuation responses; in particular, Dependency Injection must link to
-      `dependency-injection.md`, and a response must not escape with a second
-      reference defect after the one permitted Stop-hook correction.
-- [ ] Confirm that routine dependency reviews submit only bounded
-      `dependency_statements`; full source remains limited to an approved
-      architecture-boundary check.
-- [ ] Measure and reduce exploratory-response latency, especially comparison and
-      read-only-review workflows that currently take roughly 90–100 seconds.
-      Separate model latency, unnecessary browsing, MCP startup, and Stop-hook
-      correction cost before choosing an optimization.
+- [ ] Commit the reviewed release sources and run
+      `scripts/run-release-candidate-gates.ps1 -PluginVersion 0.1.0` from that
+      clean commit.
+- [ ] Inspect the generated release marketplace ZIP, verify its checksum, and record
+      the exact package and provenance hashes in the `v0.1.0` release evidence.
+- [ ] Install the exact `v0.1.0` candidate through its extracted repository
+      marketplace, review and activate the hooks, and rerun the five exploratory
+      fixtures with `scripts/run-codex-exploratory-evaluations.ps1`, `gpt-5.6`,
+      and medium reasoning. Preserve the generated report and complete its manual
+      semantic review.
+- [ ] Confirm the exact candidate's clarification continuation, approved artifact
+      persistence, static repository review, focused-reference loading,
+      proportional no-pattern result, visible decision guidance, and absence of
+      internal response markers or application-source changes.
 - [ ] Verify native Codex Desktop uninstall on the first attempt immediately after
-      a multi-task campaign while Codex remains open, with no manual process
-      termination, 15-second retry delay, or plugin-cache editing; capture process
-      ownership if the first attempt fails.
+      the release-candidate campaign while Codex remains open, with no manual
+      process termination, retry delay, restart, or plugin-cache editing.
 - [ ] Run the clean-machine Windows x86-64 acceptance gate without Python, `uv`, or
-      a first-run dependency download.
-- [ ] If the clean-uninstall gate still fails, omit the persistent MCP integration
-      from the release and ship the skills-only Codex package until the host
-      lifecycle is proven.
+      a first-run dependency download, then verify the complete workflow and
+      first-attempt uninstall.
+- [ ] Publish the reviewed `v0.1.0` GitHub Release and verify that its repository,
+      release ZIP, checksum, and installation instructions work while signed out.
+- [ ] Record and upload the public under-three-minute demonstration video, retrieve
+      the primary Codex `/feedback` Session ID, and complete the Devpost fields.
+- [ ] Confirm the Devpost project is **Submitted**, not **Draft**, before the
+      deadline and preserve the submitted repository, release, and video through
+      judging.
 
 ## Forward compatibility
 
-- [ ] Add a compact architecture diagram (preferably Mermaid) to
-      `tools/python-mcp/README.md` showing how Codex starts the PowerShell
-      launcher, how the packaged MCP runtime is copied into the plugin data
-      directory, and how running the private copy prevents the versioned plugin
-      cache from being locked during uninstall or update.
-- [ ] Add a high-level Mermaid workflow diagram to the Codex section of `README.md`
-      and a detailed counterpart to the specification's **Codex control plane**
-      section. Show the user prompt, `UserPromptSubmit`, deterministic control
-      plane and continuation state, Composite skill, host-model reasoning,
-      reference catalog, optional MCP/native tools guarded by `PreToolUse`, `Stop`
-      validation and bounded correction, the final response, and approved writes
-      limited to `.ai-architect/` artifacts.
 - [ ] Test the plugin on at least two more small Python repositories with different
       structures.
 - [ ] Add a second-language exploratory pass, beginning with German clarification,
       focused comparison, and approval responses.
-- [ ] Validate the public marketplace/release installation flow against an immutable
-      release artifact rather than the personal development marketplace.
+- [ ] Measure and reduce exploratory-response latency, especially comparison and
+      read-only-review workflows. Separate host/model latency, unnecessary tool
+      use, subagent cost, and Stop-hook correction cost before optimizing.
 - [ ] Add operating-system packages only after their clean-machine runtime,
       lifecycle, and security gates pass.
 

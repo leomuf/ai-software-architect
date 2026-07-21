@@ -19,7 +19,7 @@ local paths.
 | Plugin provenance hash | `<hash>` |
 | Package SHA-256 | `<hash>` |
 | Codex version | `<version>` |
-| Model and reasoning effort | `gpt-5.6-sol`, medium |
+| Model and reasoning effort | `gpt-5.6`, medium |
 | Operating system | Windows x86-64 `<version>` |
 | Evaluator | `<name>` |
 | Evaluation date | `<YYYY-MM-DD>` |
@@ -46,12 +46,19 @@ Evidence or workflow URL: `<link or concise note>`
 - [ ] provenance inventory and hashes validate
 - [ ] license and third-party notices are present
 - [ ] no development environment, cache, credential, or placeholder is packaged
-- [ ] fixed bundled MCP startup command is present
+- [ ] fixed bundled short-lived hook-runtime command is present
+- [ ] no persistent MCP registration or startup command is packaged
 - [ ] no first-run dependency download is required
 
 Evidence: `<link or concise note>`
 
 ## Gate C: Exploratory Fixtures
+
+- Runner output directory:
+- `report.json` SHA-256:
+- `SUMMARY.md` reviewed:
+- All deterministic assertions passed:
+- All semantic expected and forbidden behaviors reviewed:
 
 | Fixture | Result | Expected behaviors | Forbidden behaviors | Side effects | Evidence |
 |---|---|---|---|---|---|
@@ -69,10 +76,10 @@ Unresolved infrastructure errors: `<none or details>`
 - [ ] current hook definitions reviewed and activated
 - [ ] displayed version matches the candidate
 - [ ] the single `$ai-software-architect` skill invokes without an `@` plugin mention
-- [ ] expected hook and MCP behavior confirmed
+- [ ] expected short-lived hook behavior and absence of optional MCP use confirmed
 - [ ] candidate exercised from multiple tasks
 - [ ] first-attempt uninstall succeeded while Codex remained open
-- [ ] no plugin MCP process or stale installed package remained
+- [ ] no plugin hook-runtime process or stale installed package remained
 - [ ] reinstall succeeded and exposed the same version
 
 Lifecycle evidence: `<process observations and concise result>`
@@ -83,7 +90,7 @@ Lifecycle evidence: `<process observations and concise result>`
 - [ ] Python and `uv` were not preinstalled requirements
 - [ ] no first-run dependency download occurred
 - [ ] main workflow succeeded
-- [ ] deterministic MCP operation succeeded
+- [ ] deterministic pre-write and post-write artifact validation succeeded
 - [ ] no network listener appeared
 - [ ] first-attempt uninstall succeeded
 

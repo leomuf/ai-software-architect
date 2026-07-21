@@ -580,9 +580,11 @@ shared/
             architecture-contract.schema.json
             architecture-artifact-bundle.schema.json
     evaluations/
+        README.md
         acceptance.feature          # generated from this specification
         verification-manifest.yaml
-        fixtures/
+        model-fixtures/              # coding-agent-neutral exploratory scenarios
+        release-automation-plan.md
 
 tools/
     python-mcp/                     # optional transport over the shared deterministic core
@@ -596,6 +598,11 @@ adapters/
         runtime_entry.py
         smoke_test_runtime.py
         validate_plugin.py
+        evaluations/                 # Codex-specific non-interactive runner
+            README.md
+            grading.py
+            models.py
+            runner.py
         templates/
             hooks.json
             plugin.json
@@ -608,6 +615,7 @@ adapters/
         README.md
 
 tests/
+    adapters/
     conformance/
     packaging/
     security/
@@ -634,6 +642,8 @@ dist/                               # generated and gitignored
 Every directory directly below `shared/skills/` is an independently valid Agent Skill. Optional resource directories are created only when the skill needs them; an empty `scripts/`, `references/`, or `assets/` directory MUST NOT be added merely to complete the visual structure. Deterministic tooling lives in the shared Python domain core and its transport adapters, so canonical skills do not initially require `scripts/`.
 
 `shared/schemas/`, `shared/evaluations/`, `tools/`, and `adapters/` are repository-level project structures rather than Agent Skills. The Pydantic models remain the canonical schema source. Generated JSON Schema MAY be packaged as a skill asset, but MUST NOT become a separately maintained schema definition. The Gherkin block in this specification is the behavioral source; `acceptance.feature` is generated from it, and `verification-manifest.yaml` maps every stable scenario tag to its primary verification mode, test or fixture path, and release-gate status. A stale or unmapped generated evaluation artifact fails the conformance build.
+
+Exploratory fixture semantics MUST remain coding-agent-neutral under `shared/evaluations/model-fixtures/`. Host invocation, event parsing, and evidence capture MUST live in the corresponding adapter. The Codex adapter uses `codex exec --json`, isolated synthetic Git repositories, read-only initial turns, and a bounded workspace-write continuation only when a fixture explicitly verifies approved architecture-artifact persistence. Its deterministic grader checks process completion, response-marker leakage, forbidden event types, and repository-change policy. Semantic expected and forbidden behaviors remain explicit manual-review items unless a separately approved semantic grader is configured; missing semantic evidence MUST NOT be reported as a pass. The repository-level PowerShell command is a thin entry point and MUST NOT duplicate fixture, runner, or grading logic.
 
 Canonical source files MUST NOT have independently edited platform copies. An adapter MAY either package canonical skills unchanged or deterministically assemble a host-compatible derivative when the host lacks reliable skill composition. Generated derivatives MUST be disposable build outputs, preserve on-demand loading, include a source-to-output provenance map with content hashes, and be reproducible byte-for-byte apart from explicitly declared build metadata. Build output under `dist/` MUST be excluded from version control.
 
@@ -1665,6 +1675,206 @@ codex_control_plane:
       - model-response
   failure_mode: fail-open-with-visible-warning
 ```
+
+#### Activation, Reasoning, and Response Lifecycle
+
+```mermaid
+flowchart TD
+    USER["User"]
+
+    subgraph CODEX["Codex host/runtime"]
+        HU["Dispatch UserPromptSubmit"]
+        HCOMPACT["Dispatch PostCompact"]
+        HSTOP["Dispatch Stop"]
+        MODEL["Codex host model"]
+        D["Show invocation guidance"]
+        E["Continue ordinary Codex workflow"]
+        M["Draft user-facing response"]
+        AF["Return user-facing Markdown"]
+        S1["Codex-managed PLUGIN_DATA"]
+
+        subgraph PLUGIN["Installed AI Software Architect plugin"]
+            C["UserPromptSubmit hook"]
+            B{"UserPromptSubmit route"}
+            F["Classify explicit host markers only"]
+            G["Add route, safety context, reference index, and trusted template paths"]
+            H["Consume pending continuation and load typed checkpoint"]
+            I["Composite Agent Skill definition"]
+            K["Canonical reference catalog, schemas, and templates"]
+            Z["PostCompact hook"]
+            AA["Restore phase, expected artifact kinds, and validation status"]
+            AB["Stop hook"]
+            AC{"Visible response contract valid?"}
+            AD["Request one complete bounded correction"]
+            AE["Accept response with visible warning"]
+            CONT{"Response requests user input?"}
+            AH["Store one single-use continuation key"]
+            AI["Clear turn and continuation state"]
+            AJ["Warn visibly and return control to Codex"]
+        end
+    end
+
+    USER -->|"Prompt or follow-up"| HU
+    HU --> C
+    C --> B
+    B -->|"Empty plugin selection"| D
+    B -->|"Ordinary unrelated prompt"| E
+    B -->|"Explicit activation or pending continuation"| F
+    F --> G
+    G --> H
+    H -.-> S1
+    H --> I
+    I --> MODEL
+    MODEL -->|"Load on demand"| K
+    K --> MODEL
+
+    MODEL -.->|"Context compacted"| HCOMPACT
+    HCOMPACT --> Z
+    Z -.-> S1
+    Z --> AA
+    AA --> MODEL
+
+    MODEL --> M
+    M --> HSTOP
+    HSTOP --> AB
+    AB --> AC
+    AC -->|"No, first failure"| AD
+    AD --> MODEL
+    AC -->|"No, correction already used"| AE
+    AE --> AF
+    AC -->|"Yes"| CONT
+    CONT -->|"Yes"| AH
+    AH -.-> S1
+    AH --> AF
+    CONT -->|"No"| AI
+    AI -.-> S1
+    AI --> AF
+    AF --> USER
+
+    C -.->|"Unexpected failure"| AJ
+    Z -.->|"Unexpected failure"| AJ
+    AB -.->|"Unexpected failure"| AJ
+    AJ --> MODEL
+
+    classDef user fill:#F3F4F6,stroke:#6B7280,color:#1F2937,stroke-width:1.5px
+    classDef codex fill:#E5ECFA,stroke:#174D91,color:#122E52,stroke-width:2px
+    classDef hook fill:#D9F2FB,stroke:#2C91BF,color:#123A4D,stroke-width:2px
+    classDef reference fill:#DDF4F1,stroke:#278577,color:#164E46,stroke-width:1.5px
+    classDef state fill:#EEE8FA,stroke:#7655B5,color:#3F2A68,stroke-width:1.5px,stroke-dasharray:5 3
+    classDef decision fill:#FFF2CC,stroke:#B78103,color:#573F00,stroke-width:1.5px
+    classDef warning fill:#FCE8E6,stroke:#C94A43,color:#681E1A,stroke-width:2px
+
+    class USER,AF user
+    class HU,HCOMPACT,HSTOP,MODEL,E,M codex
+    class C,F,G,Z,AB hook
+    class I,K reference
+    class H,S1,AA,AH,AI state
+    class B,AC,CONT decision
+    class D,AD,AE,AJ warning
+
+    style CODEX fill:#FAFAFA,stroke:#6B7280,stroke-width:1.5px
+    style PLUGIN fill:#F8FBFF,stroke:#174D91,stroke-width:2px,stroke-dasharray:7 4
+```
+
+#### Tool Guarding and Architecture-Artifact Persistence
+
+```mermaid
+flowchart TD
+    subgraph CODEX["Codex host/runtime"]
+        MODEL["Codex host model"]
+        HPRE["Dispatch PreToolUse"]
+        HPOST["Dispatch PostToolUse"]
+        READ_PERMISSION["Codex read sandbox and permission"]
+        WRITE_PERMISSION["Codex write permission and user approval"]
+        STATIC["Host-native static inspection"]
+        WRITE["Host-native .ai-architect write"]
+        S1["Codex-managed PLUGIN_DATA"]
+
+        subgraph PLUGIN["Installed AI Software Architect plugin"]
+            N["PreToolUse hook"]
+            O{"Requested operation"}
+            P["Deny with bounded guidance"]
+            R["Reconstruct candidates, secret-scan, and validate Pydantic contracts"]
+            T{"Complete bundle valid?"}
+            V["PostToolUse hook"]
+            W{"Persisted files match validated candidates?"}
+            X["Visible postcondition warning"]
+            Y["Record typed completion checkpoint"]
+            AJ["Warn visibly and return control to Codex"]
+        end
+    end
+
+    MODEL -->|"Host-native tool request"| HPRE
+    HPRE --> N
+    N --> O
+    O -->|"Repository execution, mutation, reference web lookup, or patch outside .ai-architect"| P
+    P --> MODEL
+    O -->|"Static read"| READ_PERMISSION
+    READ_PERMISSION --> STATIC
+    STATIC -->|"Static evidence"| MODEL
+    O -->|"Proposed .ai-architect bundle"| R
+    R --> T
+    T -->|"No"| P
+    T -->|"Yes"| WRITE_PERMISSION
+    WRITE_PERMISSION --> WRITE
+    WRITE --> HPOST
+    HPOST --> V
+    V --> W
+    W -->|"No"| X
+    X --> MODEL
+    W -->|"Yes"| Y
+    Y -.-> S1
+    Y --> MODEL
+
+    N -.->|"Unexpected failure"| AJ
+    V -.->|"Unexpected failure"| AJ
+    AJ --> MODEL
+
+    classDef codex fill:#E5ECFA,stroke:#174D91,color:#122E52,stroke-width:2px
+    classDef hook fill:#D9F2FB,stroke:#2C91BF,color:#123A4D,stroke-width:2px
+    classDef reference fill:#DDF4F1,stroke:#278577,color:#164E46,stroke-width:1.5px
+    classDef state fill:#EEE8FA,stroke:#7655B5,color:#3F2A68,stroke-width:1.5px,stroke-dasharray:5 3
+    classDef decision fill:#FFF2CC,stroke:#B78103,color:#573F00,stroke-width:1.5px
+    classDef artifact fill:#E2F3E7,stroke:#37835A,color:#194D33,stroke-width:2px
+    classDef warning fill:#FCE8E6,stroke:#C94A43,color:#681E1A,stroke-width:2px
+
+    class MODEL,HPRE,HPOST,READ_PERMISSION,WRITE_PERMISSION codex
+    class N,V hook
+    class STATIC reference
+    class S1,Y state
+    class O,T,W decision
+    class R,WRITE artifact
+    class P,X,AJ warning
+
+    style CODEX fill:#FAFAFA,stroke:#6B7280,stroke-width:1.5px
+    style PLUGIN fill:#F8FBFF,stroke:#174D91,stroke-width:2px,stroke-dasharray:7 4
+```
+
+The first diagram covers conversational activation, host-native reasoning,
+progressive disclosure, compaction recovery, response validation, and continuation.
+The second begins and ends at the repeated `Codex host model` node and isolates the
+tool and durable-write lifecycle. Together they show all five hooks without forcing
+the reader to scroll through one oversized graph.
+
+Solid arrows represent normal reasoning and tool flow. Dashed arrows represent
+bounded state access or exceptional fail-open paths. No hook selects the semantic
+architecture mode, invokes a model, starts a persistent process, or expands Codex
+permissions. `PreToolUse` permits its architecture-artifact check to proceed only
+after the complete bundle has been reconstructed, scanned, and validated; Codex and
+the user still own actual tool permission. `PostToolUse` verifies the postcondition
+rather than authorizing it retroactively.
+
+In both diagrams, the outer gray area is the Codex host/runtime and the inner blue
+dashed area is the installed plugin package. Nodes outside the inner boundary are
+Codex-owned; nodes inside it are shipped by AI Software Architect. `PLUGIN_DATA` is
+outside the package because Codex manages its location, while the plugin may store
+only the bounded typed state defined above.
+
+The diagrams use the same semantic palette: gray for user interaction, dark blue
+for Codex reasoning, light blue for hooks, teal for references and evidence,
+purple for bounded state, amber for decisions, green for validated artifacts or
+outcomes, and red for denials or warnings. Shape and text remain authoritative so
+the workflow is still understandable without color.
 
 The classifier MUST use only explicit host facts: the real plugin URI and the `$ai-software-architect` marker. A plugin URI followed by a substantive request enters the same Composite route as direct skill invocation. A plugin URI without a request routes to `missing_skill_invocation`; `UserPromptSubmit` blocks that incomplete prompt and explains that the user can add a request or invoke the skill directly, without persisting turn state. A plain-text mention such as documentation that quotes `@AI Software Architect` is not sufficient activation evidence. Every activated prompt enters the same Composite route, where the selected host model and canonical modules decide whether the smallest sufficient response is focused help, comparison, clarification, recording, handoff, or review. The hook MUST NOT infer those semantic modes from pattern names, English keywords, or any other natural-language list because ordinary terms such as state, repository, strategy, or adapter can appear outside pattern requests. It MAY resolve an explicit unambiguous canonical reference name to its bundled relative path and add a hard read-before-answer instruction without deciding whether the response is an explanation, example, comparison, or complete workflow.
 

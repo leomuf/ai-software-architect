@@ -5,11 +5,12 @@
 
 <#
 .SYNOPSIS
-Runs deterministic release-candidate gates and builds the exact Codex package.
+Runs deterministic release-candidate gates and builds the exact Codex release.
 
 .DESCRIPTION
 Requires a clean candidate commit. Runs the locked-environment, generated-file,
 lint, type-check, test, full-build, package-validation, and runtime-smoke gates.
+It then creates the dependency-free marketplace bundle and checksum.
 Manual package inspection, exploratory Codex tests, Desktop lifecycle acceptance,
 and clean-machine acceptance remain separate documented release gates.
 
@@ -28,6 +29,7 @@ $ErrorActionPreference = "Stop"
 
 $RepositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $BuildScript = Join-Path $PSScriptRoot "build-codex-plugin.ps1"
+$ReleasePackageScript = Join-Path $PSScriptRoot "package-codex-release.ps1"
 $RepositoryUvCache = Join-Path $RepositoryRoot ".uv-cache"
 $SemVerPattern = "^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
 
@@ -70,6 +72,9 @@ if ($PluginVersion -notmatch $SemVerPattern) {
 if (-not (Test-Path -LiteralPath $BuildScript -PathType Leaf)) {
     throw "Build wrapper not found: $BuildScript"
 }
+if (-not (Test-Path -LiteralPath $ReleasePackageScript -PathType Leaf)) {
+    throw "Release packaging wrapper not found: $ReleasePackageScript"
+}
 
 $Uv = (Get-Command uv -CommandType Application -ErrorAction Stop).Source
 $Git = (Get-Command git -CommandType Application -ErrorAction Stop).Source
@@ -108,6 +113,9 @@ try {
 
     Write-Host "Building and validating the exact release candidate..."
     & $BuildScript -PluginVersion $PluginVersion -SkipSync
+
+    Write-Host "Creating the dependency-free marketplace bundle..."
+    & $ReleasePackageScript -PluginVersion $PluginVersion
 
     Assert-CleanWorkingTree $Git "candidate completion"
 
