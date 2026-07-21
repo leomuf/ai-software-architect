@@ -165,6 +165,11 @@ $ai-software-architect Compare suitable architectures for this project.
 $ai-software-architect Record the approved decision and prepare the coding handoff.
 ```
 
+Always begin a new AI Software Architect request with
+`$ai-software-architect`. This explicitly selects the public skill and is the
+supported, release-tested way to receive the complete repository-aware workflow.
+Do not use `@AI Software Architect` as a substitute for the `$` skill invocation.
+
 Choose the matching skill when Codex opens its completion menu. Codex may render
 the selected skill as a namespaced link such as
 `$ai-software-architect:ai-software-architect`; that is expected. You do **not**
@@ -187,13 +192,14 @@ architecture workflow without repeating `$ai-software-architect`. The
 continuation is bounded to the next turn and is cancelled if you explicitly
 select another skill or plugin.
 
-The `@AI Software Architect` plugin selector remains available for discovering
-or inspecting the installed bundle, but it is not needed for normal use. Codex
-adds this selector automatically when you choose a prompt on the plugin page.
-Those examples therefore contain only the request text and do not repeat
-`$ai-software-architect`. A substantive `@AI Software Architect` request enters
-the same workflow; selecting the plugin without adding a request is blocked with
-short correction guidance.
+The `@AI Software Architect` plugin selector is for discovering or inspecting
+the installed bundle; it is not the recommended workflow invocation. Codex may
+add this selector automatically when you launch a prompt from the plugin page.
+The hooks provide a compatibility fallback for a substantive request submitted
+that way, but `@` does not explicitly select the public skill and may produce
+less consistent repository-grounded behavior. For reliable results, start a new
+task and select `$ai-software-architect` in the composer. Selecting the plugin
+without adding a request is blocked with short correction guidance.
 
 <a id="why-codex-asks-you-to-trust-the-hooks"></a>
 
@@ -201,14 +207,14 @@ short correction guidance.
 
 Codex does not necessarily open a proactive approval dialog for plugin hooks. New or changed non-managed hooks are marked for review and skipped until you explicitly trust their current definitions. In Codex Desktop, open the AI Software Architect plugin page, review the hooks, and use the available control to activate them. In the CLI, use `/hooks` to inspect and trust them. Codex records trust for the current hook definition, so a later change requires another review. This is a useful security boundary because a hook is local code that can observe a specific workflow event and return a bounded instruction to Codex. See the official [Codex hooks documentation](https://learn.chatgpt.com/docs/hooks).
 
-For AI Software Architect, the skill or an explicit plugin-page request guides the selected model, while hooks add a small **deterministic safety and quality layer** around that reasoning. They accept a substantive request after Codex's `@AI Software Architect` selector, prevent an accidental empty selector from silently doing nothing, keep one bounded clarification or decision follow-up active, resolve explicit canonical pattern names to bundled reference paths, keep repository inspection static, prevent the architect role from editing application code, verify option-comparison rendering when the response visibly uses that structure, and ensure a recommendation offers a clear next choice. They deliberately do not choose focused help versus the complete lifecycle or classify free-form architecture intent from language-specific keywords; the selected host model and canonical modules retain that responsibility.
+For AI Software Architect, the explicitly selected `$ai-software-architect` skill guides the selected model, while hooks add a small **deterministic safety and quality layer** around that reasoning. They also provide bounded compatibility guidance when Codex supplies its `@AI Software Architect` selector from the plugin page, prevent an accidental empty selector from silently doing nothing, keep one bounded clarification or decision follow-up active, resolve explicit canonical pattern names to bundled reference paths, keep repository inspection static, prevent the architect role from editing application code, verify option-comparison rendering when the response visibly uses that structure, and ensure a recommendation offers a clear next choice. This fallback does not make `@` equivalent to explicitly selecting the `$` skill. The hooks deliberately do not choose focused help versus the complete lifecycle or classify free-form architecture intent from language-specific keywords; the selected host model and canonical modules retain that responsibility.
 
 The five hooks have deliberately narrow responsibilities. They still use one
 short-lived executable and no persistent background process:
 
 | Hook | When it runs | What it does |
 |---|---|---|
-| `UserPromptSubmit` | After you submit a prompt | Recognizes either the explicit `$ai-software-architect` invocation or a plugin-page selection followed by a substantive request, adds the one-skill routing and safety context, supplies exact bundled paths for explicitly named canonical references and the four installed artifact resources, resumes one bounded pending follow-up, and explains how to correct an empty `@` selection. |
+| `UserPromptSubmit` | After you submit a prompt | Recognizes the recommended explicit `$ai-software-architect` invocation and provides bounded compatibility guidance for a plugin-page selection followed by a substantive request. It adds routing and safety context, supplies exact bundled paths for explicitly named canonical references and the four installed artifact resources, resumes one bounded pending follow-up, and explains how to correct an empty `@` selection. |
 | `PreToolUse` | Before a shell command or file write runs | Blocks repository interpreters, test/build/package runners, mutating shell commands, and application-code patches during architect turns. For approved `.ai-architect/` writes it reconstructs the complete ADR, contract, project-context, and coding-handoff bundle in memory, validates cross-artifact references, and scans generated content for likely secrets before allowing the write. It cannot grant extra filesystem or network permissions. |
 | `PostToolUse` | After an architecture artifact write | Confirms that the persisted files exactly match the pre-write validated bundle and records a typed completion checkpoint. It cannot make an unsafe operation safe or replace `PreToolUse`. |
 | `PostCompact` | After Codex compacts a long task | Restores only the minimal typed workflow phase and expected artifact kinds; it never copies the conversation or repository content into plugin state. |
@@ -421,7 +427,7 @@ The project assumes its public controls are known to an attacker and treats repo
 ### Additional Codex Adapter Controls
 
 - The Codex package registers no persistent MCP server. Dependency and boundary observations use bounded host-native static inspection and disclose that dynamic or omitted behavior was not deterministically verified.
-- The architecture workflow activates only for an explicit `$ai-software-architect` invocation. A plugin `@` mention alone is blocked before model or tool execution and persists no turn state. Valid architect turns store only a hashed turn key and route classification in Codex's plugin-data directory, never the user's prompt or repository content.
+- The supported architecture workflow is activated explicitly with `$ai-software-architect`. A bare plugin `@` selection is blocked before model or tool execution and persists no turn state; a substantive plugin-page request receives compatibility guidance but is not guaranteed to behave identically to explicit skill selection. Valid architect turns store only a hashed turn key and route classification in Codex's plugin-data directory, never the user's prompt or repository content.
 - Trusted hooks keep architect inspection static by denying repository interpreters, test/build/package runners, mutating shell and Git commands, and application-code patches. Approved architecture artifacts are patchable only under `.ai-architect/`. The same hooks may request one corrected option rendering when the response visibly contains an Alternatives section and reject leaked internal response markers. Architect answers contain only user-facing Markdown; the hook does not infer focused versus complete mode or `clarify`, `recommendation`, or `complete` from localized prose. It fails open with a visible warning, avoids infinite retries, and does not replace Codex's sandbox, permissions, or semantic model reasoning.
 
 These controls reduce risk but do not claim perfect prompt-injection prevention. See [SECURITY.md](SECURITY.md) for reporting and the [approved specification](specs/AISoftwareArchitect.md) for the complete threat model, architecture, schemas, and acceptance criteria.
