@@ -10,11 +10,13 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
 from ai_architect_schemas import ArchitectureContract
 
 from adapters.codex import runtime_entry
 from adapters.codex.artifact_guard import (
     ArtifactCandidate,
+    proposed_artifact_candidates,
     validate_artifact_bundle_candidates,
 )
 from adapters.codex.continuation import (
@@ -91,7 +93,7 @@ decision:
             Path(".ai-architect/project-context.md"), "# Context\n", "context"
         ),
         ArtifactCandidate(
-            Path(".ai-architect/coding-handoff.md"),
+            Path(".ai-architect/implementation-plan.md"),
             "# Coding handoff\n",
             "implementation-plan",
         ),
@@ -332,7 +334,7 @@ def test_architect_patch_surface_is_limited_to_architecture_artifacts(
         "freeform": {
             "text": (
                 "*** Begin Patch\n"
-                "*** Add File: .ai-architect/context.md\n"
+                "*** Add File: .ai-architect/project-context.md\n"
                 "+# Context\n"
                 "*** End Patch\n"
             )
@@ -340,26 +342,19 @@ def test_architect_patch_surface_is_limited_to_architecture_artifacts(
     }
     assert handle_pre_tool_use(nested_architecture_patch, tmp_path / "data") == {}
 
-    absolute_staging_patch = _payload("PreToolUse")
-    absolute_staging_patch["cwd"] = str(tmp_path)
-    absolute_staging_patch["tool_name"] = "apply_patch"
-    staging_target = (
-        tmp_path
-        / ".ai-architect"
-        / ".runtime"
-        / "staging"
-        / "run-1"
-        / "ADR-001.md"
-    )
-    absolute_staging_patch["tool_input"] = {
+    absolute_architecture_patch = _payload("PreToolUse")
+    absolute_architecture_patch["cwd"] = str(tmp_path)
+    absolute_architecture_patch["tool_name"] = "apply_patch"
+    absolute_target = tmp_path / ".ai-architect" / "decisions" / "ADR-002-absolute.md"
+    absolute_architecture_patch["tool_input"] = {
         "patch": (
             "*** Begin Patch\n"
-            f"*** Add File: {staging_target}\n"
-            "+# Staged decision\n"
+            f"*** Add File: {absolute_target}\n"
+            "+# Absolute-path decision\n"
             "*** End Patch\n"
         )
     }
-    assert handle_pre_tool_use(absolute_staging_patch, tmp_path / "data") == {}
+    assert handle_pre_tool_use(absolute_architecture_patch, tmp_path / "data") == {}
 
     escaped_absolute_patch = _payload("PreToolUse")
     escaped_absolute_patch["cwd"] = str(tmp_path)
@@ -374,6 +369,69 @@ def test_architect_patch_surface_is_limited_to_architecture_artifacts(
     }
     escaped = handle_pre_tool_use(escaped_absolute_patch, tmp_path / "data")
     assert escaped["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+
+
+def test_unsupported_architecture_artifact_paths_are_denied_before_write(
+    tmp_path: Path,
+) -> None:
+    data = tmp_path / "plugin-data"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Record the approved decision."
+    handle_user_prompt_submit(submit, data)
+
+    unsupported_targets = (
+        ".ai-architect/notes.md",
+        ".ai-architect/context.md",
+        ".ai-architect/architecture-contract.yml",
+        ".ai-architect/coding-handoff.md",
+        ".ai-architect/ADR-001.md",
+        ".ai-architect/decisions/ADR-1.md",
+        ".ai-architect/decisions/ADR-001-Uppercase.md",
+        ".ai-architect/decisions/ADR-001-double--hyphen.md",
+        ".ai-architect/.runtime/staging/ADR-001.md",
+    )
+    for target in unsupported_targets:
+        proposal = _payload("PreToolUse")
+        proposal["cwd"] = str(workspace)
+        proposal["tool_name"] = "apply_patch"
+        proposal["tool_input"] = {
+            "patch": (
+                "*** Begin Patch\n"
+                f"*** Add File: {target}\n"
+                "+unknown content that must not bypass validation\n"
+                "*** End Patch\n"
+            )
+        }
+        denied = handle_pre_tool_use(proposal, data)
+        assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+        assert "ADR-NNN[-slug].md" in str(denied)
+
+    mixed_patch = _payload("PreToolUse")
+    mixed_patch["cwd"] = str(workspace)
+    mixed_patch["tool_name"] = "apply_patch"
+    mixed_patch["tool_input"] = {
+        "patch": (
+            "*** Begin Patch\n"
+            "*** Add File: .ai-architect/project-context.md\n"
+            "+# Context\n"
+            "*** Add File: .ai-architect/unscanned-secret-dump.md\n"
+            "+secret\n"
+            "*** End Patch\n"
+        )
+    }
+    denied_mixed = handle_pre_tool_use(mixed_patch, data)
+    assert denied_mixed["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+
+    with pytest.raises(ValueError, match="unsupported architecture artifact path"):
+        proposed_artifact_candidates(
+            {
+                "path": ".ai-architect/unknown.md",
+                "content": "content that must not be silently ignored",
+            },
+            workspace,
+        )
 
 
 def test_architect_uses_bundled_references_instead_of_web_search(tmp_path: Path) -> None:
@@ -424,7 +482,10 @@ def test_model_selected_comparison_retains_architecture_artifact_patch_surface(
     patch["tool_name"] = "apply_patch"
     patch["tool_input"] = {
         "patch": (
-            "*** Begin Patch\n*** Add File: .ai-architect/notes.md\n+# Notes\n*** End Patch\n"
+            "*** Begin Patch\n"
+            "*** Add File: .ai-architect/project-context.md\n"
+            "+# Project context\n"
+            "*** End Patch\n"
         )
     }
     assert handle_pre_tool_use(patch, tmp_path / "data") == {}

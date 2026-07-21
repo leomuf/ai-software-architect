@@ -290,6 +290,10 @@ responses, checks deterministic policies, and exercises the approval continuatio
 It does not perform semantic grading. A `manual-review` status requires a human to
 assess every expected and forbidden behavior before recording the gate as passed.
 
+The `gpt-5.6` and medium settings below pin the initial release-evaluation baseline
+for comparable evidence. They do not constrain the model a user may select when
+running the installed plugin.
+
 For the initial beta:
 
 - use `gpt-5.6` with medium reasoning;

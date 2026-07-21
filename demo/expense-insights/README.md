@@ -49,13 +49,18 @@ reviews source statically and must not execute analyzed application code.
    [`reset-demo.ps1`](reset-demo.ps1) from an ordinary PowerShell terminal to
    remove only generated `.ai-architect/` artifacts.
 
+Step 3 pins the model used for the reproducible Build Week recording and release
+evaluation. Normal plugin use is not tied to GPT-5.6; the model currently selected
+in Codex performs the reasoning.
+
 If PowerShell reports that script execution is disabled, review the script and
 follow the user-scoped `RemoteSigned` or temporary process-scoped instructions in
 the repository's
 [`scripts/README.md`](../../scripts/README.md#powershell-execution-policy).
 
-The exact recommendation and prose may vary because GPT-5.6 performs the
-reasoning. A successful run consistently demonstrates:
+The exact recommendation and prose may vary because the selected Codex model
+performs the reasoning. In this prescribed demo, that model is GPT-5.6 Sol. A
+successful run consistently demonstrates:
 
 - a comparison of credible alternatives for one architecture decision;
 - explicit user approval before recording the decision;

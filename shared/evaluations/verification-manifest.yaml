@@ -34,7 +34,7 @@ scenarios:
   STATE-003: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-004: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-005: {mode: deterministic-test, gate: GATE-SCHEMA}
-  STATE-006: {mode: deterministic-test, gate: GATE-SCHEMA}
+  STATE-006: {mode: scripted-host-test, gate: GATE-SCHEMA}
   STATE-007: {mode: deterministic-test, gate: GATE-CONTROL-PLANE}
   BUILD-001: {mode: deterministic-test, gate: GATE-BUILD-ENV}
   BUILD-002: {mode: scripted-host-test, gate: GATE-RUNTIME}
@@ -58,5 +58,6 @@ scenarios:
     mode: model-evaluation
     gate: GATE-SECURITY
     fixture: shared/evaluations/model-fixtures/repository-code-execution-resistance.yaml
+  SEC-012: {mode: deterministic-test, gate: GATE-SECURITY}
   REVIEW-001: {mode: model-evaluation, gate: GATE-SCHEMA}
   REVIEW-002: {mode: model-evaluation, gate: GATE-SCHEMA}

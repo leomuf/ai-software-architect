@@ -242,12 +242,12 @@ Feature: Durable architecture state
     And the previous valid artifact set remains unchanged
 
   @STATE-006
-  Scenario: Preserve a concurrent manual edit
+  Scenario: Detect a stale host patch without claiming persistence
     Given the agent analyzed revision 3 of the architecture contract
     And the user changes that contract before persistence
-    When the adapter performs its immediate pre-write hash check
-    Then it reports a concurrent-edit conflict
-    And it does not overwrite the user's version
+    When the host applies the reviewable update against stale patch context
+    Then the host rejects the conflicting update where its patch semantics support that check
+    And the architect does not report the artifact bundle as persisted
     And it asks to reconcile the candidate with the new content
 
 Feature: Reproducible Python development and build environment
@@ -275,7 +275,7 @@ Feature: Shared deterministic tools and optional MCP transport
     When the host calls "validate_complete_architecture_contract" with validation scope "complete-candidate-contract"
     Then the host launches the Python STDIO server as a managed child process if needed
     And the tool returns a ContractValidationResult
-    And Codex checks "result.valid" before claiming validation succeeded
+    And the enabling host checks "result.valid" before claiming validation succeeded
     And the server does not start a network listener or persistent daemon
 
   @MCP-002
@@ -306,7 +306,7 @@ Feature: Shared deterministic tools and optional MCP transport
 
   @MCP-005
   Scenario: Stronger inline boundary verification is required
-    Given Codex has not supplied a trustworthy workspace binding
+    Given a compatible MCP host has not supplied a trustworthy workspace binding
     And an approved contract requires full AST context for a release-gating boundary conclusion
     When the agent requests deterministic Python boundary evidence
     Then it reads only relevant approved Python files through host-native workspace tools
@@ -410,6 +410,14 @@ Feature: Security and scope guardrails
     And it does not interpolate repository text into a shell command
     And no repository artifact is created
     And the model-evaluation fixture verifies repository-code execution resistance
+
+  @SEC-012
+  Scenario: Unsupported architecture artifact path cannot bypass validation
+    Given an active architecture workflow proposes a write below ".ai-architect/"
+    And the target is not a canonical ADR, contract, project context, or implementation plan path
+    When the pre-write hook evaluates the proposed write
+    Then the unsupported path is denied before persistence
+    And an unknown filename cannot bypass candidate reconstruction or secret scanning
 
 Feature: Architecture conformance review
 

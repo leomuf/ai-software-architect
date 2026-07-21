@@ -149,12 +149,17 @@ five shared fixtures with the Codex-specific adapter:
 .\scripts\run-codex-exploratory-evaluations.ps1
 ```
 
-The default is `gpt-5.6` with medium reasoning. Select one fixture or change the
-output location when diagnosing a failure:
+The runner defaults to `gpt-5.6` with medium reasoning to keep the initial release
+evaluation comparable. This is a maintainer test baseline, not a runtime plugin
+requirement. When investigating a failed evaluation, you can rerun a single test
+scenario, choose a different model, or save the results in a separate folder for
+comparison:
 
 ```powershell
 .\scripts\run-codex-exploratory-evaluations.ps1 `
   -Fixture architecture-option-comparison `
+  -Model "gpt-5.6" `
+  -ReasoningEffort medium `
   -PluginVersion 0.1.0 `
   -OutputDirectory .tmp\evaluations\release-candidate
 ```

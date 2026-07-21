@@ -17,11 +17,13 @@ user's Antigravity/Gemini host.
 
 ## Host-specific work
 
-Antigravity plugins can group skills, rules, hooks, and optional MCP servers. The
-adapter should generate the host package from canonical sources and translate Codex
-control-plane behavior into Antigravity-native rules and hook payloads. Any agent or
-parallel-review mechanism must be capability-detected; the workflow must remain valid
-as a sequential single-agent flow.
+Google's current Antigravity getting-started material documents Rules, Workflows,
+Skills, and MCP customization. It does not establish that Codex-style plugin
+packaging or equivalent lifecycle hooks are available. The adapter format and
+control-plane mapping must therefore be designed only after the target Antigravity
+version's official contracts have been verified. Any agent or parallel-review
+mechanism must be capability-detected; the workflow must remain valid as a
+sequential single-agent flow.
 
 Suggested structure:
 
@@ -36,14 +38,15 @@ adapters/antigravity/
 └── validate_adapter.py
 ```
 
-Prefer Agent Skills and short-lived deterministic execution. Retain MCP as an optional
-transport around the same Python core, enabled only after lifecycle and permission tests
-pass on supported Antigravity versions.
+Prefer Skills and the smallest supported deterministic execution boundary. Retain
+MCP as an optional transport around the same Python core, enabled only after
+lifecycle and permission tests pass on supported Antigravity versions.
 
 ## Implementation gates
 
-1. Verify the current official plugin, skill, rule, hook, agent, permission, and MCP
-   documentation.
+1. Verify the current official skill, rule, workflow, agent, permission, packaging,
+   lifecycle-hook, and MCP documentation; do not assume a Codex-equivalent plugin
+   surface.
 2. Generate rather than duplicate canonical workflow and knowledge files.
 3. Translate activation, read-only inspection, architecture-artifact writes, contract
    validation, and secret scanning into native controls.
@@ -54,6 +57,4 @@ pass on supported Antigravity versions.
 
 Official starting points:
 
-- https://www.antigravity.google/docs/plugins
-- https://ai.google.dev/gemini-api/docs/antigravity-agent
-
+- [Getting Started with Antigravity IDE](https://codelabs.developers.google.com/getting-started-agy-ide)

@@ -14,10 +14,14 @@ from ai_architect_schemas import ComparedArchitectureOption
 from pydantic import ValidationError
 
 try:
+    from adapters.codex.artifact_paths import is_canonical_artifact_path
     from adapters.codex.reference_catalog import REFERENCE_CATALOG, ReferenceSpec
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
+    from artifact_paths import (  # type: ignore[import-not-found, no-redef]
+        is_canonical_artifact_path,
+    )
     from reference_catalog import (  # type: ignore[import-not-found, no-redef]
         REFERENCE_CATALOG,
         ReferenceSpec,
@@ -367,24 +371,6 @@ def _patch_text_from_tool_input(value: object) -> str | None:
     return candidates[0] if len(candidates) == 1 else None
 
 
-def _patch_target_is_architecture_artifact(target: str, workspace: Path | None) -> bool:
-    normalized = target.strip().replace("\\", "/")
-    if not normalized or ".." in normalized.split("/"):
-        return False
-    candidate = Path(target.strip())
-    if candidate.is_absolute():
-        if workspace is None:
-            return False
-        try:
-            relative = candidate.resolve(strict=False).relative_to(
-                workspace.resolve(strict=False)
-            )
-        except (OSError, ValueError):
-            return False
-        normalized = relative.as_posix()
-    return normalized.startswith(".ai-architect/")
-
-
 def _patch_is_limited_to_architecture_artifacts(
     tool_input: object,
     workspace: Path | None = None,
@@ -398,15 +384,13 @@ def _patch_is_limited_to_architecture_artifacts(
             for key in ("file_path", "path", "target")
             if isinstance(tool_input.get(key), str)
         )
-        return len(targets) == 1 and _patch_target_is_architecture_artifact(
-            targets[0], workspace
-        )
+        return len(targets) == 1 and is_canonical_artifact_path(targets[0], workspace)
     targets = tuple(
         (match.group(1) or match.group(2)).strip().replace("\\", "/")
         for match in PATCH_FILE_PATTERN.finditer(patch)
     )
     return bool(targets) and all(
-        _patch_target_is_architecture_artifact(target, workspace)
+        is_canonical_artifact_path(target, workspace)
         for target in targets
     )
 
@@ -434,7 +418,10 @@ def tool_denial_reason(
         if not _patch_is_limited_to_architecture_artifacts(tool_input, workspace):
             return (
                 "The AI Software Architect never writes application code. Its patch "
-                "surface is limited to approved files under .ai-architect/."
+                "surface is limited to `.ai-architect/project-context.md`, "
+                "`.ai-architect/architecture-contract.yaml`, "
+                "`.ai-architect/implementation-plan.md`, and canonical "
+                "`.ai-architect/decisions/ADR-NNN[-slug].md` files."
             )
     return None
 

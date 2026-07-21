@@ -17,10 +17,11 @@ and uses the user's Claude model and plan.
 
 ## Host-specific work
 
-Claude Code supports plugins, skills, command hooks, custom subagents, and optional MCP
-servers. The adapter should map the three semantic review roles to read-only Claude
-subagents while leaving the main session responsible for recommendations and writes.
-Hook configuration and payloads must be translated rather than copied from Codex.
+Claude Code documents plugins containing skills, agents, hooks, and optional MCP
+servers. The adapter may map the three semantic review roles to read-only Claude
+agents after the target version's delegation and permission behavior is verified;
+the main session remains responsible for recommendations and writes. Hook
+configuration and payloads must be translated rather than copied from Codex.
 
 Suggested structure:
 
@@ -52,7 +53,5 @@ lifecycle tests prove reliable startup, shutdown, upgrade, and uninstall behavio
 
 Official starting points:
 
-- https://code.claude.com/docs/en/features-overview
-- https://code.claude.com/docs/en/hooks
-- https://code.claude.com/docs/en/sub-agents
-
+- [Create Claude Code plugins](https://code.claude.com/docs/en/plugins)
+- [Claude Code plugin reference](https://code.claude.com/docs/en/plugins-reference)

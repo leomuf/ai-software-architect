@@ -8,7 +8,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
 
 import yaml
 from ai_architect_schemas import (
@@ -24,14 +23,21 @@ from ai_architect_tools.domain.contracts import (
 )
 from pydantic import ValidationError
 
+try:
+    from adapters.codex.artifact_paths import ArtifactKind, canonical_artifact_path
+except ModuleNotFoundError as exc:
+    if exc.name != "adapters":
+        raise
+    from artifact_paths import (  # type: ignore[import-not-found, no-redef]
+        ArtifactKind,
+        canonical_artifact_path,
+    )
+
 FILE_SECTION_PATTERN = re.compile(
     r"^\*\*\* (Add|Update|Delete) File: (.+)$",
     flags=re.MULTILINE,
 )
 HUNK_PATTERN = re.compile(r"^@@.*$", flags=re.MULTILINE)
-
-
-ArtifactKind = Literal["adr", "contract", "context", "implementation-plan"]
 
 
 @dataclass(frozen=True)
@@ -46,22 +52,6 @@ def _relative_target(target: str, workspace: Path) -> Path:
     if candidate.is_absolute():
         return candidate.resolve(strict=False).relative_to(workspace.resolve(strict=False))
     return candidate
-
-
-def _artifact_kind(path: Path) -> ArtifactKind | None:
-    normalized = path.as_posix().casefold()
-    name = path.name.casefold()
-    if not normalized.startswith(".ai-architect/"):
-        return None
-    if name in {"architecture-contract.yaml", "architecture-contract.yml"}:
-        return "contract"
-    if name.startswith("adr-") and name.endswith(".md"):
-        return "adr"
-    if name.startswith("project-context") or name in {"context.md", "context.yaml"}:
-        return "context"
-    if name.startswith("implementation-plan") or name.startswith("coding-handoff"):
-        return "implementation-plan"
-    return None
 
 
 def _added_content(body: str) -> str:
@@ -114,9 +104,10 @@ def _patch_candidates(patch: str, workspace: Path) -> tuple[ArtifactCandidate, .
         if operation == "Delete":
             continue
         relative = _relative_target(target, workspace)
-        kind = _artifact_kind(relative)
-        if kind is None:
-            continue
+        canonical = canonical_artifact_path(relative)
+        if canonical is None:
+            raise ValueError(f"unsupported architecture artifact path: {relative.as_posix()}")
+        relative, kind = canonical
         start = match.end()
         end = matches[index + 1].start() if index + 1 < len(matches) else patch.find(
             "*** End Patch", start
@@ -158,9 +149,10 @@ def _structured_write_candidate(
     if target is None or content is None:
         return ()
     relative = _relative_target(target, workspace)
-    kind = _artifact_kind(relative)
-    if kind is None:
-        return ()
+    canonical = canonical_artifact_path(relative)
+    if canonical is None:
+        raise ValueError(f"unsupported architecture artifact path: {relative.as_posix()}")
+    relative, kind = canonical
     return (ArtifactCandidate(path=relative, content=content, kind=kind),)
 
 

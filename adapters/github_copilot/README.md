@@ -18,10 +18,12 @@ the `.ai-architect/` artifact format, and run the shared Gherkin evaluations.
 
 ## Host-specific work
 
-Copilot currently supports Agent Skills, custom agents, repository and personal
-hooks, and optional MCP servers. The first adapter should prefer Agent Skills plus
-short-lived hooks or a one-shot CLI. MCP may be enabled later only when install,
-restart, idle-process, and removal behavior passes lifecycle tests.
+GitHub documents Agent Skills, custom agents, hooks, and optional MCP integrations,
+but availability and configuration differ between Copilot surfaces. The first
+adapter should target an explicitly supported surface and version, then prefer
+Agent Skills plus short-lived hooks or a one-shot CLI where those capabilities are
+available. MCP may be enabled only when installation, restart, idle-process, and
+removal behavior passes lifecycle tests.
 
 Suggested structure:
 
@@ -37,8 +39,8 @@ adapters/github_copilot/
 
 The generated package should expose one obvious public entry point. Semantic review
 roles—architecture critic, security/operations reviewer, and maintainability/testability
-reviewer—may map to Copilot custom agents, but the canonical workflow must still work
-sequentially when subagent delegation is unavailable.
+reviewer—may map to host-native agents only after that behavior is verified. The
+canonical workflow must still work sequentially when delegation is unavailable.
 
 ## Implementation gates
 
@@ -54,6 +56,5 @@ sequentially when subagent delegation is unavailable.
 
 Official starting points:
 
-- https://docs.github.com/en/copilot/reference/customization-cheat-sheet
-- https://docs.github.com/en/copilot/concepts/agents/hooks
-
+- [Copilot customization cheat sheet](https://docs.github.com/en/copilot/reference/customization-cheat-sheet)
+- [About hooks for GitHub Copilot](https://docs.github.com/en/copilot/concepts/agents/hooks)

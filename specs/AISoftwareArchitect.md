@@ -7,15 +7,17 @@ SPDX-License-Identifier: MIT
 
 ## Specification Status
 
-This document defines the product direction and first implementation scope for the OpenAI Build Week project.
+This document defines the product direction and implemented first-release scope for the OpenAI Build Week project. It is a living specification: the current version describes the intended behavior of the next release candidate, while Git tags preserve the exact specification shipped with each release.
 
-The initial implementation target is an installable Codex plugin. The product is designed so that adapters for GitHub Copilot, Claude Code, Google Antigravity, and other coding assistants can reuse the same architectural skills, schemas, templates, and repository artifacts later.
+The implemented first host adapter is an installable Codex plugin. The product is designed so that planned adapters for GitHub Copilot, Claude Code, Google Antigravity, and other coding assistants can reuse the same architectural skills, schemas, templates, and repository artifacts later.
 
 ```yaml
 specification:
   name: ai-software-architect
-  version: 0.7.0
-  status: approved-for-mvp-implementation
+  version: 0.8.0
+  status: approved
+  implementation_status: pre-release
+  target_product_version: 0.1.0
   last_architecture_and_security_review: 2026-07-21
   release_scope: minimum-viable-product
   primary_host: codex
@@ -26,7 +28,7 @@ specification:
   managed_backend_required: false
 ```
 
-Implementation may begin only after the following readiness gates are represented as executable checks or recorded, time-boxed capability decisions. A failed gate blocks the affected release capability; it MUST NOT be bypassed by weakening a security boundary.
+Implementation and release may proceed only when the following readiness gates are represented as executable checks or recorded, time-boxed capability decisions. A failed gate blocks the affected release capability; it MUST NOT be bypassed by weakening a security boundary.
 
 ```yaml
 implementation_readiness_gates:
@@ -61,6 +63,9 @@ This specification is intended to be both human-readable and suitable as input t
 - If narrative examples conflict with a Pydantic contract or Gherkin acceptance criterion, the Pydantic contract and acceptance criterion take precedence.
 - A conflict between a Pydantic contract and a Gherkin acceptance criterion is a specification defect and MUST fail the documentation/conformance build until resolved.
 - Implementations MAY add host-specific fields, but MUST preserve the semantics of shared fields and artifacts.
+- Statements under current product, Codex, schema, security, and release-scope sections describe implemented or release-gating behavior unless explicitly labeled as planned or conditional.
+- Statements under **Future Capabilities**, planned host-adapter sections, or explicitly conditional optional-MCP clauses are not claims about the current Codex release.
+- The executable Pydantic models, generated JSON Schemas, generated Gherkin file, adapter manifests, and release tests MUST remain semantically aligned with this specification; implementation details that do not affect observable behavior remain owned by source code.
 
 ## Vision
 
@@ -162,7 +167,7 @@ Consequences:
 
 ### No managed remote MCP service
 
-The project will not require or maintain a Streamable HTTP MCP server.
+The project does not require or maintain a Streamable HTTP MCP server.
 
 There is no central service, account system, hosted database, usage metering, or project-data upload requirement.
 
@@ -385,9 +390,9 @@ workflow:
     review: complete
 ```
 
-The six nodes are the normative MVP abstraction. An adapter MAY use finer internal steps for tracing or implementation convenience, but those steps MUST NOT change shared artifacts, routing outcomes, or user-visible behavior. While workflow status is `active`, `current_node` MUST identify one of these six nodes. When a terminal status is reached, `current_node` MUST be `null`.
+The six nodes are the normative first-release abstraction. An adapter MAY use finer internal steps for tracing or implementation convenience, but those steps MUST NOT change shared artifacts, routing outcomes, or user-visible behavior. While workflow status is `active`, `current_node` MUST identify one of these six nodes. When a terminal status is reached, `current_node` MUST be `null`.
 
-The MVP has no application database. Durable state is stored in version-controlled Markdown and YAML files. Ephemeral orchestration state lives in host memory and MAY be checkpointed locally so an interrupted interaction can resume.
+The product has no application database. Durable state is stored in version-controlled Markdown and YAML files. Ephemeral orchestration state is host-managed and MUST remain outside the analyzed repository. In Codex, the control plane stores only bounded typed routing, continuation, phase, and validation metadata under Codex-managed `PLUGIN_DATA`; it never stores prompts, responses, tool arguments, or repository content.
 
 ```yaml
 state_store:
@@ -399,8 +404,11 @@ state_store:
       - yaml
     source_of_truth: true
   ephemeral:
-    type: host-memory
-    optional_checkpoint: .ai-architect/.runtime/session-state.yaml
+    type: host-managed-local-state
+    repository_resident: false
+    codex_location: PLUGIN_DATA
+    codex_content: bounded-typed-metadata-only
+    sensitive_content: forbidden
     version_controlled: false
   database:
     required: false
@@ -408,7 +416,7 @@ state_store:
     rebuild_from_durable_artifacts: true
 ```
 
-The `.ai-architect/.runtime/` directory MUST be excluded from version control. Accepted decisions MUST NOT exist only in ephemeral state. If a future adapter uses SQLite or another database for indexing or caching, that database MUST remain derived state; repository artifacts remain canonical.
+Accepted decisions MUST NOT exist only in ephemeral state. If a future adapter uses SQLite or another database for indexing or caching, that database MUST remain derived state outside the project artifact tree; repository artifacts remain canonical.
 
 ## User Experience
 
@@ -477,166 +485,46 @@ Repository-based architecture artifacts
 
 "Canonical" means that the project maintains one authoritative version of shared knowledge and contracts. Platform packages are generated from that source rather than maintained as independent copies.
 
-Planned source organization:
+Current source organization (showing the significant canonical, adapter, and
+verification components):
 
 ```text
-SECURITY.md
-LICENSE
-NOTICE
-THIRD_PARTY_NOTICES.md
-.gitignore                         # excludes /.venv/, /dist/, and local build caches
-.python-version
-pyproject.toml                     # uv workspace and development dependency groups
-uv.lock                            # single committed workspace lockfile
-.github/
-    CODEOWNERS
-    dependabot.yml
-    workflows/
-        ci.yml
-        security.yml
-        release.yml
-
-shared/
-    skills/
-        orchestrate-architecture-workflow/
-            SKILL.md
-        conduct-architecture-interview/
-            SKILL.md
-            references/
-                quality-attributes.md
-                stakeholder-and-constraint-discovery.md
-        evaluate-architecture-options/
-            SKILL.md
-            references/
-                gof-abstract-factory.md
-                gof-adapter.md
-                gof-bridge.md
-                gof-builder.md
-                gof-chain-of-responsibility.md
-                gof-command.md
-                gof-composite.md
-                gof-decorator.md
-                gof-facade.md
-                gof-factory-method.md
-                gof-flyweight.md
-                gof-interpreter.md
-                gof-iterator.md
-                gof-mediator.md
-                gof-memento.md
-                gof-observer.md
-                gof-prototype.md
-                gof-proxy.md
-                gof-singleton.md
-                gof-state.md
-                gof-strategy.md
-                gof-template-method.md
-                gof-visitor.md
-                no-pattern.md
-                architecture-modular-monolith.md
-                architecture-service-oriented.md
-                architecture-layered.md
-                architecture-clean.md
-                architecture-hexagonal.md
-                presentation-model-view-controller.md
-                architecture-vertical-slice.md
-                architecture-event-driven.md
-                dependency-inversion.md
-                dependency-injection.md
-                architecture-ports-and-adapters.md
-                modernization-anti-corruption-layer.md
-                data-repository.md
-                data-unit-of-work.md
-                integration-idempotency.md
-                integration-idempotent-consumer.md
-                integration-transactional-outbox.md
-                integration-saga.md
-                integration-publish-subscribe.md
-                resilience-retry-and-backoff.md
-                resilience-timeout-and-deadline.md
-                resilience-circuit-breaker.md
-                data-cache-aside.md
-        create-architecture-decisions/
-            SKILL.md
-            references/
-                adr-authoring.md
-            assets/
-                adr-template.md
-                architecture-contract.example.yaml
-        prepare-coding-handoff/
-            SKILL.md
-            assets/
-                implementation-plan-template.md
-        review-architecture-conformance/
-            SKILL.md
-            references/
-                finding-classification.md
-    schemas/
-        pyproject.toml
-        src/
-            ai_architect_schemas/
-                __init__.py
-                models.py
-        generated/
-            architecture-contract.schema.json
-            architecture-artifact-bundle.schema.json
-    evaluations/
-        README.md
-        acceptance.feature          # generated from this specification
-        verification-manifest.yaml
-        model-fixtures/              # coding-agent-neutral exploratory scenarios
-        release-automation-plan.md
-
-tools/
-    python-mcp/                     # optional transport over the shared deterministic core
-
-adapters/
-    codex/
-        artifact_guard.py
-        build_plugin.py
-        control_plane.py
-        hook_entry.py
-        runtime_entry.py
-        smoke_test_runtime.py
-        validate_plugin.py
-        evaluations/                 # Codex-specific non-interactive runner
-            README.md
-            grading.py
-            models.py
-            runner.py
-        templates/
-            hooks.json
-            plugin.json
-            openai.yaml
-    github_copilot/
-        README.md
-    claude_code/
-        README.md
-    antigravity/
-        README.md
-
-tests/
-    adapters/
-    conformance/
-    packaging/
-    security/
-
-dist/                               # generated and gitignored
-    codex/
-        ai-software-architect/
-            .codex-plugin/
-                plugin.json
-            hooks/
-                hooks.json
-            provenance.json
-            skills/
-                ai-software-architect/
-                    SKILL.md
-                    agents/
-                        openai.yaml
-                    references/
-                    assets/
-            runtime/
-                <supported-platform>/
+ai-software-architect/
+├── shared/
+│   ├── skills/                     # Canonical Agent Skills and focused references
+│   │   ├── orchestrate-architecture-workflow/
+│   │   ├── conduct-architecture-interview/
+│   │   ├── evaluate-architecture-options/
+│   │   │   ├── SKILL.md
+│   │   │   └── references/         # GoF, architecture, presentation, dependency,
+│   │   │                           # data, integration, resilience, and modernization
+│   │   ├── create-architecture-decisions/
+│   │   ├── prepare-coding-handoff/
+│   │   └── review-architecture-conformance/
+│   ├── schemas/                    # Pydantic source and generated JSON Schemas
+│   └── evaluations/                # Gherkin, verification map, and shared fixtures
+├── tools/
+│   └── python-mcp/                 # Deterministic core, CLI, and optional MCP adapter
+├── adapters/
+│   ├── codex/
+│   │   ├── control_plane.py        # Deterministic workflow policy
+│   │   ├── hook_entry.py           # Codex lifecycle entry point
+│   │   ├── artifact_guard.py       # Architecture-artifact write validation
+│   │   ├── reference_catalog.json  # Generated canonical-reference index
+│   │   ├── evaluations/            # Codex exploratory runner and grader
+│   │   └── templates/              # Plugin, hook, skill-agent, and marketplace metadata
+│   ├── github_copilot/             # Future host adapter plan
+│   ├── claude_code/                # Future host adapter plan
+│   └── antigravity/                # Future host adapter plan
+├── tests/                          # Cross-cutting conformance and packaging tests
+├── demo/                           # Reproducible end-to-end workflow
+├── specs/                          # Approved product and security specification
+├── docs/                           # Installation, release, and demo documentation
+├── scripts/                        # Build, package, release, and evaluation entry points
+├── assets/                         # Project artwork and plugin icon
+├── .github/                        # CI, CodeQL, release, and dependency automation
+├── pyproject.toml                  # uv workspace and development tooling
+└── uv.lock                         # Reproducible dependency resolution
 ```
 
 Every directory directly below `shared/skills/` is an independently valid Agent Skill. Optional resource directories are created only when the skill needs them; an empty `scripts/`, `references/`, or `assets/` directory MUST NOT be added merely to complete the visual structure. Deterministic tooling lives in the shared Python domain core and its transport adapters, so canonical skills do not initially require `scripts/`.
@@ -863,18 +751,11 @@ The default project state is stored under `.ai-architect/`:
 
 ```text
 .ai-architect/
-    .gitignore                     # contains exactly .runtime/
     project-context.md
     architecture-contract.yaml
-    .runtime/                       # local checkpoint; gitignored
-        session-state.yaml
     decisions/
         ADR-001-example.md
     implementation-plan.md
-    constraints/
-        architectural-boundaries.yaml
-    reviews/
-        architecture-review-YYYY-MM-DD.md
 ```
 
 ### `project-context.md`
@@ -883,7 +764,7 @@ Contains the problem definition, relevant requirements, stakeholders, constraint
 
 ### `architecture-contract.yaml`
 
-Provides a stable machine-readable summary of accepted architecture decisions. Planned fields include:
+Provides a stable machine-readable summary of accepted architecture decisions. Validated fields include:
 
 - contract version;
 - system or feature scope;
@@ -920,19 +801,19 @@ Translates accepted decisions into a coding-agent-ready sequence of milestones, 
 
 ### Architecture reviews
 
-Reviews contain evidence-linked findings rather than an unexplained score. Each finding identifies the relevant decision or constraint and distinguishes confirmed violations from uncertain observations.
+The current conformance-review workflow returns evidence-linked findings to the user rather than writing a separate review artifact automatically. Each finding identifies the relevant decision or constraint and distinguishes confirmed violations from uncertain observations. A future durable review format requires its own canonical schema, path policy, secret scanning, and acceptance tests before the Codex write guard may persist it.
 
 ### Safe artifact update protocol
 
-Repository artifacts are user-owned, reviewable project state. Before modifying them, the host adapter MUST read the current files and retain their content hashes, prepare and validate the complete candidate set, show the user the material decisions or diff, and obtain the approval required by the workflow. Immediately before each write it MUST verify that the on-disk hash still matches the version analyzed. A mismatch is a concurrent-edit conflict: stop, preserve both versions, reload the user's change, and request reconciliation rather than overwriting it.
+Repository artifacts are user-owned, reviewable project state. Before modifying them, the host adapter MUST read relevant current artifacts, prepare the complete candidate set in memory, show the user the material decision, and obtain the approval required by the workflow. The current Codex adapter submits the ADR, contract, project context, and implementation plan together through one reviewable host-native patch. `PreToolUse` reconstructs that complete candidate set against the current workspace, scans every candidate for likely secrets, validates the contract and `ArchitectureArtifactBundle`, and denies the write on any failure. Codex and the user retain normal write-permission control.
 
-For a multi-file decision update, the adapter MUST generate `run_id` as a lowercase UUIDv4 independent of repository content, stage candidates under `.ai-architect/.runtime/staging/<run-id>/`, validate the staged set including links, then commit in this order: new ADRs, updated contract, project context, and implementation plan. It MUST use atomic replacement where the host and filesystem support it. If any commit step fails, it MUST restore every already-replaced file from the staging backup and report incomplete persistence; it MUST NOT claim success. Staging and backup files MUST be removed after successful commit or completed rollback and protected with user-only permissions where the operating system supports them. Re-running the same approved update MUST be idempotent and MUST NOT create duplicate ADR identifiers.
+After the host write, `PostToolUse` compares every persisted artifact with the prevalidated candidates and records completion only when they match exactly. A rejected, failed, partial, or changed write MUST NOT be reported as successful. The first release does not claim a cross-filesystem transaction, automatic rollback, or a general concurrent-edit merge facility; host patch context provides conflict detection where supported. Stronger hash-based concurrency checks, staging, atomic replacement, and rollback are future hardening work.
 
-The contract `revision` is incremented for every accepted contract change and is checked together with the content hash. `.ai-architect/.gitignore` MUST contain `.runtime/`, and release tests MUST verify that checkpoints, staging files, and backups cannot be committed. The MCP server remains read-only and does not participate in artifact writes.
+The contract `revision` is incremented for every accepted contract change. Re-running the same approved update MUST NOT silently create duplicate ADR identifiers. Control-plane checkpoints, continuations, and validation metadata remain under Codex-managed `PLUGIN_DATA`, never under `.ai-architect/`. The optional MCP server remains read-only and does not participate in artifact writes.
 
 ## Core Data Schema and Structured Outputs
 
-Pydantic v2 models are the runtime contract for model-produced structured data, YAML artifacts, MCP inputs, and MCP outputs. The implementation MAY split these models across files, but MUST keep one canonical definition under `shared/schemas/` and generate JSON Schema from it for host adapters and editors.
+Pydantic v2 models are the runtime contract for model-produced structured data, YAML artifacts, deterministic-core inputs, and deterministic-core outputs. The exact executable definitions live in [`shared/schemas/src/ai_architect_schemas/models.py`](../shared/schemas/src/ai_architect_schemas/models.py), and generated JSON Schemas under `shared/schemas/generated/` provide portable contract artifacts for host adapters and editors. The following model listing documents the public shapes and important invariants; source-level helper refactoring MAY differ, but its serialized behavior MUST remain semantically aligned.
 
 ```python
 from __future__ import annotations
@@ -1054,12 +935,27 @@ class ComparedArchitectureOption(StrictModel):
     main_liability: EvidenceText
     material_assumption: EvidenceText
 
+    @model_validator(mode="after")
+    def validate_reference(self) -> Self:
+        if self.category == "No pattern":
+            if self.canonical_reference is not None:
+                raise ValueError("the no-pattern option must not declare a canonical reference")
+        elif self.canonical_reference is None:
+            raise ValueError("named options require a canonical reference")
+        return self
+
 
 class SupportingPattern(StrictModel):
     category: PatternCategory
     name: ShortText
     canonical_reference: ShortText
     role: EvidenceText
+
+    @model_validator(mode="after")
+    def validate_supporting_category(self) -> Self:
+        if self.category == "No pattern":
+            raise ValueError("a supporting pattern must be a named pattern")
+        return self
 
 
 class ArchitectureOptionComparison(StrictModel):
@@ -1073,6 +969,25 @@ class ArchitectureOptionComparison(StrictModel):
     supporting_patterns: list[SupportingPattern] = Field(default_factory=list, max_length=10)
     user_decision_prompt: EvidenceText
     offered_actions: list[DecisionAction] = Field(min_length=3, max_length=3)
+
+    @model_validator(mode="after")
+    def validate_comparison(self) -> Self:
+        option_ids = [option.id for option in self.alternatives]
+        if len(option_ids) != len(set(option_ids)):
+            raise ValueError("alternative option ids must be unique")
+        if len({option.name.casefold() for option in self.alternatives}) != len(
+            self.alternatives
+        ):
+            raise ValueError("alternative option names must be unique")
+        if len(self.alternatives) < 3 and self.fewer_than_three_rationale is None:
+            raise ValueError("fewer_than_three_rationale is required for fewer than three alternatives")
+        if len(self.alternatives) >= 3 and self.fewer_than_three_rationale is not None:
+            raise ValueError("fewer_than_three_rationale is allowed only below three alternatives")
+        if self.recommended_option_id not in option_ids:
+            raise ValueError("recommended_option_id must reference an alternative")
+        if set(self.offered_actions) != {"approve", "revise", "more-information"}:
+            raise ValueError("offered_actions must contain all three canonical actions")
+        return self
 
 
 class ArchitectureDecision(StrictModel):
@@ -1173,6 +1088,24 @@ class ArchitectureContract(StrictModel):
         for rule in self.dependency_rules:
             if rule.source not in known_nodes or rule.target not in known_nodes:
                 raise ValueError("dependency rules must reference declared nodes")
+        return self
+
+
+class ArchitectureArtifactBundle(StrictModel):
+    contract: ArchitectureContract
+    decisions: list[ArchitectureDecisionArtifact] = Field(min_length=1, max_length=200)
+    project_context: NarrativeText
+    coding_handoff: NarrativeText
+
+    @model_validator(mode="after")
+    def validate_cross_artifact_references(self) -> Self:
+        decision_ids = [artifact.decision.id for artifact in self.decisions]
+        if len(decision_ids) != len(set(decision_ids)):
+            raise ValueError("bundle decision ids must be unique")
+        if set(decision_ids) != set(self.contract.decision_ids):
+            raise ValueError("bundle decisions must exactly match contract decision_ids")
+        if any(artifact.decision.status != "accepted" for artifact in self.decisions):
+            raise ValueError("record-and-handoff bundles require accepted decisions")
         return self
 
 
@@ -1528,7 +1461,7 @@ class WorkflowState(StrictModel):
         return self
 ```
 
-`ArchitectureArtifactBundle` is the atomic record-and-handoff boundary. It contains
+`ArchitectureArtifactBundle` is the complete pre-write validation boundary. It contains
 one validated `ArchitectureContract`, one or more accepted
 `ArchitectureDecisionArtifact` objects, project-context Markdown, and coding-handoff
 Markdown. Its cross-model validator requires the ADR identifiers to match the
@@ -1545,7 +1478,7 @@ model to reproduce formatting rules from memory.
 - `EvidenceClaim` separates confirmed facts, static indications, runtime observations, assumptions, and unverified possibilities. Confirmed facts, static indications, and runtime observations require at least one cited evidence item. This prevents an environment or dependency assertion from being serialized as an observed fact without recording what supports it; semantic review still reconciles contradictions between individually valid claims.
 - `@model_validator(mode="after")` enforces relationships between fields after their individual types and constraints are valid. Examples include requiring an accepted ADR to select one of its considered options, requiring terminal workflow states to have no current node, and keeping result flags consistent with their error or finding lists.
 - `ArchitectureOptionComparison` defines the complete structured choice contract: one decision scope, explicit scoring criteria, two to five genuine alternatives, categorized canonical references, ordinal fit, rationale, benefit, liability, assumption, a referenced recommendation, supporting-pattern roles, localized visible decision guidance, and language-neutral `offered_actions`. Three to five alternatives remain the default; a smaller set requires a rationale. The model prevents duplicate or dangling option identifiers and requires the canonical actions `approve`, `revise`, and `more-information`. Codex validates the complete model only when structured output is requested. Its Stop hook separately parses and validates only fields that are deterministically represented in the focused Markdown rendering; it MUST NOT fabricate omitted evidence, criteria, or supporting-pattern data merely to make the complete model validate.
-- Transport input models such as `CompleteContractValidationInput`, `SourceFileInput`, `DependencyStatementInput`, `DependencyAnalysisInput`, `InlineBoundaryCheckInput`, and `ArtifactSecretScanInput` define exact bounded request shapes for the shared deterministic core and optional adapters. They reject unknown fields, wrong types, excessive content, duplicate normalized paths or line locations, and unbounded collections before domain logic runs. A future host's `analyze_python_dependencies` MCP surface may accept compact, line-preserving `dependency_statements`; `check_python_architecture_boundaries` may accept bounded `source_files` when an approved contract requires higher-assurance AST verification. The Codex package exposes neither MCP tool nor root argument and uses host-native static inspection instead.
+- Transport input models such as `CompleteContractValidationInput`, `SourceFileInput`, `DependencyStatementInput`, `DependencyAnalysisInput`, `InlineBoundaryCheckInput`, and `ArtifactSecretScanInput` define exact bounded request shapes for the shared deterministic core and optional adapters. They reject unknown fields, wrong types, excessive content, duplicate normalized paths or line locations, and unbounded collections before domain logic runs. The optional `analyze_python_dependencies` MCP surface accepts compact, line-preserving `dependency_statements`; `check_python_architecture_boundaries` also accepts bounded `source_files` when an enabling host requires higher-assurance AST verification. The Codex package exposes neither MCP tool nor root argument and uses host-native static inspection instead.
 - MCP result models provide the same guarantee in the opposite direction: every tool returns a bounded, predictable structure that the host can validate and interpret without guessing.
 
 `fit_score` is an ordinal `0–100` comparison aid within one analysis, not a probability, certainty claim, calibrated percentage, or cross-project metric. Before the alternatives table, the user-facing result MUST explicitly say that Fit is ordinal and is not a probability or measured percentage. It renders Fit as `NN/100`, states its scoring criteria, supports every score with `fit_rationale`, exposes uncertainty, repeats the selected table option's exact category and name in the recommendation, and MUST NOT choose an option solely because it has the highest number.
@@ -1615,7 +1548,7 @@ For human readers, the principal fields mean:
 
 ## Platform Strategy
 
-### Codex: first implementation target
+### Codex: implemented first host adapter
 
 The first release is an installable Codex plugin containing:
 
@@ -1957,6 +1890,8 @@ python_environment:
       - shared/schemas
       - tools/python-mcp
     python_version_file: .python-version
+    tested_python: "3.13.12"
+    supported_python: ">=3.11,<3.14"
     virtual_environment: .venv
     local_sync_command: uv sync --all-packages
     command_runner: uv run
@@ -1988,7 +1923,7 @@ This development environment does not alter the installed-product contract. uv a
 
 ## Shared Python Core and Optional STDIO MCP Adapter
 
-The shared Python package provides a small deterministic domain core, CLI, and optional STDIO MCP transport. It MUST target Python 3.11 or later, use Pydantic v2, and pin dependencies through the reproducible lock file. The optional MCP adapter uses a supported official Python MCP SDK and MUST be enabled only by a host adapter whose lifecycle and uninstall behavior pass its release gates. A different SDK requires an accepted ADR documenting the incompatibility and security review. The project MUST NOT install a persistent background daemon or listen on a network port.
+The shared Python package provides a small deterministic domain core, CLI, and optional STDIO MCP transport. The current workspace supports Python `>=3.11,<3.14`, records Python `3.13.12` as its tested development and CI version, uses Pydantic v2, and pins dependencies through the reproducible lock file. The optional MCP adapter uses a supported official Python MCP SDK and MUST be enabled only by a host adapter whose lifecycle and uninstall behavior pass its release gates. A different SDK requires an accepted ADR documenting the incompatibility and security review. The project MUST NOT install a persistent background daemon or listen on a network port.
 
 The server and CLI call the same side-effect-light domain functions:
 
@@ -2031,10 +1966,11 @@ mcp_server:
   status: optional-host-adapter
   language: python
   minimum_python: "3.11"
+  maximum_python_exclusive: "3.14"
   sdk:
     implementation: official-modelcontextprotocol-python-sdk
     mvp_release_line: stable-v1
-    version_constraint: ">=1,<2"
+    version_constraint: ">=1.27,<2"
     prereleases: deny
     exact_resolution: lock-file
   transport: stdio
@@ -2106,7 +2042,7 @@ At optional MCP initialization, the server MUST return concise `instructions` th
 
 MCP tools MUST return evidence and structured facts, not architectural recommendations. The host model interprets the evidence. Input schemas limit shape and size; the domain boundary layer separately validates inline-source and protected-file policies. Codex reads `.ai-architect/decisions/` only through host-native read-only tools and exposes no MCP surface. All optional MCP tools are read-only; the host writes approved files through its normal repository tools and permission flow. Additional tools require a documented use case, schema, guardrail analysis, and acceptance scenario before they enter the public surface.
 
-The AI Architect itself is programming-language independent: its workflow, architecture knowledge, ADRs, contracts, and host-native reasoning can be used for Python, Java, C#, TypeScript, Go, Rust, and other languages. Only the MVP's deterministic MCP dependency extractor is initially Python-specific. For other languages, the host model MAY inspect code with approved native tools, but it MUST disclose that the dependency graph was not deterministically verified by this MCP tool.
+The AI Architect itself is programming-language independent: its workflow, architecture knowledge, ADRs, contracts, and host-native reasoning can be used for Python, Java, C#, TypeScript, Go, Rust, and other languages. The repository's optional deterministic dependency extractor is currently Python-specific. Codex uses approved host-native static inspection for every language and MUST disclose the limitations of that evidence; an adapter that enables the optional MCP tool MUST additionally disclose when a non-Python dependency graph was not verified by it.
 
 The deterministic dependency extractor uses Python's standard-library Abstract Syntax Tree (AST) parser. An AST represents source code as structured syntax nodes, allowing the tool to identify `import` and `from ... import ...` statements and derive module dependencies without importing or executing repository code. This is safer and more accurate than regular-expression scanning because comments and string literals are not mistaken for imports, while multiline and aliased imports remain valid syntax the parser understands. Fast statement mode uses the same AST parser but receives only host-selected static-import statements and their original starting lines; it reduces payload size, not the need to disclose incomplete selection.
 
@@ -2118,7 +2054,7 @@ The server MUST never write logs to standard output because that would corrupt t
 
 The security design assumes that the complete specification, source code, default limits, and guardrail logic are public and known to an attacker. No control may depend on secrecy of its implementation. The primary protected party is a user who installs the plugin or analyzes a repository containing malicious or compromised content.
 
-The threat model includes accidental secret exposure, path traversal, symlink or Windows junction escape, unbounded repository scans, unsafe file parsing, destructive writes, indirect prompt injection from repository content, prompt-driven tool misuse, malicious MCP startup configuration, compromised dependencies or releases, and accidental expansion into a hosted service. Local-first operation reduces remote exposure, but the MCP process can access resources permitted by the host and operating system and therefore requires explicit least-privilege controls.
+The threat model includes accidental secret exposure, path traversal, symlink or Windows junction escape, unbounded repository scans, unsafe file parsing, destructive writes, indirect prompt injection from repository content, prompt-driven tool misuse, malicious optional-MCP startup configuration, compromised dependencies or releases, and accidental expansion into a hosted service. Local-first operation reduces remote exposure. Any host that enables the optional MCP process must still apply explicit least privilege because that child process can access resources permitted by the host and operating system; the current Codex package does not start it.
 
 ```yaml
 guardrails:
@@ -2172,8 +2108,13 @@ guardrails:
       unpack_archives: false
       unknown_format_action: deny
       deny_rules_override_allow_rules: true
+    allowed_write_paths:
+      - .ai-architect/project-context.md
+      - .ai-architect/architecture-contract.yaml
+      - .ai-architect/implementation-plan.md
     allowed_write_globs:
-      - .ai-architect/**
+      - .ai-architect/decisions/ADR-*.md
+    unsupported_architecture_artifact_path: deny
     write_executor: host-native-tools-only
     protected_read_globs:
       - .git/**
@@ -2263,6 +2204,8 @@ guardrails:
     structured_output_repair_attempts: 1
     generated_artifact_secret_scan: required-before-write
   strikes:
+    applicability: adapter-with-stateful-repository-tools
+    codex_release_enabled: false
     scope: current-run
     authorization_effect: none
     warn_at: 1
@@ -2279,7 +2222,9 @@ guardrails:
 
 These are local execution budgets rather than commercial API quotas. The deterministic core enforces per-operation scan limits. An adapter that enables MCP additionally enforces transport call and process-lifetime ceilings; a new workflow run does not reset an independent process ceiling. Exceeding a scan budget produces a partial result with `truncated: true`; a call-count ceiling rejects further calls with `budget-exhausted`. Hosts MAY impose stricter limits and MUST disclose material truncation.
 
-A strike is a local safety-response metric, not an authorization mechanism or user analytics. Workspace, secret, network, parsing, shell, and destructive-action prohibitions are invariant and MUST be enforced independently on every operation and every run. Resetting strikes or starting a new run MUST NOT permit an otherwise prohibited action. Strike events are limited to denied user- or model-requested actions: workspace escape, protected-secret access, network access, model-call attempts from MCP, shell execution, destructive writes, or repeated attempts to bypass the off-topic guard. Strikes MUST NOT be transmitted or retained as telemetry.
+A strike is a portable, local safety-response metric for an adapter that exposes stateful repository tools; it is not an authorization mechanism or user analytics. The current Codex release does not enable strike tracking because it ships no persistent MCP transport and its short-lived hooks deny each prohibited operation independently. Workspace, secret, network, parsing, shell, and destructive-action prohibitions remain invariant whether or not an adapter implements strikes. Resetting strikes or starting a new run MUST NOT permit an otherwise prohibited action. When enabled, strike events are limited to denied user- or model-requested actions: workspace escape, protected-secret access, network access, model-call attempts from MCP, shell execution, destructive writes, or repeated attempts to bypass the off-topic guard. Strikes MUST NOT be transmitted or retained as telemetry.
+
+For adapters that enable this metric:
 
 - At one strike, deny the action, warn, and explain the applicable boundary.
 - At two strikes, disable repository-scanning tools for the current run; only pathless validation of a user-selected architecture contract and pre-write artifact secret scanning remain available.
@@ -2676,12 +2621,12 @@ Feature: Durable architecture state
     And the previous valid artifact set remains unchanged
 
   @STATE-006
-  Scenario: Preserve a concurrent manual edit
+  Scenario: Detect a stale host patch without claiming persistence
     Given the agent analyzed revision 3 of the architecture contract
     And the user changes that contract before persistence
-    When the adapter performs its immediate pre-write hash check
-    Then it reports a concurrent-edit conflict
-    And it does not overwrite the user's version
+    When the host applies the reviewable update against stale patch context
+    Then the host rejects the conflicting update where its patch semantics support that check
+    And the architect does not report the artifact bundle as persisted
     And it asks to reconcile the candidate with the new content
 
 Feature: Reproducible Python development and build environment
@@ -2709,7 +2654,7 @@ Feature: Shared deterministic tools and optional MCP transport
     When the host calls "validate_complete_architecture_contract" with validation scope "complete-candidate-contract"
     Then the host launches the Python STDIO server as a managed child process if needed
     And the tool returns a ContractValidationResult
-    And Codex checks "result.valid" before claiming validation succeeded
+    And the enabling host checks "result.valid" before claiming validation succeeded
     And the server does not start a network listener or persistent daemon
 
   @MCP-002
@@ -2740,7 +2685,7 @@ Feature: Shared deterministic tools and optional MCP transport
 
   @MCP-005
   Scenario: Stronger inline boundary verification is required
-    Given Codex has not supplied a trustworthy workspace binding
+    Given a compatible MCP host has not supplied a trustworthy workspace binding
     And an approved contract requires full AST context for a release-gating boundary conclusion
     When the agent requests deterministic Python boundary evidence
     Then it reads only relevant approved Python files through host-native workspace tools
@@ -2845,6 +2790,14 @@ Feature: Security and scope guardrails
     And no repository artifact is created
     And the model-evaluation fixture verifies repository-code execution resistance
 
+  @SEC-012
+  Scenario: Unsupported architecture artifact path cannot bypass validation
+    Given an active architecture workflow proposes a write below ".ai-architect/"
+    And the target is not a canonical ADR, contract, project context, or implementation plan path
+    When the pre-write hook evaluates the proposed write
+    Then the unsupported path is denied before persistence
+    And an unknown filename cannot bypass candidate reconstruction or secret scanning
+
 Feature: Architecture conformance review
 
   @REVIEW-001
@@ -2868,7 +2821,7 @@ Feature: Architecture conformance review
     And it reports any side effect and requests authorization before cleanup
 ```
 
-## Build Week MVP
+## Build Week MVP Release Scope
 
 ### Required capabilities
 
@@ -2895,13 +2848,13 @@ The first Codex plugin must demonstrate one complete architecture-first loop:
 19. Generate the Codex Composite and provenance map reproducibly from canonical modular skills; fail the build when generated output is stale.
 20. Use Codex's trustworthy native workspace binding for repository inspection; require an independently verified host root before any future adapter enables MCP filesystem reads.
 21. Enforce accepted-decision, reference-integrity, workflow-state, and cross-artifact semantic validation in addition to Pydantic shape validation.
-22. Preserve concurrent user edits and recover safely from a partial multi-file persistence failure.
-23. Block generated artifacts containing likely secrets and verify that `.ai-architect/.runtime/` cannot be committed.
+22. Submit the complete approved artifact bundle through one reviewable host write, verify the persisted postcondition, and never report a rejected, partial, or changed write as successful.
+23. Block generated artifacts containing likely secrets and keep ephemeral control-plane state outside the analyzed repository.
 24. Create the development environment from the root uv workspace, reject a stale `uv.lock` in CI, and prove that `.venv/` and uv are absent from the released plugin runtime.
 
 ### Initial knowledge scope
 
-The MVP should cover a deliberately bounded, progressively disclosed set of concepts:
+The MVP covers a deliberately bounded, progressively disclosed set of concepts:
 
 - modular monolith and service-oriented alternatives;
 - layered, clean, hexagonal, Model-View-Controller, and vertical-slice architecture;
@@ -2973,8 +2926,7 @@ verification_modes:
       - generated-provenance-validation
       - semantic-cross-artifact-validation
       - schema-migration-validation
-      - concurrent-edit-protection
-      - runtime-ignore-validation
+      - control-plane-state-location-validation
       - generated-artifact-secret-scanning
       - mcp-instruction-prefix-validation
       - uv-workspace-and-lock-validation
@@ -2993,6 +2945,7 @@ verification_modes:
       - trustworthy-workspace-binding
       - clean-uninstall
       - clean-uv-workspace-sync
+      - host-patch-conflict-detection
   model-evaluation:
     applies_to:
       - clarification-quality
@@ -3014,10 +2967,12 @@ Each scenario tag MUST be mapped in the test manifest to exactly one primary ver
 - Cloud-native and distributed-systems knowledge
 - AI agent architecture patterns
 - Framework- and language-specific references
-- Dependency-graph and boundary validation
-- Architecture drift detection
-- Pull-request architecture review
-- CI integration using deterministic local tooling
+- Deterministic dependency parsers for languages beyond Python
+- Deeper automated boundary and architecture-drift analysis
+- Pull-request architecture review and CI-enforced conformance gates
+- Automated semantic exploratory evaluation in protected release workflows
+- Transactional multi-file artifact updates with hash-based concurrency checks and rollback
+- Codex runtime packages for additional operating systems and architectures
 - UML and diagram generation
 - Technical-debt evidence and trend analysis
 - Additional coding-assistant adapters

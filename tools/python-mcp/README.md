@@ -21,8 +21,9 @@ credits, tools, permissions, and reasoning behavior.
 
 The Python MCP adapter remains versioned and tested, but it is no longer registered
 or shipped as a persistent server in the Codex plugin. Codex now packages only a
-short-lived deterministic runtime for `UserPromptSubmit`, `PreToolUse`, and `Stop`
-hooks. Each hook process handles one bounded event and exits.
+short-lived deterministic runtime for `UserPromptSubmit`, `PreToolUse`,
+`PostToolUse`, `PostCompact`, and `Stop` hooks. Each hook process handles one
+bounded event and exits.
 
 Exploratory testing established an incompatible lifecycle trade-off in Codex Desktop
 for Windows:
@@ -135,16 +136,16 @@ The tools use two filesystem-free evidence representations:
   `analyze_python_dependencies`, but cannot evaluate omitted or dynamic imports.
 - **Full-source mode:** receives bounded Python source files when full AST
   context is required for `check_python_architecture_boundaries` against an
-  approved contract. Codex may request interactive approval for this larger
-  local data transfer.
+  approved contract. A compatible host may request interactive approval for
+  this larger local data transfer.
 
-In both modes, Codex first reads the selected content through its native
-workspace permissions. The MCP tool accepts no workspace root and opens no
-repository path. It parses the supplied text with Python's Abstract Syntax Tree
-(AST) support without importing or executing the analyzed application.
+In both modes, the enabling host first reads the selected content through its
+native workspace permissions. The MCP tool accepts no workspace root and opens
+no repository path. It parses the supplied text with Python's Abstract Syntax
+Tree (AST) support without importing or executing the analyzed application.
 
-The architecture workflow and pattern knowledge are language-neutral. Only the
-initial deterministic dependency and boundary analyzers are Python-specific.
+The architecture workflow and pattern knowledge are language-neutral. The
+current deterministic dependency and boundary analyzers are Python-specific.
 Other languages may still be reviewed by the host model, but they do not yet
 receive an MCP-verified dependency graph.
 
@@ -201,8 +202,9 @@ Shared Pydantic input and output contracts live in
 tests use the same structured definitions.
 
 The CLI deliberately has local diagnostic commands that accept user-supplied
-paths, including architecture-decision discovery. The narrower Codex MCP surface
-does not expose a filesystem root or ADR-listing tool.
+paths, including architecture-decision discovery. The optional MCP surface does
+not expose a filesystem root or ADR-listing tool, and the current Codex package
+does not register the MCP server at all.
 
 ## Local Development
 
@@ -256,6 +258,6 @@ and [release guide](../../docs/RELEASING.md) for the complete workflow.
 
 ## Further Documentation
 
-- [AI Software Architect specification](../../specs/AISoftwareArchitect.md#python-stdio-mcp-server)
+- [AI Software Architect specification](../../specs/AISoftwareArchitect.md#shared-python-core-and-optional-stdio-mcp-adapter)
 - [Main project README](../../README.md)
 - [Codex adapter](../../adapters/codex)

@@ -130,6 +130,24 @@ def smoke_test_hook(executable: Path) -> None:
         if _run_hook(powershell, command, valid_contract, environment) != {}:
             raise RuntimeError("valid architecture contract was unexpectedly blocked")
 
+        unsupported_artifact = {
+            **base,
+            "hook_event_name": "PreToolUse",
+            "tool_name": "apply_patch",
+            "tool_input": (
+                "*** Begin Patch\n*** Add File: .ai-architect/unvalidated-notes.md\n"
+                "+content that cannot bypass artifact validation\n*** End Patch"
+            ),
+        }
+        unsupported_response = _run_hook(
+            powershell, command, unsupported_artifact, environment
+        )
+        if _hook_output(unsupported_response).get("permissionDecision") != "deny":
+            raise RuntimeError(
+                "unsupported architecture artifact path was not blocked: "
+                f"{unsupported_response}"
+            )
+
         stop = {
             **base,
             "hook_event_name": "Stop",
