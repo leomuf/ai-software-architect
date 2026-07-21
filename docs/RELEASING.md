@@ -287,8 +287,10 @@ After installing the exact candidate and activating its reviewed hooks, run:
 Store the generated output path in the release evidence. The runner creates one
 isolated synthetic Git repository per fixture, captures Codex JSONL and final
 responses, checks deterministic policies, and exercises the approval continuation.
-It records the installed and enabled personal plugin version reported by Codex;
-the expected-version argument fails before model calls if another version is active.
+It queries all marketplaces, requires exactly one installed and enabled matching plugin,
+and records its plugin ID, marketplace, version, and available provenance digest. The
+expected-version argument fails before model calls if another version is active, while
+duplicate enabled installations fail as ambiguous before any evaluation credits are used.
 It does not install or switch plugin versions.
 It does not perform semantic grading. A `manual-review` status requires a human to
 assess every expected and forbidden behavior before recording the gate as passed.

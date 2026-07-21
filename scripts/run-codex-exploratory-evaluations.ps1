@@ -12,8 +12,9 @@ adapters/codex/evaluations.
 
 .PARAMETER ExpectedPluginVersion
 Optional release safety check. The runner detects the installed and enabled
-ai-software-architect@personal version and exits before model calls if it differs.
-PluginVersion remains a backward-compatible alias.
+AI Software Architect across all marketplaces, rejects ambiguous duplicates, and
+exits before model calls if its version differs. PluginVersion remains a
+backward-compatible alias.
 #>
 
 [CmdletBinding()]

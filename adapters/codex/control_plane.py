@@ -55,48 +55,14 @@ MISSING_INVOCATION_GUIDANCE = (
 SHELL_TOOL_NAMES = {"bash", "exec_command", "shell_command"}
 PATCH_TOOL_NAMES = {"apply_patch", "edit", "write"}
 WEB_LOOKUP_TOOL_NAMES = {"websearch", "web_search", "search_query", "web__run"}
-REPOSITORY_EXECUTION_PATTERN = re.compile(
-    r"""(?ix)
-    (?:^|[;&|{(=]\s*)(?:&\s*)?(?:["'][^"'\r\n]*[\\/])?
-    (?:
-        python(?:3(?:\.\d+)*)? | py | pytest | tox | nox | coverage |
-        uv | pip(?:3)? | node | npm | npx | pnpm | yarn | bun | deno |
-        ruby | bundle | php | java | javac | gradle | mvn | dotnet |
-        cargo | rustc | go | cmd | powershell | pwsh | wsl | bash | sh |
-        zsh | start-process | invoke-expression | iex | import-module
-    )
-    (?:\.exe)?(?=\s|$|["'])
-    """
-)
-DIRECT_EXECUTABLE_PATTERN = re.compile(
-    r"""(?ix)
-    (?:^|[;&|{(=]\s*)(?:&\s*)?
-    (?:"[^"\r\n]+"|'[^'\r\n]+'|[^\s;&|{}()=]+)
-    \.(?:exe|bat|cmd|ps1|sh|py)
-    (?=\s|$)
-    """
-)
-REPOSITORY_MUTATION_PATTERN = re.compile(
-    r"""(?ix)
-    (?:^|[;&|{(]\s*)
-    (?:
-        remove-item | set-content | add-content | out-file | new-item |
-        copy-item | move-item | rename-item | clear-content |
-        del | erase | copy | move | mkdir | rmdir
-    )
-    (?=\s|$)
-    """
-)
-GIT_MUTATION_PATTERN = re.compile(
-    r"""(?ix)
-    (?:^|[;&|{(]\s*)git(?:\.exe)?\s+
-    (?:
-        add | commit | checkout | switch | restore | reset | clean | merge |
-        rebase | cherry-pick | revert | pull | push | tag | stash | rm | mv
-    )
-    (?=\s|$)
-    """
-)
+STATIC_POWERSHELL_COMMANDS = {
+    "get-childitem",
+    "get-content",
+    "select-string",
+    "test-path",
+}
+STATIC_GIT_SUBCOMMANDS = {"diff", "log", "ls-files", "show", "status"}
+SHELL_COMPOSITION_PATTERN = re.compile(r"[\r\n;&|{}<>`] | \$", flags=re.VERBOSE)
 PATCH_FILE_PATTERN = re.compile(
     r"^\*\*\* (?:Add|Update|Delete) File: (.+)$|^\*\*\* Move to: (.+)$",
     flags=re.MULTILINE,
@@ -291,6 +257,9 @@ def developer_context(
         "For dependency rules, `allow-via-interface` requires `via_interface`; `allow` "
         "and `deny` must omit `via_interface`. "
         "Do not resolve them from the plugin root or search for artifact schemas or examples."
+        " When shell-backed static inspection is unavoidable, issue exactly one "
+        "allowlisted read command per tool call. Do not use pipelines, script blocks, "
+        "variables, call operators, redirection, or compound commands."
         " For a complete or high-impact workflow, ask Codex to delegate up to three "
         "independent read-only reviews when subagents are available: architecture "
         "simplicity and pattern fit; security and operations; maintainability and "
@@ -333,19 +302,35 @@ def _shell_denial_reason(tool_input: object) -> str | None:
             "The AI Software Architect could not verify this shell command's "
             "arguments, so it was denied. Use host-native static reads instead."
         )
-    if REPOSITORY_EXECUTION_PATTERN.search(command) or DIRECT_EXECUTABLE_PATTERN.search(command):
+    stripped = command.strip()
+    if not stripped or SHELL_COMPOSITION_PATTERN.search(stripped):
         return (
-            "AI Software Architect analysis treats repository code as untrusted "
-            "data and does not run interpreters, test runners, package runners, or "
-            "build tools. Use host-native static reads and the bounded AST tools."
+            "AI Software Architect shell inspection is fail-closed: use exactly one "
+            "allowlisted static read command without pipelines, variables, call "
+            "operators, script blocks, redirection, or command composition."
         )
-    if REPOSITORY_MUTATION_PATTERN.search(command) or GIT_MUTATION_PATTERN.search(command):
-        return (
-            "AI Software Architect shell inspection is read-only and cannot mutate "
-            "repository files or Git state. Approved architecture artifacts must be "
-            "written through a reviewable patch limited to .ai-architect/."
-        )
-    return None
+    words = stripped.split()
+    executable = words[0].casefold().removesuffix(".exe")
+    if executable in STATIC_POWERSHELL_COMMANDS:
+        return None
+    if executable == "git" and len(words) >= 2:
+        subcommand = words[1].casefold()
+        unsafe_options = {"--ext-diff", "--textconv"}
+        if subcommand in STATIC_GIT_SUBCOMMANDS and not unsafe_options.intersection(
+            word.casefold().split("=", 1)[0] for word in words[2:]
+        ):
+            return None
+    if executable in {"rg", "ripgrep"}:
+        unsafe_options = {"--pre", "--pre-glob"}
+        if not unsafe_options.intersection(
+            word.casefold().split("=", 1)[0] for word in words[1:]
+        ):
+            return None
+    return (
+        "AI Software Architect analysis treats repository code as untrusted data. "
+        "Only allowlisted static file and Git reads are permitted; interpreters, "
+        "test runners, package tools, scripts, and other executables are denied."
+    )
 
 
 def _patch_text_from_tool_input(value: object) -> str | None:
@@ -678,5 +663,16 @@ def final_response_violations(
     message: str,
 ) -> list[str]:
     if context.route == CodexTurnRoute.ARCHITECTURE_WORKFLOW:
-        return _architecture_workflow_violations(message)
+        violations = _architecture_workflow_violations(message)
+        missing_links = [
+            f"{CANONICAL_REFERENCE_BASE}{Path(path).name}"
+            for path in context.reference_paths
+            if f"{CANONICAL_REFERENCE_BASE}{Path(path).name}" not in message
+        ]
+        if missing_links:
+            violations.append(
+                "include the canonical public link for every explicitly routed "
+                "architecture reference: " + ", ".join(missing_links)
+            )
+        return violations
     return []

@@ -104,7 +104,10 @@ class CampaignReport(StrictModel):
     completed_at: datetime
     codex_command: str
     codex_version: str
+    installed_plugin_id: str | None = None
+    installed_plugin_marketplace: str | None = None
     installed_plugin_version: str | None = None
+    installed_plugin_provenance_sha256: str | None = None
     expected_plugin_version: str | None = None
     model: str
     reasoning_effort: str

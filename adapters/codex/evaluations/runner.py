@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -34,7 +35,15 @@ from adapters.codex.evaluations.models import (
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_MANIFEST = ROOT / "shared" / "evaluations" / "verification-manifest.yaml"
 INTERNAL_MARKER = "<!-- ai-architect-"
-PLUGIN_ID = "ai-software-architect@personal"
+PLUGIN_NAME = "ai-software-architect"
+
+
+@dataclass(frozen=True)
+class InstalledPluginIdentity:
+    plugin_id: str
+    marketplace: str
+    version: str
+    provenance_sha256: str | None = None
 
 
 def _snapshot(root: Path) -> dict[str, str]:
@@ -230,16 +239,39 @@ def _codex_version(executable: str) -> str:
     return completed.stdout.strip()
 
 
-def _installed_plugin_version(executable: str) -> str:
+def _provenance_digest(plugin: dict[str, Any]) -> str | None:
+    source = plugin.get("source")
+    source_path = source.get("path") if isinstance(source, dict) else None
+    if not isinstance(source_path, str) or not source_path.strip():
+        return None
+    root = Path(source_path).expanduser()
+    if not root.is_absolute():
+        return None
+    provenance_path = root / "provenance.json"
+    manifest_path = root / ".codex-plugin" / "plugin.json"
+    try:
+        provenance_bytes = provenance_path.read_bytes()
+        provenance = json.loads(provenance_bytes)
+        manifest = json.loads(manifest_path.read_text("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(
+            "The enabled AI Software Architect source could not be provenance-verified."
+        ) from exc
+    version = plugin.get("version")
+    if (
+        provenance.get("plugin_version") != version
+        or manifest.get("version") != version
+        or manifest.get("name") != PLUGIN_NAME
+    ):
+        raise ValueError(
+            "The enabled AI Software Architect manifest, provenance, and Codex version disagree."
+        )
+    return hashlib.sha256(provenance_bytes).hexdigest()
+
+
+def _installed_plugin_identity(executable: str) -> InstalledPluginIdentity:
     completed = subprocess.run(  # noqa: S603
-        [
-            executable,
-            "plugin",
-            "list",
-            "--marketplace",
-            "personal",
-            "--json",
-        ],
+        [executable, "plugin", "list", "--json"],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -261,21 +293,34 @@ def _installed_plugin_version(executable: str) -> str:
     matches = [
         plugin
         for plugin in installed
-        if isinstance(plugin, dict) and plugin.get("pluginId") == PLUGIN_ID
+        if isinstance(plugin, dict)
+        and (
+            plugin.get("name") == PLUGIN_NAME
+            or str(plugin.get("pluginId", "")).partition("@")[0] == PLUGIN_NAME
+        )
+        and plugin.get("installed") is True
+        and plugin.get("enabled") is True
     ]
     if len(matches) != 1:
         raise ValueError(
-            f"Expected exactly one installed {PLUGIN_ID} entry; found {len(matches)}."
+            "Expected exactly one installed and enabled AI Software Architect across "
+            f"all marketplaces; found {len(matches)}. Disable or uninstall duplicates "
+            "before spending evaluation credits."
         )
     plugin = matches[0]
-    if plugin.get("installed") is not True or plugin.get("enabled") is not True:
-        raise ValueError(
-            f"{PLUGIN_ID} must be installed and enabled before running evaluations."
-        )
+    plugin_id = plugin.get("pluginId")
+    if not isinstance(plugin_id, str) or not plugin_id.startswith(f"{PLUGIN_NAME}@"):
+        raise ValueError("Codex did not report an unambiguous AI Software Architect plugin ID.")
+    marketplace = plugin_id.partition("@")[2]
     version = plugin.get("version")
     if not isinstance(version, str) or not version.strip():
-        raise ValueError(f"Codex did not report a version for {PLUGIN_ID}.")
-    return version.strip()
+        raise ValueError(f"Codex did not report a version for {plugin_id}.")
+    return InstalledPluginIdentity(
+        plugin_id=plugin_id,
+        marketplace=marketplace,
+        version=version.strip(),
+        provenance_sha256=_provenance_digest(plugin),
+    )
 
 
 def _load_campaign(manifest: Path, selected: set[str]) -> list[tuple[Path, EvaluationFixture]]:
@@ -300,8 +345,12 @@ def _summary(report: CampaignReport) -> str:
         f"- Model: `{report.model}`",
         f"- Reasoning effort: `{report.reasoning_effort}`",
         f"- Codex CLI: `{report.codex_version}`",
+        f"- Installed plugin: `{report.installed_plugin_id or 'not-checked (dry run)'}`",
+        f"- Installed marketplace: `{report.installed_plugin_marketplace or 'not-checked'}`",
         "- Installed plugin version: "
         f"`{report.installed_plugin_version or 'not-checked (dry run)'}`",
+        "- Installed provenance SHA-256: "
+        f"`{report.installed_plugin_provenance_sha256 or 'not-reported'}`",
         f"- Expected plugin version: `{report.expected_plugin_version or 'not-specified'}`",
         f"- Started: `{report.started_at.isoformat()}`",
         "",
@@ -331,17 +380,17 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
     fixtures = _load_campaign(args.manifest, selected)
     if args.dry_run:
         codex_version = "not-checked (dry run)"
-        installed_plugin_version = None
+        installed_plugin = None
     else:
         codex_version = _codex_version(args.codex_command)
-        installed_plugin_version = _installed_plugin_version(args.codex_command)
+        installed_plugin = _installed_plugin_identity(args.codex_command)
         if (
             args.expected_plugin_version is not None
-            and installed_plugin_version != args.expected_plugin_version
+            and installed_plugin.version != args.expected_plugin_version
         ):
             raise ValueError(
                 f"Expected AI Software Architect {args.expected_plugin_version}, but Codex has "
-                f"{installed_plugin_version} installed and enabled. Install the intended release "
+                f"{installed_plugin.version} installed and enabled. Install the intended release "
                 "candidate before running the evaluations."
             )
     args.output_directory.mkdir(parents=True, exist_ok=False)
@@ -349,8 +398,12 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
     fixture_count = len(fixtures)
 
     print(f"Loaded {fixture_count} exploratory fixture(s).", flush=True)
-    if installed_plugin_version is not None:
-        print(f"Installed plugin version: {installed_plugin_version}.", flush=True)
+    if installed_plugin is not None:
+        print(
+            f"Installed plugin: {installed_plugin.plugin_id} "
+            f"({installed_plugin.version}).",
+            flush=True,
+        )
 
     for fixture_index, (_, fixture) in enumerate(fixtures, start=1):
         progress = f"[{fixture_index}/{fixture_count}] {fixture.id} ({fixture.scenario})"
@@ -465,7 +518,14 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
         completed_at=datetime.now(UTC),
         codex_command=args.codex_command,
         codex_version=codex_version,
-        installed_plugin_version=installed_plugin_version,
+        installed_plugin_id=(installed_plugin.plugin_id if installed_plugin else None),
+        installed_plugin_marketplace=(
+            installed_plugin.marketplace if installed_plugin else None
+        ),
+        installed_plugin_version=(installed_plugin.version if installed_plugin else None),
+        installed_plugin_provenance_sha256=(
+            installed_plugin.provenance_sha256 if installed_plugin else None
+        ),
         expected_plugin_version=args.expected_plugin_version,
         model=args.model,
         reasoning_effort=args.reasoning_effort,
@@ -493,7 +553,7 @@ def _parser() -> argparse.ArgumentParser:
         "--expected-plugin-version",
         "--plugin-version",
         dest="expected_plugin_version",
-        help="Fail before evaluation if the enabled personal plugin has another version.",
+        help="Fail before evaluation if the one enabled plugin has another version.",
     )
     parser.add_argument(
         "--reasoning-effort",

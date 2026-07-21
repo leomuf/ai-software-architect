@@ -1,0 +1,309 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+SPDX-License-Identifier: MIT
+-->
+
+# Development Handoff
+
+This document summarizes the project state and the architectural decisions needed
+to continue development without relying on the original Codex conversation. It is
+a point-in-time handoff, not a replacement for the living specification or release
+documentation.
+
+## Snapshot
+
+```yaml
+handoff_date: 2026-07-21
+branch: main
+head_commit: dcc9760
+head_summary: hardens Codex release-candidate runner
+remote_state_at_handoff: origin/main matched HEAD
+target_release: 0.1.0
+installed_codex_plugin_version: 0.1.0
+specification_status: approved, pre-release, living specification
+license: MIT
+working_tree_note: docs/DEMO_VIDEO.md was the only untracked file before this handoff was added
+```
+
+The historical tag `pre-release-mcp-server` points to commit `8f2f035`. It preserves
+the earlier persistent-MCP Codex design as a rollback and comparison point.
+
+## Product Summary
+
+AI Software Architect is an open-source, coding-assistant-hosted architecture
+companion. It helps users clarify requirements, inspect a repository statically,
+compare three to five credible architecture or design-pattern alternatives, make a
+user-controlled decision, record Architecture Decision Records (ADRs) and related
+artifacts, prepare a coding handoff, and review architectural conformance.
+
+The first release is an installable Codex plugin. GitHub Copilot, Claude Code, and
+Google Antigravity adapters are planned and already have adapter-specific README
+placeholders. Model reasoning remains host-native: the user's selected coding-
+assistant model performs the reasoning with the user's applicable account or
+credits. No managed AI backend is required.
+
+## Architecture Decisions to Preserve
+
+### Canonical shared source
+
+- Reusable skills, schemas, reference material, templates, and evaluation fixtures
+  live under `shared/`.
+- Codex packaging is an adapter under `adapters/codex/`; future hosts should reuse
+  the shared source and implement only host-specific integration.
+- All 23 Gang of Four patterns have focused progressive-disclosure references.
+  Architecture, presentation, dependency, data, integration, resilience, and
+  modernization patterns are separated by category.
+- Pattern references include short Python implementation examples and a human-
+  readable example context.
+
+### One public Codex skill
+
+Users invoke one public entry point:
+
+```text
+$ai-software-architect <request>
+```
+
+The host model chooses between focused help and the complete architecture workflow.
+Internal modular skills remain hidden implementation building blocks; users should
+not need to choose among them. Documentation should recommend `$` skill invocation,
+not `@` plugin selection. Bare or mistaken `@` activation receives recovery guidance
+from the control plane instead of silently doing nothing.
+
+### Strongest plugin-native workflow
+
+The product was initially considered as a separately configured autonomous agent.
+The first release instead uses an easily installed Codex plugin with modular skills
+and deterministic hooks. This is not a true independently scheduled autonomous
+agent, but the hooks make the plugin-native workflow reliably agentic while leaving
+semantic reasoning to the selected Codex model.
+
+The Codex package uses these short-lived hooks:
+
+- `UserPromptSubmit`: activation, routing, continuation, and minimal context.
+- `PreToolUse`: static-inspection boundaries, application-code write denial, and
+  complete architecture-bundle validation before persistence.
+- `PostToolUse`: persisted architecture-artifact verification.
+- `PostCompact`: minimal typed workflow recovery after compaction.
+- `Stop`: visible response-shape checks and internal-marker rejection.
+
+Hooks make no model or network calls, start no persistent process, do not bypass
+Codex permissions, and do not persist prompt or repository content. Users must
+review and activate them in the Codex plugin page. Their public source and tests are
+part of the repository so users can establish trust.
+
+### No persistent MCP process in the Codex package
+
+The current Codex plugin uses a short-lived packaged hook runtime instead of a
+persistent MCP server. This avoids process locks that previously prevented or
+delayed plugin uninstall. The Python STDIO MCP implementation remains versioned
+under `tools/python-mcp/` as optional reusable tooling and historical architecture,
+but it is not started persistently by the Codex release package.
+
+The persistent-MCP design is preserved by the `pre-release-mcp-server` tag.
+
+### Persistence contract
+
+Read-only recommendations never modify the repository. After explicit user
+approval, the plugin may persist only validated architecture artifacts under:
+
+```text
+.ai-architect/
+  project-context.md
+  architecture-contract.yaml
+  implementation-plan.md
+  decisions/ADR-NNN[-slug].md
+```
+
+Application source code remains unchanged during the architecture-recording
+workflow. The pre-write guard validates the complete candidate bundle, including
+typed Pydantic/YAML shapes and secret scanning, before one reviewable patch. The
+post-write hook verifies the persisted result.
+
+## Important Repository Areas
+
+```text
+README.md                              Public project introduction and usage
+specs/AISoftwareArchitect.md           Living product and architecture specification
+shared/skills/                         Canonical modular skills and pattern references
+shared/schemas/                        Pydantic contracts and generated JSON Schemas
+shared/evaluations/                    Cross-host fixtures and release automation plan
+adapters/codex/                        Codex control plane, hooks, packaging, and eval runner
+adapters/github_copilot/               Planned GitHub Copilot adapter guidance
+adapters/claude_code/                  Planned Claude Code adapter guidance
+adapters/antigravity/                  Planned Google Antigravity adapter guidance
+tools/python-mcp/                      Optional Python STDIO MCP tools, not persistent in Codex
+scripts/                               Build, package, install-copy, release, and eval entry points
+docs/RELEASING.md                      Canonical release process
+docs/release-evidence-template.md      Release evidence checklist/template
+TODO.md                                Current release blockers and deferred work
+```
+
+## Current Build and Installation Flow
+
+Build the exact release candidate from the repository root:
+
+```powershell
+.\scripts\build-codex-plugin.ps1 -PluginVersion 0.1.0
+```
+
+This performs a full self-contained Windows x86-64 runtime build, plugin validation,
+and runtime smoke test. Do not use `-ReuseRuntime` for a release candidate.
+
+Create the marketplace bundle with the release/package scripts documented in
+`docs/RELEASING.md` and `scripts/README.md`. The bundle is intended to install
+without Python, `uv`, or first-run dependency downloads.
+
+## Exploratory Evaluation System
+
+Five shared fixtures currently form the main campaign:
+
+1. `clarify-ui-architecture` (`FLOW-001`)
+2. `architecture-option-comparison` (`FLOW-004`), including approval continuation
+3. `read-only-architecture-review` (`REVIEW-002`)
+4. `abstract-factory-example` (`SKILL-007`)
+5. `avoid-overengineering` (`FLOW-002`)
+
+Run the release campaign with:
+
+```powershell
+.\scripts\run-codex-exploratory-evaluations.ps1 `
+  -ExpectedPluginVersion 0.1.0
+```
+
+Current behavior:
+
+- defaults to `gpt-5.6-sol` with medium reasoning;
+- asks Codex for the one unambiguous installed and enabled AI Software Architect
+  across all marketplaces and records its identity and version;
+- records the actual version in `SUMMARY.md` and `report.json`;
+- treats `-ExpectedPluginVersion` as a mismatch guard and stops before model calls
+  when the active version differs;
+- never installs, disables, or switches plugins;
+- keeps `-PluginVersion` as a backward-compatible PowerShell alias;
+- shows live `[current/total]` fixture and phase progress;
+- prints detailed fixture, phase, assertion, Codex, and stderr diagnostics on failure;
+- preserves responses, JSONL events, stderr, isolated repositories, and change
+  evidence under `.tmp/evaluations/<timestamp>/`.
+
+`manual-review` means deterministic safeguards passed; it is not automatically a
+semantic pass. A human must still review expected and forbidden behavior.
+
+### Latest reviewed campaign
+
+The campaign at `.tmp/evaluations/20260721T164129Z/` used `gpt-5.6-sol`, medium
+reasoning, and Codex CLI `0.145.0-alpha.18`. It ran for approximately seven minutes.
+All five fixtures passed deterministic checks and subsequent human semantic review.
+
+Notable evidence:
+
+- clarification correctly stopped at the Tkinter-versus-web contradiction;
+- option comparison presented three same-scope alternatives with fit scores,
+  categories, canonical links, evidence, assumptions, benefits, and liabilities;
+- approval continuation persisted exactly four allowed architecture artifacts and
+  did not modify application source;
+- the pre-write hook rejected an initially incorrect artifact filename and the
+  model corrected it before persistence;
+- read-only review remained static and disclosed incomplete evidence;
+- Abstract Factory loaded the bundled canonical example;
+- the tiny-script scenario correctly recommended no named pattern;
+- no MCP call or internal response marker was observed.
+
+The older report did not record the plugin version because it predated automatic
+version detection. Captured installed-skill paths nevertheless showed version
+`0.1.0`. Future release evidence should use the command above.
+
+Two non-blocking observations from the run:
+
+- `rg` was unavailable inside some isolated Codex workspaces; the model recovered
+  with PowerShell-only static inspection.
+- delegated review was unavailable in one session and was correctly disclosed.
+
+## GitHub and CI State
+
+The existing GitHub workflows run deterministic tests, generation-diff checks,
+Ruff, mypy, pytest, plugin build/validation, runtime smoke testing, CodeQL, and
+release packaging. GitHub CI was green at this handoff.
+
+Dependabot is configured separately for Python and GitHub Actions. It may create
+multiple temporary branches because ungrouped updates receive one branch and pull
+request each.
+
+### Recommended exploratory CI strategy (not yet implemented)
+
+Use two tiers:
+
+1. Add only the zero-credit exploratory `-DryRun` to ordinary push/PR CI.
+2. Add a separate protected Windows release workflow, initially triggered by
+   `workflow_dispatch`, for the live five-fixture campaign.
+
+The protected workflow should:
+
+- check out the exact trusted release commit;
+- build, package, install, and verify the exact candidate;
+- use `-ExpectedPluginVersion` to prevent testing the wrong installation;
+- keep repository permissions read-only;
+- expose a maintainer-controlled API key only to the model-execution step;
+- never expose that secret to fork or untrusted pull-request code;
+- use environment approval where available;
+- pin actions to reviewed commit SHAs;
+- prevent concurrent credit-consuming campaigns;
+- set an explicit timeout;
+- upload sanitized evaluation evidence;
+- render the concise result in `GITHUB_STEP_SUMMARY`;
+- fail on deterministic or infrastructure errors; and
+- retain human semantic review and the manual Codex Desktop install/uninstall gate.
+
+The existing proposal is documented in
+`shared/evaluations/release-automation-plan.md`. Do not run the live model campaign
+on every pull request: it is slower, consumes credits, requires a protected secret,
+and has nondeterministic semantic output.
+
+## Release Status and Remaining Work
+
+The intended first public release is `0.1.0`. The exact remaining blockers are the
+authoritative checklist in `TODO.md`; do not copy that checklist into another
+source of truth. At handoff, the major remaining activities were:
+
+- commit and rerun the deterministic release-candidate gates from a clean commit;
+- inspect the marketplace ZIP, checksum, and provenance;
+- run and record the exact installed-candidate exploratory campaign;
+- complete first-attempt uninstall and clean-machine Windows acceptance;
+- publish and verify the public GitHub Release;
+- finish the public under-three-minute demo and Devpost submission.
+
+The demo video must be under three minutes and include audio explaining how Codex
+and GPT-5.6 were used. The project runtime is not tied to GPT-5.6: users receive
+architecture reasoning from whichever compatible model they select in their coding
+assistant. Do not reintroduce wording that claims the plugin always runs GPT-5.6.
+
+`docs/DEMO_VIDEO.md` existed as an untracked draft at handoff. The main README must
+not mention `DEMO_VIDEO.md` unless that decision is explicitly revisited.
+
+## Safety and Maintenance Constraints
+
+- Treat the public repository as attacker-readable; controls must not depend on
+  secrecy of their implementation.
+- Do not commit credentials, Codex `auth.json`, hidden reasoning, or sensitive local
+  paths in release evidence.
+- Do not run repository code during a read-only architecture inspection.
+- Do not weaken typed validation or application-code write denial to make a model
+  response pass.
+- Do not restore a persistent Codex MCP process without revisiting uninstall locks,
+  trust boundaries, and the historical tagged implementation.
+- Preserve progressive disclosure; focused pattern questions should load only the
+  required reference.
+- Keep model-specific reasoning out of the shared deterministic control plane.
+- Keep the specification living and aligned with intended behavior; Git tags
+  preserve historical released specifications.
+
+## Suggested Resume Prompt
+
+Use this prompt in a future Codex task:
+
+> Read `docs/DEVELOPMENT_HANDOFF.md`, `TODO.md`, `docs/RELEASING.md`, and the relevant
+> sections of `specs/AISoftwareArchitect.md`. Verify the current branch, Git status,
+> installed plugin version, and latest CI state before changing anything. Continue
+> with the next unfinished release blocker. Preserve the one-public-skill Codex
+> design, short-lived hooks, host-native model reasoning, validated `.ai-architect`
+> persistence, and the no-persistent-MCP Codex package decision.

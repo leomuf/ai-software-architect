@@ -28,9 +28,10 @@ future GitHub Copilot, Claude Code, and Antigravity adapters can reuse them.
 
 The runner uses the caller's existing Codex authentication and installed plugin.
 Install the exact release candidate and activate its reviewed hooks before running
-the campaign. For real runs, it obtains the installed and enabled personal plugin
-version from Codex and records that version in the report. An optional expected
-version acts only as an early mismatch guard. The runner does not install, update,
+the campaign. For real runs, it searches every marketplace, requires exactly one
+installed and enabled AI Software Architect, and records its plugin ID, marketplace,
+version, and available provenance digest. An optional expected version acts only as
+an early mismatch guard. The runner does not install, update,
 switch, trust, disable, or uninstall a plugin.
 
 Use the repository-level PowerShell entry described in

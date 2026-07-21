@@ -308,13 +308,26 @@ def handle_pre_tool_use(
         payload.get("tool_input"),
         workspace=workspace,
     )
-    if reason is None and context.active and workspace is not None:
+    if reason is None and context.active:
         local_name = str(payload.get("tool_name", "")).rsplit(".", 1)[-1].casefold()
         if local_name in {"apply_patch", "edit", "write"}:
-            reason = architecture_artifact_denial_reason(
-                payload.get("tool_input"),
-                workspace,
-            )
+            if workspace is None:
+                reason = (
+                    "AI Software Architect denied the architecture artifact write because "
+                    "Codex did not provide a trustworthy workspace root."
+                )
+            else:
+                checkpoint = WorkflowCheckpointManager(plugin_data).load(
+                    _session_id(payload)
+                )
+                reason = architecture_artifact_denial_reason(
+                    payload.get("tool_input"),
+                    workspace,
+                    require_complete_bundle=(
+                        checkpoint is not None
+                        and checkpoint.phase == CheckpointPhase.DECISION_RESPONSE
+                    ),
+                )
     if reason is None:
         return {}
     return {
@@ -340,12 +353,19 @@ def handle_post_tool_use(
         return {}
     cwd = payload.get("cwd")
     if not isinstance(cwd, str) or not cwd:
-        return {}
+        return {
+            "continue": False,
+            "stopReason": (
+                "AI Software Architect stopped because Codex did not provide a "
+                "trustworthy workspace root for post-write verification."
+            ),
+            "systemMessage": "Architecture artifact post-write verification failed.",
+        }
     workspace = Path(cwd)
     try:
         candidates = proposed_artifact_candidates(payload.get("tool_input"), workspace)
         if not candidates:
-            return {}
+            raise ValueError("no reconstructable architecture artifact candidate")
         for candidate in candidates:
             persisted = (workspace / candidate.path).read_text("utf-8")
             if persisted != candidate.content:
@@ -479,6 +499,7 @@ def handle_hook(
     payload: dict[str, Any],
     plugin_data: Path,
     plugin_root: Path | None = None,
+    expected_event: str | None = None,
 ) -> dict[str, Any]:
     handlers = {
         "UserPromptSubmit": handle_user_prompt_submit,
@@ -489,7 +510,9 @@ def handle_hook(
     }
     event = payload.get("hook_event_name")
     if not isinstance(event, str):
-        return {}
+        raise ValueError("hook_event_name is unavailable")
+    if expected_event is not None and event != expected_event:
+        raise ValueError("hook event does not match the invoked hook entry point")
     handler = handlers.get(event)
     HookPayload.model_validate(payload)
     if handler is handle_user_prompt_submit:
@@ -497,7 +520,31 @@ def handle_hook(
     return handler(payload, plugin_data) if handler else {}
 
 
-def main() -> None:
+def _runtime_failure_response(expected_event: str | None, diagnostic: str) -> dict[str, Any]:
+    message = (
+        "AI Software Architect control-plane validation failed; the protected operation "
+        "was not allowed."
+        + diagnostic
+    )
+    if expected_event == "PreToolUse":
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": message,
+            },
+            "systemMessage": message,
+        }
+    if expected_event == "PostToolUse":
+        return {
+            "continue": False,
+            "stopReason": message,
+            "systemMessage": message,
+        }
+    return {"systemMessage": message}
+
+
+def main(expected_event: str | None = None) -> None:
     """Read one bounded hook event from stdin and emit one JSON response."""
 
     try:
@@ -512,18 +559,17 @@ def main() -> None:
             raise ValueError("PLUGIN_DATA is unavailable")
         plugin_root_text = os.environ.get("PLUGIN_ROOT")
         plugin_root = Path(plugin_root_text) if plugin_root_text else None
-        response = handle_hook(payload, Path(plugin_data_text), plugin_root)
+        response = handle_hook(
+            payload,
+            Path(plugin_data_text),
+            plugin_root,
+            expected_event=expected_event,
+        )
     except Exception as exc:
         diagnostic = ""
         if os.environ.get("AI_ARCHITECT_HOOK_DEBUG") == "1":
             diagnostic = f" Diagnostic: {type(exc).__name__}: {exc}"
-        response = {
-            "systemMessage": (
-                "AI Software Architect control-plane hook failed open; deterministic "
-                "turn validation was unavailable."
-                + diagnostic
-            )
-        }
+        response = _runtime_failure_response(expected_event, diagnostic)
     sys.stdout.write(json.dumps(response, separators=(",", ":")))
     sys.stdout.flush()
 

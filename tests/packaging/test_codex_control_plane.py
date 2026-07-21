@@ -261,7 +261,7 @@ def test_architecture_workflow_blocks_execution_and_allows_static_shell_reads(
     denied = handle_pre_tool_use(execution, tmp_path / "data")
     assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
     assert (
-        "does not run interpreters"
+        "fail-closed"
         in denied["hookSpecificOutput"][  # type: ignore[index]
             "permissionDecisionReason"
         ]
@@ -291,8 +291,18 @@ def test_architecture_workflow_blocks_execution_and_allows_static_shell_reads(
 
     static_read = _payload("PreToolUse")
     static_read["tool_name"] = "Bash"
-    static_read["tool_input"] = {"command": "Get-Content budget_book.py; git status --short"}
+    static_read["tool_input"] = {"command": "Get-Content budget_book.py"}
     assert handle_pre_tool_use(static_read, tmp_path / "data") == {}
+
+    for bypass in (
+        '& (Get-Command python) -c "print(1)"',
+        "Get-Item .\\repo-tool.ps1 | ForEach-Object { & $_ }",
+        "Get-Content budget_book.py; git status --short",
+    ):
+        composed = dict(static_read)
+        composed["tool_input"] = {"command": bypass}
+        result = handle_pre_tool_use(composed, tmp_path / "data")
+        assert result["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
 
 
 def test_architect_patch_surface_is_limited_to_architecture_artifacts(
@@ -317,6 +327,7 @@ def test_architect_patch_surface_is_limited_to_architecture_artifacts(
     )
 
     architecture_patch = _payload("PreToolUse")
+    architecture_patch["cwd"] = str(tmp_path)
     architecture_patch["tool_name"] = "apply_patch"
     architecture_patch["tool_input"] = {
         "patch": (
@@ -326,9 +337,12 @@ def test_architect_patch_surface_is_limited_to_architecture_artifacts(
             "*** End Patch\n"
         )
     }
-    assert handle_pre_tool_use(architecture_patch, tmp_path / "data") == {}
+    denied_adr = handle_pre_tool_use(architecture_patch, tmp_path / "data")
+    assert denied_adr["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+    assert "ADR frontmatter is invalid" in str(denied_adr)
 
     nested_architecture_patch = _payload("PreToolUse")
+    nested_architecture_patch["cwd"] = str(tmp_path)
     nested_architecture_patch["tool_name"] = "apply_patch"
     nested_architecture_patch["tool_input"] = {
         "freeform": {
@@ -354,7 +368,8 @@ def test_architect_patch_surface_is_limited_to_architecture_artifacts(
             "*** End Patch\n"
         )
     }
-    assert handle_pre_tool_use(absolute_architecture_patch, tmp_path / "data") == {}
+    denied_absolute = handle_pre_tool_use(absolute_architecture_patch, tmp_path / "data")
+    assert denied_absolute["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
 
     escaped_absolute_patch = _payload("PreToolUse")
     escaped_absolute_patch["cwd"] = str(tmp_path)
@@ -479,6 +494,7 @@ def test_model_selected_comparison_retains_architecture_artifact_patch_surface(
     handle_user_prompt_submit(submit, tmp_path / "data")
 
     patch = _payload("PreToolUse")
+    patch["cwd"] = str(tmp_path)
     patch["tool_name"] = "apply_patch"
     patch["tool_input"] = {
         "patch": (
@@ -720,6 +736,25 @@ def test_complete_workflow_clarification_needs_no_machine_marker(
     assert handle_stop(stop, tmp_path) == {}
 
 
+def test_focused_pattern_help_requires_its_routed_canonical_link(tmp_path: Path) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Show an Abstract Factory example."
+    handle_user_prompt_submit(submit, tmp_path)
+
+    stop = _payload("Stop")
+    stop["last_assistant_message"] = "Abstract Factory creates compatible product families."
+    denied = handle_stop(stop, tmp_path)
+    assert denied["decision"] == "block"
+    assert "gof-abstract-factory.md" in denied["reason"]
+
+    handle_user_prompt_submit(submit, tmp_path)
+    stop["last_assistant_message"] = (
+        "See [Abstract Factory]("
+        f"{CANONICAL_REFERENCE_BASE}gof-abstract-factory.md) for the canonical example."
+    )
+    assert handle_stop(stop, tmp_path) == {}
+
+
 def test_clarification_and_decision_replies_continue_for_one_turn(
     tmp_path: Path,
 ) -> None:
@@ -769,6 +804,20 @@ def test_decision_approval_continuation_requires_record_and_handoff(
     assert "do not merely acknowledge approval" in additional
     assert "Approval never authorizes application-code changes" in additional
     assert "original request explicitly prohibited" in additional
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    incomplete = _payload("PreToolUse")
+    incomplete["turn_id"] = "turn-2"
+    incomplete["cwd"] = str(workspace)
+    incomplete["tool_name"] = "Write"
+    incomplete["tool_input"] = {
+        "path": ".ai-architect/project-context.md",
+        "content": "# Project context\nApproved scope.\n",
+    }
+    denied = handle_pre_tool_use(incomplete, tmp_path)
+    assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+    assert "missing adr, contract, implementation-plan" in str(denied)
 
 
 def test_clarification_continuation_resumes_design_without_recording(
@@ -852,7 +901,13 @@ def test_runtime_entry_dispatches_hook_mode_as_a_source_script(tmp_path: Path) -
     environment = os.environ.copy()
     environment["PLUGIN_DATA"] = str(tmp_path)
     result = subprocess.run(  # noqa: S603
-        [sys.executable, str(Path(runtime_entry.__file__).resolve()), "--codex-hook"],
+        [
+            sys.executable,
+            str(Path(runtime_entry.__file__).resolve()),
+            "--codex-hook",
+            "--event",
+            "UserPromptSubmit",
+        ],
         input=json.dumps(payload),
         text=True,
         capture_output=True,
@@ -932,3 +987,63 @@ def test_pre_write_hook_scans_artifacts_and_reconstructs_updates(tmp_path: Path)
     denied = handle_pre_tool_use(tool, data)
     assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
     assert "pre-write secret scan" in str(denied)
+
+
+def test_active_artifact_writes_fail_closed_without_workspace_or_on_delete(
+    tmp_path: Path,
+) -> None:
+    data = tmp_path / "plugin-data"
+    workspace = tmp_path / "workspace"
+    decisions = workspace / ".ai-architect" / "decisions"
+    decisions.mkdir(parents=True)
+    (decisions / "ADR-001-example.md").write_text("existing\n", encoding="utf-8")
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Update the approved decision."
+    handle_user_prompt_submit(submit, data)
+
+    missing_workspace = _payload("PreToolUse")
+    missing_workspace["tool_name"] = "Write"
+    missing_workspace["tool_input"] = {
+        "path": ".ai-architect/project-context.md",
+        "content": "# Context\n",
+    }
+    denied = handle_pre_tool_use(missing_workspace, data)
+    assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+    assert "workspace root" in str(denied)
+
+    deletion = _payload("PreToolUse")
+    deletion["cwd"] = str(workspace)
+    deletion["tool_name"] = "apply_patch"
+    deletion["tool_input"] = (
+        "*** Begin Patch\n"
+        "*** Delete File: .ai-architect/decisions/ADR-001-example.md\n"
+        "*** End Patch"
+    )
+    denied = handle_pre_tool_use(deletion, data)
+    assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+    assert "deletion is not permitted" in str(denied)
+
+
+def test_pretool_runtime_validation_failure_is_fail_closed(tmp_path: Path) -> None:
+    environment = os.environ.copy()
+    environment["PLUGIN_DATA"] = str(tmp_path)
+    result = subprocess.run(  # noqa: S603
+        [
+            sys.executable,
+            str(Path(runtime_entry.__file__).resolve()),
+            "--codex-hook",
+            "--event",
+            "PreToolUse",
+        ],
+        input="not-json",
+        text=True,
+        capture_output=True,
+        env=environment,
+        timeout=10,
+        check=True,
+    )
+    response = json.loads(result.stdout)
+    output = response["hookSpecificOutput"]
+    assert output["hookEventName"] == "PreToolUse"
+    assert output["permissionDecision"] == "deny"
+    assert "failed open" not in result.stdout

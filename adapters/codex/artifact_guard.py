@@ -45,6 +45,7 @@ class ArtifactCandidate:
     path: Path
     content: str
     kind: ArtifactKind
+    operation: str = "Update"
 
 
 def _relative_target(target: str, workspace: Path) -> Path:
@@ -98,16 +99,22 @@ def _apply_update_patch(original: str, body: str) -> str:
 
 def _patch_candidates(patch: str, workspace: Path) -> tuple[ArtifactCandidate, ...]:
     matches = tuple(FILE_SECTION_PATTERN.finditer(patch))
+    if not matches:
+        raise ValueError("patch contains no reconstructable file section")
     candidates: list[ArtifactCandidate] = []
+    seen: set[Path] = set()
     for index, match in enumerate(matches):
         operation, target = match.groups()
         if operation == "Delete":
-            continue
+            raise ValueError("architecture artifact deletion is not permitted by this workflow")
         relative = _relative_target(target, workspace)
         canonical = canonical_artifact_path(relative)
         if canonical is None:
             raise ValueError(f"unsupported architecture artifact path: {relative.as_posix()}")
         relative, kind = canonical
+        if relative in seen:
+            raise ValueError(f"patch contains duplicate artifact target: {relative.as_posix()}")
+        seen.add(relative)
         start = match.end()
         end = matches[index + 1].start() if index + 1 < len(matches) else patch.find(
             "*** End Patch", start
@@ -120,7 +127,14 @@ def _patch_candidates(patch: str, workspace: Path) -> tuple[ArtifactCandidate, .
         else:
             source = workspace / relative
             content = _apply_update_patch(source.read_text("utf-8"), body)
-        candidates.append(ArtifactCandidate(path=relative, content=content, kind=kind))
+        candidates.append(
+            ArtifactCandidate(
+                path=relative,
+                content=content,
+                kind=kind,
+                operation=operation,
+            )
+        )
     return tuple(candidates)
 
 
@@ -141,19 +155,37 @@ def _structured_write_candidate(
     content = next(
         (
             tool_input[key]
-            for key in ("content", "text", "new_string")
+            for key in ("content", "text")
             if isinstance(tool_input.get(key), str)
         ),
         None,
     )
-    if target is None or content is None:
+    if target is None:
         return ()
     relative = _relative_target(target, workspace)
     canonical = canonical_artifact_path(relative)
     if canonical is None:
         raise ValueError(f"unsupported architecture artifact path: {relative.as_posix()}")
     relative, kind = canonical
-    return (ArtifactCandidate(path=relative, content=content, kind=kind),)
+    source = workspace / relative
+    old_string = tool_input.get("old_string")
+    new_string = tool_input.get("new_string")
+    operation = "Update" if source.is_file() else "Add"
+    if isinstance(old_string, str) and isinstance(new_string, str):
+        original = source.read_text("utf-8")
+        if not old_string or original.count(old_string) != 1:
+            raise ValueError("structured edit original text is missing or ambiguous")
+        content = original.replace(old_string, new_string, 1)
+    elif content is None:
+        raise ValueError("structured write does not provide complete reconstructable content")
+    return (
+        ArtifactCandidate(
+            path=relative,
+            content=content,
+            kind=kind,
+            operation=operation,
+        ),
+    )
 
 
 def proposed_artifact_candidates(
@@ -197,12 +229,14 @@ def _adr_frontmatter(content: str) -> ArchitectureDecisionArtifact:
 
 def validate_artifact_bundle_candidates(
     candidates: tuple[ArtifactCandidate, ...],
+    *,
+    require_complete: bool = False,
 ) -> ArchitectureArtifactBundle | None:
     """Validate a complete multi-file record-and-handoff write atomically."""
 
     kinds = {candidate.kind for candidate in candidates}
     bundle_kinds = {"adr", "contract", "context", "implementation-plan"}
-    if not ("contract" in kinds and len(kinds & bundle_kinds) > 1):
+    if not require_complete and not ("contract" in kinds and len(kinds & bundle_kinds) > 1):
         return None
     missing = sorted(bundle_kinds - kinds)
     if missing:
@@ -238,6 +272,8 @@ def validate_artifact_bundle_candidates(
 def architecture_artifact_denial_reason(
     tool_input: object,
     workspace: Path,
+    *,
+    require_complete_bundle: bool = False,
 ) -> str | None:
     """Return a safe denial reason when a proposed artifact set fails validation."""
 
@@ -248,7 +284,14 @@ def architecture_artifact_denial_reason(
             "AI Software Architect could not reconstruct the complete proposed "
             f"architecture artifact safely: {exc}. Use one complete reviewable write."
         )
+    if not candidates:
+        return (
+            "AI Software Architect could not identify a complete architecture artifact "
+            "candidate, so the write was denied. Use one reviewable canonical write."
+        )
     for candidate in candidates:
+        if not candidate.content.strip():
+            return f"AI Software Architect blocked empty artifact `{candidate.path.as_posix()}`."
         scan = scan_generated_artifact(
             ArtifactSecretScanInput(content=candidate.content, artifact_kind=candidate.kind)
         )
@@ -272,8 +315,25 @@ def architecture_artifact_denial_reason(
                     "retrying, load `assets/architecture-contract.example.yaml` from the "
                     "installed AI Software Architect skill and preserve its nested object shapes."
                 )
+        if candidate.kind == "adr":
+            try:
+                adr = _adr_frontmatter(candidate.content)
+            except (ValidationError, ValueError, yaml.YAMLError) as exc:
+                return (
+                    f"AI Software Architect blocked `{candidate.path.as_posix()}` because "
+                    f"its complete ADR frontmatter is invalid: {exc}."
+                )
+            filename_id = candidate.path.stem.split("-", 2)[:2]
+            if "-".join(filename_id) != adr.decision.id:
+                return (
+                    f"AI Software Architect blocked `{candidate.path.as_posix()}` because "
+                    "the ADR filename and decision id disagree."
+                )
     try:
-        validate_artifact_bundle_candidates(candidates)
+        validate_artifact_bundle_candidates(
+            candidates,
+            require_complete=require_complete_bundle,
+        )
     except (ValidationError, ValueError, yaml.YAMLError) as exc:
         return (
             "AI Software Architect blocked the record-and-handoff write because the "

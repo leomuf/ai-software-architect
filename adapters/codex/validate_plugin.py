@@ -95,7 +95,7 @@ def validate(root: Path) -> None:
         "Stop",
     }:
         raise ValueError("the Codex control-plane hook events are incomplete")
-    for groups in hooks["hooks"].values():
+    for event, groups in hooks["hooks"].items():
         for group in groups:
             for hook in group["hooks"]:
                 if hook["type"] != "command" or hook["timeout"] > 5:
@@ -103,6 +103,11 @@ def validate(root: Path) -> None:
                 if "--codex-hook" not in hook["commandWindows"]:
                     raise ValueError("Windows control-plane hook entry is invalid")
                 windows_command = hook["commandWindows"]
+                expected_suffix = f"--codex-hook --event {event}"
+                if expected_suffix not in hook["command"] or expected_suffix not in windows_command:
+                    raise ValueError(
+                        f"{event} hook must declare its exact fail-closed runtime event"
+                    )
                 if "$env:PLUGIN_ROOT" not in windows_command:
                     raise ValueError(
                         "Windows control-plane hooks must use PowerShell plugin-root "

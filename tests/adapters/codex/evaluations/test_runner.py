@@ -19,8 +19,9 @@ from adapters.codex.evaluations.models import (
 )
 from adapters.codex.evaluations.runner import (
     DEFAULT_MANIFEST,
+    InstalledPluginIdentity,
     _codex_command,
-    _installed_plugin_version,
+    _installed_plugin_identity,
     _parse_events,
     main,
 )
@@ -129,7 +130,7 @@ def test_codex_command_is_ephemeral_only_without_a_continuation() -> None:
     assert continuation[-3:] == ["resume", "thread-123", "Approve it."]
 
 
-def test_installed_plugin_version_uses_enabled_personal_plugin(
+def test_installed_plugin_identity_uses_one_enabled_plugin_across_marketplaces(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     payload = {
@@ -148,15 +149,40 @@ def test_installed_plugin_version_uses_enabled_personal_plugin(
             "codex",
             "plugin",
             "list",
-            "--marketplace",
-            "personal",
             "--json",
         ]
         return subprocess.CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    assert _installed_plugin_version("codex") == "0.2.0"
+    assert _installed_plugin_identity("codex") == InstalledPluginIdentity(
+        plugin_id="ai-software-architect@personal",
+        marketplace="personal",
+        version="0.2.0",
+    )
+
+
+def test_installed_plugin_identity_rejects_enabled_duplicates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = {
+        "installed": [
+            {
+                "pluginId": f"ai-software-architect@{marketplace}",
+                "version": "0.2.0",
+                "installed": True,
+                "enabled": True,
+            }
+            for marketplace in ("personal", "ai-software-architect-release")
+        ]
+    }
+
+    def fake_run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(ValueError, match="exactly one installed and enabled"):
+        _installed_plugin_identity("codex")
 
 
 def test_expected_plugin_version_mismatch_fails_before_evaluation(
@@ -168,7 +194,11 @@ def test_expected_plugin_version_mismatch_fails_before_evaluation(
 
     output = tmp_path / "campaign"
     monkeypatch.setattr(runner, "_codex_version", lambda _: "codex-cli test")
-    monkeypatch.setattr(runner, "_installed_plugin_version", lambda _: "0.2.0")
+    monkeypatch.setattr(
+        runner,
+        "_installed_plugin_identity",
+        lambda _: InstalledPluginIdentity("ai-software-architect@personal", "personal", "0.2.0"),
+    )
 
     exit_code = main(
         [

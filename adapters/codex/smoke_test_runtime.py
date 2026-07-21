@@ -14,13 +14,16 @@ import tempfile
 from pathlib import Path
 
 
-def _windows_hook_command(executable: Path) -> str:
+def _windows_hook_commands(executable: Path) -> dict[str, str]:
     plugin_root = executable.resolve().parents[3]
     hooks = json.loads((plugin_root / "hooks" / "hooks.json").read_text("utf-8"))
-    command = hooks["hooks"]["UserPromptSubmit"][0]["hooks"][0]["commandWindows"]
-    if not isinstance(command, str):
-        raise TypeError("the Windows hook command must be a string")
-    return command
+    commands = {
+        event: groups[0]["hooks"][0]["commandWindows"]
+        for event, groups in hooks["hooks"].items()
+    }
+    if not all(isinstance(command, str) for command in commands.values()):
+        raise TypeError("every Windows hook command must be a string")
+    return commands
 
 
 def _run_hook(
@@ -54,7 +57,7 @@ def smoke_test_hook(executable: Path) -> None:
     powershell = shutil.which("powershell.exe")
     if powershell is None:
         raise RuntimeError("PowerShell is required to test the Windows hook command")
-    command = _windows_hook_command(executable)
+    commands = _windows_hook_commands(executable)
     with tempfile.TemporaryDirectory() as plugin_data, tempfile.TemporaryDirectory() as workspace:
         environment = os.environ.copy()
         environment["PLUGIN_DATA"] = plugin_data
@@ -70,7 +73,7 @@ def smoke_test_hook(executable: Path) -> None:
             "hook_event_name": "UserPromptSubmit",
             "prompt": "$ai-software-architect Review this project architecture.",
         }
-        response = _run_hook(powershell, command, submit, environment)
+        response = _run_hook(powershell, commands["UserPromptSubmit"], submit, environment)
         context = _hook_output(response).get("additionalContext")
         if "Route: model-selected workflow" not in str(context):
             raise RuntimeError(f"hook routing smoke test failed: {response}")
@@ -80,7 +83,7 @@ def smoke_test_hook(executable: Path) -> None:
             "hook_event_name": "PostCompact",
             "trigger": "auto",
         }
-        compact_response = _run_hook(powershell, command, compact, environment)
+        compact_response = _run_hook(powershell, commands["PostCompact"], compact, environment)
         compact_context = _hook_output(compact_response).get("additionalContext")
         if "typed workflow checkpoint: phase=active" not in str(compact_context):
             raise RuntimeError(
@@ -93,7 +96,7 @@ def smoke_test_hook(executable: Path) -> None:
             "tool_name": "Bash",
             "tool_input": {"command": "python -m py_compile analyzed_repository.py"},
         }
-        shell_response = _run_hook(powershell, command, shell, environment)
+        shell_response = _run_hook(powershell, commands["PreToolUse"], shell, environment)
         if _hook_output(shell_response).get("permissionDecision") != "deny":
             raise RuntimeError(f"read-only shell guard failed: {shell_response}")
 
@@ -107,7 +110,9 @@ def smoke_test_hook(executable: Path) -> None:
                 "*** End Patch"
             ),
         }
-        invalid_response = _run_hook(powershell, command, invalid_contract, environment)
+        invalid_response = _run_hook(
+            powershell, commands["PreToolUse"], invalid_contract, environment
+        )
         if _hook_output(invalid_response).get("permissionDecision") != "deny":
             raise RuntimeError(f"invalid contract was not blocked: {invalid_response}")
 
@@ -127,7 +132,9 @@ def smoke_test_hook(executable: Path) -> None:
                 + "*** End Patch"
             ),
         }
-        if _run_hook(powershell, command, valid_contract, environment) != {}:
+        if _run_hook(
+            powershell, commands["PreToolUse"], valid_contract, environment
+        ) != {}:
             raise RuntimeError("valid architecture contract was unexpectedly blocked")
 
         unsupported_artifact = {
@@ -140,7 +147,7 @@ def smoke_test_hook(executable: Path) -> None:
             ),
         }
         unsupported_response = _run_hook(
-            powershell, command, unsupported_artifact, environment
+            powershell, commands["PreToolUse"], unsupported_artifact, environment
         )
         if _hook_output(unsupported_response).get("permissionDecision") != "deny":
             raise RuntimeError(
@@ -157,7 +164,7 @@ def smoke_test_hook(executable: Path) -> None:
                 "<!-- ai-architect-outcome: recommendation -->"
             ),
         }
-        stop_response = _run_hook(powershell, command, stop, environment)
+        stop_response = _run_hook(powershell, commands["Stop"], stop, environment)
         if stop_response.get("decision") != "block":
             raise RuntimeError(f"visible-response marker guard failed: {stop_response}")
 
