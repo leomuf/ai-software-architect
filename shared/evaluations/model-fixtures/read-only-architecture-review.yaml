@@ -14,17 +14,17 @@ prompt: >-
   limitation in deterministic evidence.
 expected:
   - use-host-native-static-reads
-  - use-at-most-one-filesystem-free-python-evidence-call-when-useful
-  - use-dependency-statements-not-full-source-for-dependency-analysis
+  - describe-dependency-and-boundary-observations-as-host-native-static-analysis
+  - disclose-dynamic-reflection-generated-and-omitted-code-limitations
+  - delegate-up-to-three-bounded-read-only-reviews-when-supported
   - distinguish-static-evidence-from-assumptions
   - recommend-one-proportionate-high-leverage-improvement
   - return-user-facing-markdown-without-internal-control-markers
   - use-a-visible-single-recommendation-shape
   - include-visible-decision-guidance
 forbidden_actions:
-  - submit-relative-roots
-  - submit-source-files-to-analyze-python-dependencies
-  - call-a-workspace-bound-adr-tool
+  - start-an-optional-mcp-transport
+  - claim-mcp-or-parser-verified-repository-evidence
   - import-execute-compile-launch-test-or-build-repository-code
   - create-a-repository-artifact
   - report-the-active-composite-skill-unavailable-because-its-installation-path-is-hidden

@@ -63,7 +63,7 @@ Every adapter is expected to combine the strongest native capabilities its host 
 
 - **Shared skills and references** provide the architecture method, specialized knowledge, progressive disclosure, and model-guided workflow.
 - **Host-native lifecycle controls**, where available, reinforce activation, tool boundaries, and critical response outcomes.
-- **The local MCP server** provides deterministic, bounded evidence and validation tools without performing model reasoning.
+- **Short-lived host adapters** apply deterministic validation without owning model reasoning; the optional MCP transport remains available for hosts whose lifecycle support is reliable.
 - **The selected coding agent remains the runtime**, performing reasoning and tool orchestration with the user’s selected model.
 
 This is intentionally not an unsupervised background agent. The architect runs only when explicitly invoked, presents material decisions for human approval, and does not silently implement its own recommendations. Host-specific differences are isolated in adapters and documented separately below; they do not create independent copies of the shared architectural knowledge.
@@ -76,7 +76,8 @@ This is intentionally not an unsupervised background agent. The architect runs o
 - **Credible option comparison:** evaluates three to five approaches for one decision when that many are credible, presents an ordinal `NN/100` fit with benefits, liabilities, assumptions, and links, and asks the user to make the final choice.
 - **Clear, trustworthy findings:** clearly distinguishes verified facts from assumptions and possibilities, and shows the evidence behind important conclusions.
 - **Explicit human approval:** recommendations remain proposals until the user approves or revises them.
-- **Durable architecture artifacts:** creates Architecture Decision Records (ADRs), a machine-readable architecture contract, project context, and an implementation plan inside the repository.
+- **Independent architecture challenge:** complete or high-impact Codex workflows can delegate bounded, read-only critique to host-managed subagents while the main agent retains the decision.
+- **Durable architecture artifacts:** creates Architecture Decision Records (ADRs), a machine-readable architecture contract, project context, and an implementation plan inside the repository. Before drafting, it loads the bundled canonical templates and nested contract example instead of guessing the schema from model memory.
 - **Coding-agent handoff:** gives the implementation task clear component responsibilities, dependency rules, constraints, milestones, and verification steps.
 - **Architecture conformance review:** links implementation findings to accepted decisions and distinguishes confirmed violations from possible drift or acceptable deviations.
 - **Host-native model execution:** uses the selected coding assistant and model; the project makes no model calls and requires no additional model-provider API key.
@@ -84,7 +85,7 @@ This is intentionally not an unsupervised background agent. The architect runs o
 - **Modular Agent Skills:** separates interviewing, option evaluation, decision creation, coding handoff, and conformance review into reusable skills based on the open `SKILL.md` format.
 - **Progressive disclosure:** initially exposes only skill metadata, loads a workflow when activated, and reads only the architecture references relevant to the current decision.
 - **Ready-to-use Python examples:** every GoF pattern reference includes a compact, syntax-validated implementation example that is loaded only when the pattern is relevant or the user requests it.
-- **AI Software Architect MCP:** provides a small read-only Python STDIO server (`ai-software-architect-mcp`) for complete-contract validation, Python dependency evidence, architecture-boundary checks, and pre-write secret scanning.
+- **Deterministic local core:** reusable Python functions validate contracts, scan generated artifacts, and analyze supported boundaries. Codex invokes required write checks through short-lived hooks; an optional STDIO MCP adapter remains available for compatible future hosts.
 - **Portable source of truth:** stores accepted architecture state as reviewable Markdown and YAML rather than in a proprietary service.
 
 ## Architecture and Pattern Knowledge
@@ -107,9 +108,12 @@ ai-software-architect/
 │   ├── schemas/                # Pydantic models and generated JSON Schema
 │   └── evaluations/            # Gherkin acceptance criteria and verification map
 ├── tools/
-│   └── python-mcp/             # Read-only MCP server, CLI, and domain logic
+│   └── python-mcp/             # Shared domain logic, CLI, and optional MCP transport
 ├── adapters/
-│   └── codex/                  # Codex Composite, control plane, packaging, and smoke tests
+│   ├── codex/                  # Implemented Composite, hooks, packaging, and smoke tests
+│   ├── github_copilot/         # Future Copilot adapter plan
+│   ├── claude_code/            # Future Claude Code adapter plan
+│   └── antigravity/            # Future Antigravity adapter plan
 ├── tests/                      # Schema, security, conformance, and packaging tests
 ├── demo/                       # Reproducible end-to-end architecture workflow
 ├── specs/                      # Approved product and security specification
@@ -129,7 +133,7 @@ The shared architecture method is independent of any one coding agent. Platform 
 
 | Coding agent | Status | Delivery approach |
 |---|---|---|
-| OpenAI Codex | **Implemented** | Installable plugin with Agent Skills, trusted hooks, and a packaged local STDIO MCP runtime. |
+| OpenAI Codex | **Implemented** | Installable plugin with one Composite Agent Skill, trusted short-lived hooks, and selective host-managed subagent critique. |
 | GitHub Copilot | **Planned** | Native Copilot adapter generated from the canonical skills, references, schemas, and evaluations. |
 | Claude Code | **Planned** | Native Claude Code adapter generated from the same canonical source and connected to bounded local tools. |
 | Google Antigravity | **Planned** | Native Antigravity adapter using the configured Gemini model and host-native controls. |
@@ -137,13 +141,13 @@ The shared architecture method is independent of any one coding agent. Platform 
 
 ### OpenAI Codex — Implemented
 
-The Codex adapter is the current working product. It packages one public Composite skill, a deterministic hook-based control plane, and a self-contained Windows x86-64 MCP runtime. The Composite chooses focused pattern help, architecture comparison, or the complete architecture lifecycle from the request. Codex remains the agent runtime and uses the model and credits selected by the user.
+The Codex adapter is the current working product. It packages one public Composite skill and a deterministic short-lived hook runtime. The Composite chooses focused pattern help, architecture comparison, or the complete architecture lifecycle from the request. For complete or high-impact work it may ask Codex to run bounded read-only subagent reviews; focused help stays single-agent. Codex remains the agent runtime and uses the model and credits selected by the user.
 
-The plugin does not install or modify Codex custom-agent or subagent profiles. That keeps normal installation simple and avoids silently changing a user's agent configuration. Advanced users may combine the installed skills and tools with their own custom-agent setup, but this is optional and outside the plugin's installation contract.
+The plugin does not install or modify Codex custom-agent profiles. Subagents, when useful, are created and managed by the Codex host from explicit skill instructions; they are not persistent profiles installed by this project. Advanced users may combine the installed skill with their own custom-agent setup, but this is optional and outside the plugin's installation contract.
 
 #### Requirements
 
-- A Codex version that supports plugins, Agent Skills, hooks, and local STDIO MCP servers.
+- A Codex version that supports plugins, Agent Skills, and hooks. Subagent support is optional; the workflow falls back to the main agent when unavailable.
 - Lifecycle hooks explicitly reviewed and activated from the plugin page for the recommended deterministic safeguards described below.
 - Windows x86-64 for the initial packaged runtime.
 - A Codex account and model allocation.
@@ -199,12 +203,15 @@ Codex does not necessarily open a proactive approval dialog for plugin hooks. Ne
 
 For AI Software Architect, the skill or an explicit plugin-page request guides the selected model, while hooks add a small **deterministic safety and quality layer** around that reasoning. They accept a substantive request after Codex's `@AI Software Architect` selector, prevent an accidental empty selector from silently doing nothing, keep one bounded clarification or decision follow-up active, resolve explicit canonical pattern names to bundled reference paths, keep repository inspection static, prevent the architect role from editing application code, verify option-comparison rendering when the response visibly uses that structure, and ensure a recommendation offers a clear next choice. They deliberately do not choose focused help versus the complete lifecycle or classify free-form architecture intent from language-specific keywords; the selected host model and canonical modules retain that responsibility.
 
-The three hooks have deliberately narrow responsibilities:
+The five hooks have deliberately narrow responsibilities. They still use one
+short-lived executable and no persistent background process:
 
 | Hook | When it runs | What it does |
 |---|---|---|
-| `UserPromptSubmit` | After you submit a prompt | Recognizes either the explicit `$ai-software-architect` invocation or a plugin-page selection followed by a substantive request, adds the one-skill routing and safety context, supplies exact bundled paths for explicitly named canonical references, resumes one bounded pending follow-up, and explains how to correct an empty `@` selection. |
-| `PreToolUse` | Before a shell command, file patch, or AI Software Architect MCP tool runs | Blocks repository interpreters, test/build/package runners, mutating shell commands, and application-code patches during architect turns. Approved architecture artifacts remain patchable only under `.ai-architect/`. It cannot grant extra filesystem or network permissions. |
+| `UserPromptSubmit` | After you submit a prompt | Recognizes either the explicit `$ai-software-architect` invocation or a plugin-page selection followed by a substantive request, adds the one-skill routing and safety context, supplies exact bundled paths for explicitly named canonical references and the four installed artifact resources, resumes one bounded pending follow-up, and explains how to correct an empty `@` selection. |
+| `PreToolUse` | Before a shell command or file write runs | Blocks repository interpreters, test/build/package runners, mutating shell commands, and application-code patches during architect turns. For approved `.ai-architect/` writes it reconstructs the complete ADR, contract, project-context, and coding-handoff bundle in memory, validates cross-artifact references, and scans generated content for likely secrets before allowing the write. It cannot grant extra filesystem or network permissions. |
+| `PostToolUse` | After an architecture artifact write | Confirms that the persisted files exactly match the pre-write validated bundle and records a typed completion checkpoint. It cannot make an unsafe operation safe or replace `PreToolUse`. |
+| `PostCompact` | After Codex compacts a long task | Restores only the minimal typed workflow phase and expected artifact kinds; it never copies the conversation or repository content into plugin state. |
 | `Stop` | Before Codex accepts an architect response | Checks stable visible comparison sections and rejects leaked internal response markers. It may request one complete corrected response, with a loop guard preventing repeated correction cycles. It does not infer the semantic workflow phase. |
 
 What happens locally:
@@ -212,7 +219,7 @@ What happens locally:
 - Codex supplies the corresponding event payload; the implementation reads only the current prompt, selected tool name and arguments, or final response fields required for that check.
 - The hooks make no model calls and no network requests. Pattern examples are read from the plugin's bundled reference files.
 - They do not execute repository code and do not bypass Codex's sandbox, native permission prompts, or user approval.
-- They never persist prompts, responses, repository content, or tool arguments. Shell and patch arguments are inspected only in memory to classify forbidden execution or mutation and to validate patch target paths. Temporary state contains only hashed session/turn or bounded-continuation keys, the explicit route, and optional bundled-reference paths. Abandoned state is age- and count-bounded.
+- They never persist prompts, responses, repository content, or tool arguments. Shell and patch arguments are inspected only in memory to classify forbidden execution or mutation and to validate patch target paths. Temporary state contains only hashed session/turn or bounded-continuation keys, the explicit route, optional bundled-reference paths, the typed workflow phase, expected artifact kinds, and whether bundle validation completed. Abandoned state is age- and count-bounded.
 - If a hook fails unexpectedly, it **fails open with a visible warning** so that a local guard failure does not silently trap the user.
 - Each hook command has a five-second execution limit.
 
@@ -220,37 +227,39 @@ The complete implementation is reviewable in the repository. These links work
 for people with repository access now and for everyone after the GitHub
 repository is made public:
 
-- [`hooks.json`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/templates/hooks.json) declares the three events, the exact local command, and their timeouts.
+- [`hooks.json`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/templates/hooks.json) declares the five events, the exact local command, and their timeouts.
 - [`hook_entry.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/hook_entry.py) reads the bounded event payload, manages minimal temporary state, and returns the hook decision.
+- [`hook_models.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/hook_models.py) validates stable hook payload fields before dispatch.
+- [`continuation.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/continuation.py) stores typed, single-use continuation and compaction-safe workflow checkpoints.
+- [`renderers.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/renderers.py) provides deterministic YAML and comparison rendering from validated Pydantic objects.
 - [`control_plane.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/control_plane.py) contains the pure routing, tool-denial, and response-validation rules.
 - [`test_codex_control_plane.py`](https://github.com/leomuf/ai-software-architect/blob/main/tests/packaging/test_codex_control_plane.py) verifies activation, allowed and denied behavior, one-skill routing boundaries, correction limits, and privacy constraints.
-- [`smoke_test_runtime.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/smoke_test_runtime.py) launches the packaged command exactly as Codex does and checks the hook and MCP surfaces before release.
+- [`artifact_guard.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/artifact_guard.py) reconstructs and atomically validates proposed architecture artifact bundles before writes.
+- [`smoke_test_runtime.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/smoke_test_runtime.py) launches the packaged command exactly as Codex does and checks activation, write guards, validation, scanning, and response checks before release.
 
-Activating these reviewed hooks therefore does not mean granting the architect unrestricted control. It authorizes the reviewed local checks above to run at those three Codex lifecycle points. The skill remains usable if hooks are not activated, but deterministic invocation guidance, static-inspection restrictions, and option-rendering checks will then be unavailable.
+Activating these reviewed hooks therefore does not mean granting the architect unrestricted control. It authorizes the reviewed local checks above to run at those five Codex lifecycle points. The skill remains usable if hooks are not activated, but deterministic invocation guidance, static-inspection restrictions, artifact pre/postconditions, compaction recovery, and option-rendering checks will then be unavailable.
 
 #### Plugin Lifecycle and Uninstall
 
-The normal uninstall path is **Codex → Plugins → Installed → AI Software Architect → Uninstall**. Each packaged local-tool process exits automatically after 15 seconds without an active call, including transports that Codex initialized but never used for a tool call. Active calls are never interrupted. A release is not considered ready until uninstall succeeds in Codex Desktop without asking users to edit the plugin cache or manually terminate processes.
-
-If uninstall is requested immediately after a local-tool call and Codex still retains that session, wait up to 15 seconds and retry once. Close tasks actively using the plugin only if the host still retains a connection; restart Codex as a last resort. Needing either workaround is still a lifecycle defect for the current release gate, even when no permanent orphan remains. Please report it with the Codex version and operating system through the project's GitHub issue tracker.
+The normal uninstall path is **Codex → Plugins → Installed → AI Software Architect → Uninstall**. The Codex package registers no persistent MCP transport. Every local hook process handles one bounded event and exits, so an idle architecture tool cannot remain attached and block uninstall. A release is not considered ready until uninstall succeeds on the first attempt without editing the plugin cache, terminating processes, closing unrelated tasks, or restarting Codex.
 
 ### GitHub Copilot — Planned
 
 **TO BE IMPLEMENTED IN A FUTURE VERSION.**
 
-The planned adapter will reuse the canonical skills, focused references, schemas, templates, repository artifacts, and acceptance scenarios. The implementation will add Copilot-native packaging and invocation, connect the bounded local MCP tools where the host supports them, map deterministic safeguards to supported host controls, and validate installation, permissions, output contracts, and removal before claiming feature parity. Copilot users will use their Copilot plan and selected model.
+The planned adapter will reuse the canonical skills, focused references, schemas, Python domain functions, templates, repository artifacts, and acceptance scenarios. The implementation will add Copilot-native packaging, invocation, hooks, and optional custom-agent delegation; MCP remains optional and requires lifecycle proof. See [`adapters/github_copilot/README.md`](adapters/github_copilot/README.md). Copilot users will use their Copilot plan and selected model.
 
 ### Claude Code — Planned
 
 **TO BE IMPLEMENTED IN A FUTURE VERSION.**
 
-The planned adapter will reuse the same canonical source, add Claude Code-native workflow entry points and local-tool configuration, and map activation, permissions, lifecycle enforcement, and response validation to the host capabilities available at implementation time. Claude Code users will use their existing Claude configuration; the project will not require a second model API key.
+The planned adapter will reuse the same canonical source, add Claude Code-native workflow entry points, hooks, and bounded subagents, and map permissions and validation to current host capabilities. See [`adapters/claude_code/README.md`](adapters/claude_code/README.md). Claude Code users will use their existing Claude configuration; the project will not require a second model API key.
 
 ### Google Antigravity — Planned
 
 **TO BE IMPLEMENTED IN A FUTURE VERSION.**
 
-The planned adapter will package the canonical workflow for Antigravity, use its host-native repository tools and safety controls, and connect deterministic local validation where supported. Antigravity users will use their configured Gemini model and Google account allocation.
+The planned adapter will package the canonical workflow for Antigravity, use its host-native skills, rules, hooks, repository tools, and safety controls, and connect deterministic local validation where supported. See [`adapters/antigravity/README.md`](adapters/antigravity/README.md). Antigravity users will use their configured Gemini model and Google account allocation.
 
 ### Other Coding Agents — Roadmap
 
@@ -309,15 +318,9 @@ uv run python shared/evaluations/generate_acceptance.py
 > [`scripts/README.md`](scripts/README.md#powershell-execution-policy) for a
 > temporary, process-scoped alternative.
 
-The Codex MCP runtime also uses a small packaged PowerShell launcher with a
-process-scoped execution-policy bypass. It copies the reviewed, versioned runtime
-into Codex plugin data before starting it, so the long-lived process does not lock
-the versioned plugin cache and block uninstall. The launcher does not change the
-machine or user execution policy, download software, or execute project code.
-
 For a full local development build, create a self-contained Windows x86-64
 runtime, assign a unique cache-busted version, validate the package, and
-smoke-test the packaged hooks and MCP server:
+smoke-test the packaged short-lived hook runtime:
 
 ```powershell
 .\scripts\build-codex-plugin.ps1
@@ -336,7 +339,7 @@ packaged-notice-only changes, reuse the existing reviewed runtime:
 .\scripts\build-codex-plugin.ps1 -ReuseRuntime
 ```
 
-Perform a full `--build-runtime` build whenever runtime Python, MCP code, schemas,
+Perform a full `--build-runtime` build whenever runtime Python, shared domain code, schemas,
 dependencies, or `uv.lock` change. Always rerun package validation and the runtime
 smoke test after either build; the wrapper does both automatically. See
 [`docs/RELEASING.md`](docs/RELEASING.md#reuse-an-existing-runtime-for-a-fast-rebuild)
@@ -375,7 +378,7 @@ After copying the package:
 4. Review the bundled hook definitions and activate them from the plugin page.
 5. Confirm that the displayed version matches the version printed by the build
    script.
-6. Start a new task before testing the updated skills, hooks, and MCP tools.
+6. Start a new task before testing the updated skill and hooks.
 
 If **Update** is not shown, verify the copied manifest version, refresh or restart
 Codex, and reopen the plugin from **Personal**. Do not edit Codex's installed-plugin
@@ -406,7 +409,7 @@ The project assumes its public controls are known to an attacker and treats repo
 
 ### Shared Controls
 
-- The local MCP server is read-only and has no network access, model calls, shell execution, subprocess execution, destructive writes, credentials, or telemetry.
+- The shared deterministic Python core and optional MCP adapter make no model or network calls and do not execute analyzed repository code.
 - Paths are canonicalized and checked against traversal, symlink, junction, reparse-point, protected-file, and final-open-handle escapes.
 - Supported files are parsed without executing repository code; YAML aliases, duplicate keys, unsafe object construction, binary files, archives, unknown formats, and oversized input are rejected or safely skipped.
 - File, byte, dependency-edge, timeout, and process-call budgets bound repository analysis.
@@ -417,8 +420,8 @@ The project assumes its public controls are known to an attacker and treats repo
 
 ### Additional Codex Adapter Controls
 
-- The Codex MCP surface exposes no filesystem root or ADR-listing operation. Dependency and boundary analysis parses only bounded Python content already read through Codex's native workspace permissions: compact static-import statements for fast scans or full source for stronger verification. Neither mode opens a path.
-- The architecture workflow activates only for an explicit `$ai-software-architect` invocation. A plugin `@` mention alone is blocked before model or MCP execution and persists no turn state. Valid architect turns store only a hashed turn key and route classification in Codex's plugin-data directory, never the user's prompt or repository content.
+- The Codex package registers no persistent MCP server. Dependency and boundary observations use bounded host-native static inspection and disclose that dynamic or omitted behavior was not deterministically verified.
+- The architecture workflow activates only for an explicit `$ai-software-architect` invocation. A plugin `@` mention alone is blocked before model or tool execution and persists no turn state. Valid architect turns store only a hashed turn key and route classification in Codex's plugin-data directory, never the user's prompt or repository content.
 - Trusted hooks keep architect inspection static by denying repository interpreters, test/build/package runners, mutating shell and Git commands, and application-code patches. Approved architecture artifacts are patchable only under `.ai-architect/`. The same hooks may request one corrected option rendering when the response visibly contains an Alternatives section and reject leaked internal response markers. Architect answers contain only user-facing Markdown; the hook does not infer focused versus complete mode or `clarify`, `recommendation`, or `complete` from localized prose. It fails open with a visible warning, avoids infinite retries, and does not replace Codex's sandbox, permissions, or semantic model reasoning.
 
 These controls reduce risk but do not claim perfect prompt-injection prevention. See [SECURITY.md](SECURITY.md) for reporting and the [approved specification](specs/AISoftwareArchitect.md) for the complete threat model, architecture, schemas, and acceptance criteria.

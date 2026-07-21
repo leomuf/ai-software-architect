@@ -16,11 +16,19 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from adapters.codex.artifact_guard import (
+        architecture_artifact_denial_reason,
+        proposed_artifact_candidates,
+        validate_artifact_bundle_candidates,
+    )
     from adapters.codex.continuation import (
         ApprovalTransition,
+        CheckpointPhase,
         ContinuationManager,
         PendingInteraction,
         SessionContinuation,
+        WorkflowCheckpoint,
+        WorkflowCheckpointManager,
         WorkflowPhase,
     )
     from adapters.codex.control_plane import (
@@ -33,14 +41,23 @@ try:
         tool_denial_reason,
         with_reference_hints,
     )
+    from adapters.codex.hook_models import HookPayload
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
+    from artifact_guard import (  # type: ignore[import-not-found, no-redef]
+        architecture_artifact_denial_reason,
+        proposed_artifact_candidates,
+        validate_artifact_bundle_candidates,
+    )
     from continuation import (  # type: ignore[import-not-found, no-redef]
         ApprovalTransition,
+        CheckpointPhase,
         ContinuationManager,
         PendingInteraction,
         SessionContinuation,
+        WorkflowCheckpoint,
+        WorkflowCheckpointManager,
         WorkflowPhase,
     )
     from control_plane import (  # type: ignore[import-not-found, no-redef]
@@ -53,6 +70,7 @@ except ModuleNotFoundError as exc:
         tool_denial_reason,
         with_reference_hints,
     )
+    from hook_models import HookPayload  # type: ignore[import-not-found, no-redef]
 
 MAX_HOOK_INPUT_BYTES = 1_000_000
 MAX_STATE_AGE_SECONDS = 86_400
@@ -198,7 +216,7 @@ def _cleanup_stale_contexts(
 def handle_user_prompt_submit(
     payload: dict[str, Any],
     plugin_data: Path,
-    _plugin_root: Path | None = None,
+    plugin_root: Path | None = None,
 ) -> dict[str, Any]:
     prompt = payload.get("prompt")
     prompt_text = prompt if isinstance(prompt, str) else ""
@@ -230,19 +248,46 @@ def handle_user_prompt_submit(
         }
     if continuation is None:
         continuations.cancel(_session_id(payload))
+    checkpoints = WorkflowCheckpointManager(plugin_data)
+    if continuation is None:
+        checkpoint = WorkflowCheckpoint(phase=CheckpointPhase.ACTIVE)
+    elif continuation.interaction == PendingInteraction.DECISION:
+        checkpoint = WorkflowCheckpoint(
+            phase=CheckpointPhase.DECISION_RESPONSE,
+            expected_artifacts=["adr", "contract", "context", "implementation-plan"],
+        )
+    else:
+        checkpoint = WorkflowCheckpoint(phase=CheckpointPhase.ACTIVE)
+    checkpoints.save(_session_id(payload), checkpoint)
     _write_context(payload, context, plugin_data)
+    additional_context = developer_context(
+        context,
+        continued=continuation is not None,
+        continuation_instruction=(
+            _continuation_instruction(continuation)
+            if continuation is not None
+            else ""
+        ),
+    )
+    if plugin_root is not None:
+        skill_root = plugin_root.resolve(strict=False) / "skills" / "ai-software-architect"
+        resources = (
+            skill_root / "assets" / "adr-template.md",
+            skill_root / "assets" / "architecture-contract.example.yaml",
+            skill_root / "references" / "adr-authoring.md",
+            skill_root / "assets" / "implementation-plan-template.md",
+        )
+        additional_context += (
+            " Exact installed record-and-handoff resource paths (authoritative; read "
+            "these files directly with host-native static file tools and do not search "
+            "for alternatives): "
+            + "; ".join(str(path) for path in resources)
+            + "."
+        )
     return {
         "hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit",
-            "additionalContext": developer_context(
-                context,
-                continued=continuation is not None,
-                continuation_instruction=(
-                    _continuation_instruction(continuation)
-                    if continuation is not None
-                    else ""
-                ),
-            ),
+            "additionalContext": additional_context,
         }
     }
 
@@ -252,16 +297,24 @@ def handle_pre_tool_use(
     plugin_data: Path,
 ) -> dict[str, Any]:
     context = _read_context(payload, plugin_data)
+    workspace = (
+        Path(payload["cwd"])
+        if isinstance(payload.get("cwd"), str) and payload["cwd"]
+        else None
+    )
     reason = tool_denial_reason(
         context,
         payload.get("tool_name"),
         payload.get("tool_input"),
-        workspace=(
-            Path(payload["cwd"])
-            if isinstance(payload.get("cwd"), str) and payload["cwd"]
-            else None
-        ),
+        workspace=workspace,
     )
+    if reason is None and context.active and workspace is not None:
+        local_name = str(payload.get("tool_name", "")).rsplit(".", 1)[-1].casefold()
+        if local_name in {"apply_patch", "edit", "write"}:
+            reason = architecture_artifact_denial_reason(
+                payload.get("tool_input"),
+                workspace,
+            )
     if reason is None:
         return {}
     return {
@@ -269,6 +322,89 @@ def handle_pre_tool_use(
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
             "permissionDecisionReason": reason,
+        }
+    }
+
+
+def handle_post_tool_use(
+    payload: dict[str, Any],
+    plugin_data: Path,
+) -> dict[str, Any]:
+    """Verify the durable postconditions of an approved artifact write."""
+
+    context = _read_context(payload, plugin_data)
+    if not context.active:
+        return {}
+    local_name = str(payload.get("tool_name", "")).rsplit(".", 1)[-1].casefold()
+    if local_name not in {"apply_patch", "edit", "write"}:
+        return {}
+    cwd = payload.get("cwd")
+    if not isinstance(cwd, str) or not cwd:
+        return {}
+    workspace = Path(cwd)
+    try:
+        candidates = proposed_artifact_candidates(payload.get("tool_input"), workspace)
+        if not candidates:
+            return {}
+        for candidate in candidates:
+            persisted = (workspace / candidate.path).read_text("utf-8")
+            if persisted != candidate.content:
+                raise ValueError(
+                    "persisted content differs from validated candidate: "
+                    f"{candidate.path.as_posix()}"
+                )
+        bundle = validate_artifact_bundle_candidates(candidates)
+    except (OSError, UnicodeError, ValueError) as exc:
+        return {
+            "continue": False,
+            "stopReason": (
+                "AI Software Architect stopped because post-write verification failed: "
+                f"{exc}. Review the repository before continuing."
+            ),
+            "systemMessage": "Architecture artifact post-write verification failed.",
+        }
+    if bundle is None:
+        return {}
+    WorkflowCheckpointManager(plugin_data).save(
+        _session_id(payload),
+        WorkflowCheckpoint(
+            phase=CheckpointPhase.COMPLETE,
+            expected_artifacts=["adr", "contract", "context", "implementation-plan"],
+            artifact_bundle_validated=True,
+        ),
+    )
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PostToolUse",
+            "additionalContext": (
+                "The persisted ADR, architecture contract, project context, and coding "
+                "handoff exactly match the pre-write validated bundle. State that the "
+                "architecture artifacts were recorded and that application source code "
+                "was not authorized by this workflow."
+            ),
+        }
+    }
+
+
+def handle_post_compact(
+    payload: dict[str, Any],
+    plugin_data: Path,
+) -> dict[str, Any]:
+    """Restore only the minimal typed workflow checkpoint after compaction."""
+
+    checkpoint = WorkflowCheckpointManager(plugin_data).load(_session_id(payload))
+    if checkpoint is None or checkpoint.phase == CheckpointPhase.COMPLETE:
+        return {}
+    expected = ", ".join(checkpoint.expected_artifacts) or "none"
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PostCompact",
+            "additionalContext": (
+                "AI Software Architect typed workflow checkpoint: phase="
+                f"{checkpoint.phase.value}; expected_artifacts={expected}; "
+                "artifact_bundle_validated=false. Preserve the current approval and "
+                "read-only boundaries; do not reconstruct workflow state from memory."
+            ),
         }
     }
 
@@ -290,6 +426,16 @@ def handle_stop(
         pending = _pending_continuation(message_text, context)
         if pending is not None:
             continuations.open(_session_id(payload), pending)
+            WorkflowCheckpointManager(plugin_data).save(
+                _session_id(payload),
+                WorkflowCheckpoint(
+                    phase=(
+                        CheckpointPhase.AWAIT_DECISION
+                        if pending.interaction == PendingInteraction.DECISION
+                        else CheckpointPhase.CLARIFY
+                    )
+                ),
+            )
         else:
             continuations.cancel(_session_id(payload))
         _remove_context(payload, plugin_data)
@@ -303,6 +449,16 @@ def handle_stop(
         pending = _pending_continuation(message_text, context)
         if pending is not None:
             continuations.open(_session_id(payload), pending)
+            WorkflowCheckpointManager(plugin_data).save(
+                _session_id(payload),
+                WorkflowCheckpoint(
+                    phase=(
+                        CheckpointPhase.AWAIT_DECISION
+                        if pending.interaction == PendingInteraction.DECISION
+                        else CheckpointPhase.CLARIFY
+                    )
+                ),
+            )
         else:
             continuations.cancel(_session_id(payload))
         return {}
@@ -327,12 +483,15 @@ def handle_hook(
     handlers = {
         "UserPromptSubmit": handle_user_prompt_submit,
         "PreToolUse": handle_pre_tool_use,
+        "PostToolUse": handle_post_tool_use,
+        "PostCompact": handle_post_compact,
         "Stop": handle_stop,
     }
     event = payload.get("hook_event_name")
     if not isinstance(event, str):
         return {}
     handler = handlers.get(event)
+    HookPayload.model_validate(payload)
     if handler is handle_user_prompt_submit:
         return handler(payload, plugin_data, plugin_root)
     return handler(payload, plugin_data) if handler else {}
@@ -354,11 +513,15 @@ def main() -> None:
         plugin_root_text = os.environ.get("PLUGIN_ROOT")
         plugin_root = Path(plugin_root_text) if plugin_root_text else None
         response = handle_hook(payload, Path(plugin_data_text), plugin_root)
-    except Exception:
+    except Exception as exc:
+        diagnostic = ""
+        if os.environ.get("AI_ARCHITECT_HOOK_DEBUG") == "1":
+            diagnostic = f" Diagnostic: {type(exc).__name__}: {exc}"
         response = {
             "systemMessage": (
                 "AI Software Architect control-plane hook failed open; deterministic "
                 "turn validation was unavailable."
+                + diagnostic
             )
         }
     sys.stdout.write(json.dumps(response, separators=(",", ":")))

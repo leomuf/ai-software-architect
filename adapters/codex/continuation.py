@@ -12,6 +12,8 @@ from dataclasses import asdict, dataclass
 from enum import StrEnum
 from pathlib import Path
 
+from pydantic import BaseModel, ConfigDict, Field
+
 try:
     from adapters.codex.control_plane import CodexTurnContext, CodexTurnRoute
 except ModuleNotFoundError as exc:
@@ -36,6 +38,25 @@ class WorkflowPhase(StrEnum):
 class ApprovalTransition(StrEnum):
     RESUME_DESIGN = "resume_design"
     RECORD_AND_HANDOFF = "record_and_handoff"
+
+
+class CheckpointPhase(StrEnum):
+    ACTIVE = "active"
+    CLARIFY = "clarify"
+    AWAIT_DECISION = "await_decision"
+    DECISION_RESPONSE = "decision_response"
+    RECORD_AND_HANDOFF = "record_and_handoff"
+    COMPLETE = "complete"
+
+
+class WorkflowCheckpoint(BaseModel):
+    """Minimal durable state that survives turn boundaries and compaction."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    phase: CheckpointPhase
+    expected_artifacts: list[str] = Field(default_factory=list, max_length=4)
+    artifact_bundle_validated: bool = False
 
 
 @dataclass(frozen=True)
@@ -89,4 +110,34 @@ class ContinuationManager:
             path.unlink(missing_ok=True)
 
     def cancel(self, session_id: str) -> None:
+        self._path(session_id).unlink(missing_ok=True)
+
+
+class WorkflowCheckpointManager:
+    def __init__(self, plugin_data: Path) -> None:
+        self._root = plugin_data / "control-plane"
+
+    def _path(self, session_id: str) -> Path:
+        digest = hashlib.sha256(session_id.encode("utf-8", errors="replace")).hexdigest()
+        return self._root / f"workflow-{digest}.json"
+
+    def save(self, session_id: str, checkpoint: WorkflowCheckpoint) -> None:
+        path = self._path(session_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(
+            checkpoint.model_dump_json() + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        temporary.replace(path)
+
+    def load(self, session_id: str) -> WorkflowCheckpoint | None:
+        path = self._path(session_id)
+        try:
+            return WorkflowCheckpoint.model_validate_json(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            return None
+
+    def clear(self, session_id: str) -> None:
         self._path(session_id).unlink(missing_ok=True)

@@ -117,7 +117,7 @@ From the repository root, run:
 
 The script synchronizes the locked environment, creates a unique UTC
 cache-busted version, performs a full runtime build, validates the assembled
-package and provenance, and smoke-tests the packaged hook and MCP surfaces.
+package and provenance, and smoke-tests the packaged short-lived hook surface.
 The assembled package is written to:
 
 ```text
@@ -132,6 +132,7 @@ Reuse the reviewed runtime only when none of these changed:
 
 - `adapters/codex/runtime_entry.py`;
 - `adapters/codex/hook_entry.py`;
+- `adapters/codex/artifact_guard.py`;
 - `adapters/codex/control_plane.py`;
 - `tools/python-mcp/`;
 - `shared/schemas/`;
@@ -206,7 +207,7 @@ After copying the package:
 4. Select **Install** if it is not installed, or **Update** when Codex detects the
    new cache-busted version.
 5. Review the bundled hook definitions and activate them from the plugin page.
-6. Start a new task before testing the updated skills, hooks, and MCP tools.
+6. Start a new task before testing the updated skill and hooks.
 7. Confirm that the displayed plugin version equals the version just built.
 
 If **Update** is not shown:
@@ -256,7 +257,8 @@ Confirm:
 - the archive contains `LICENSE`, `NOTICE`, and `THIRD_PARTY_NOTICES.md`;
 - the package contains no `.venv`, `uv`, build cache, source credential, or
   unresolved placeholder;
-- MCP startup uses the fixed bundled Windows executable; and
+- the manifest contains no `mcpServers` entry or `.mcp.json` companion;
+- every hook invokes the fixed bundled short-lived runtime with `--codex-hook`; and
 - the runtime starts without installing or downloading dependencies.
 
 ### Gate C: Five Exploratory Fixtures
@@ -290,16 +292,15 @@ This gate is required even after future model-evaluation automation exists:
 2. Review and activate its current hook definitions.
 3. Confirm the single `$ai-software-architect` skill covers focused help and the
    complete lifecycle without an `@` plugin mention.
-4. Confirm expected hook and MCP behavior in at least one complete workflow.
+4. Confirm hook-based contract validation and secret scanning in at least one approved artifact workflow.
 5. Run the candidate from multiple tasks.
 6. Keep Codex Desktop open and uninstall on the first attempt.
-7. Confirm that no plugin MCP process or stale installed package remains.
+7. Confirm that no plugin runtime process or stale installed package remains.
 8. Reinstall once and confirm the same version and hook-review behavior.
 
 If first-attempt uninstall fails, capture the Codex version, plugin version, active
 tasks, process ownership, elapsed time, and recovery steps. The release remains
-blocked unless the approved release policy explicitly falls back to a skills-only
-package.
+blocked; the Codex package is already designed without persistent MCP registration.
 
 ### Gate E: Clean-Machine Acceptance
 
@@ -307,7 +308,7 @@ On a clean Windows x86-64 environment without Python, `uv`, or development cache
 
 1. install the exact package;
 2. activate the reviewed hooks;
-3. run one main workflow and one deterministic MCP operation;
+3. run one main workflow and one approved artifact write that exercises deterministic pre-write validation;
 4. verify that no first-run download or network listener appears; and
 5. uninstall successfully on the first attempt.
 

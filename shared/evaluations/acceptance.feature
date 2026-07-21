@@ -114,7 +114,7 @@ Feature: Host-native architectural reasoning
     When the user starts an architecture analysis
     Then Codex performs the architectural reasoning with the user's selected model
     And the plugin does not request a separate model-provider credential
-    And the Python MCP server makes no model or network request
+    And no deterministic local transport makes a model or network request
 
   @HOST-002
   Scenario: Different hosts produce different defensible recommendations
@@ -201,9 +201,21 @@ Feature: Durable architecture state
   Scenario: Approved decisions become portable repository artifacts
     Given the user approves a material architecture decision
     When the workflow enters "record_and_handoff"
-    Then an ADR is written under ".ai-architect/decisions/"
-    And "architecture-contract.yaml" links the accepted ADR
-    And both artifacts validate against the canonical Pydantic schemas
+    Then it loads the exact bundled artifact templates and contract example before drafting
+    And it preserves the example's nested contract object shapes
+    And the ADR, contract, project context, and coding handoff are submitted as one candidate bundle
+    And every dependency policy follows the conditional via_interface rule
+    And ArchitectureArtifactBundle cross-validates the accepted ADR identifiers
+    And the pre-write hook scans and validates every candidate before persistence
+    And the post-write hook verifies that every persisted file matches its validated candidate
+    And no application source code is modified
+
+  @STATE-007
+  Scenario: Compaction preserves only typed architecture workflow state
+    Given a long architecture workflow is waiting for a user decision
+    When Codex compacts the task context
+    Then the post-compact hook restores the typed workflow phase and expected artifact kinds
+    But it does not persist or restore prompt text, model responses, tool arguments, or repository content
 
   @STATE-003
   Scenario: Invalid structured output cannot overwrite valid state
@@ -250,17 +262,17 @@ Feature: Reproducible Python development and build environment
   @BUILD-002
   Scenario: The installed plugin is independent of the build environment
     Given a clean supported machine has neither uv nor Python installed
-    When Codex starts the plugin's local MCP server
-    Then the bundled self-contained one-directory runtime starts successfully
-    And one logical launch creates one runtime process rather than a one-file bootloader pair
+    When Codex invokes a trusted AI Software Architect hook
+    Then the bundled self-contained one-directory hook runtime starts successfully
+    And the process exits after handling the single event
     And the plugin does not create ".venv" or install a dependency
 
-Feature: Local deterministic MCP tools
+Feature: Shared deterministic tools and optional MCP transport
 
   @MCP-001
-  Scenario: Codex invokes a validation tool
-    Given the plugin MCP configuration is active
-    When Codex calls "validate_complete_architecture_contract" with validation scope "complete-candidate-contract"
+  Scenario: A compatible host invokes an optional MCP validation tool
+    Given a host adapter has explicitly enabled and validated the STDIO MCP transport
+    When the host calls "validate_complete_architecture_contract" with validation scope "complete-candidate-contract"
     Then the host launches the Python STDIO server as a managed child process if needed
     And the tool returns a ContractValidationResult
     And Codex checks "result.valid" before claiming validation succeeded
@@ -276,9 +288,9 @@ Feature: Local deterministic MCP tools
 
   @MCP-003
   Scenario: No trustworthy workspace binding is available
-    Given Codex has not supplied a documented and verified active-project binding
+    Given an MCP host has not supplied a documented and verified active-project binding
     When the agent requests deterministic Python dependency evidence
-    Then the Codex MCP schemas expose no filesystem-root or ADR-listing input
+    Then the MCP schemas expose no filesystem-root or ADR-listing input
     And no tool accepts a model-proposed workspace root
     But the agent may read relevant Python files through host-native workspace tools
     And call "analyze_python_dependencies" with bounded workspace-relative "dependency_statements" for a routine static dependency scan
@@ -304,12 +316,11 @@ Feature: Local deterministic MCP tools
     And the result discloses that host file selection may be incomplete
 
   @MCP-006
-  Scenario: Stale Codex MCP sessions cannot block plugin uninstall
-    Given the one-directory MCP runtime was launched by several Codex tasks
-    And no MCP tool call remains active
-    When stdin closes or the parent exits
-    Then every affected runtime process exits within the lifecycle grace period
-    And no one-file bootloader parent remains
+  Scenario: Codex hooks cannot block plugin uninstall
+    Given the one-directory hook runtime handled several Codex events
+    When every bounded hook response has been returned
+    Then no AI Software Architect runtime process remains
+    And the Codex package contains no persistent MCP configuration
     And Codex can uninstall the plugin on the first attempt without manual process termination
 
 Feature: Security and scope guardrails

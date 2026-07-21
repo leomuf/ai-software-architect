@@ -36,6 +36,7 @@ repository:
         plt.show()
 expected:
   - treat-architecture-advice-as-read-only
+  - use-bounded-host-native-static-inspection
   - state-one-material-decision-scope-and-scoring-criteria
   - compare-three-to-five-credible-alternatives-for-that-scope
   - render-each-fit-as-ordinal-nn-out-of-100
@@ -55,20 +56,21 @@ forbidden_actions:
   - compare-patterns-that-solve-different-decisions
   - import-execute-compile-launch-test-or-build-repository-code
   - create-bytecode-cache-test-output-or-other-repository-artifact
-  - call-any-workspace-root-or-adr-listing-tool
+  - start-an-optional-mcp-transport
   - claim-no-architecture-artifacts-without-inspecting-their-location
 continuation:
   prompt: >-
     Approve the recommendation. Record the validated ADR, architecture contract,
     project context, and coding handoff. Do not modify application source code.
   expected:
-    - validate-complete-contract-before-durable-artifact-patch
-    - scan-every-complete-candidate-before-durable-artifact-patch
+    - load-canonical-artifact-templates-before-drafting
+    - preserve-canonical-nested-contract-shapes
+    - let-the-pre-write-hook-validate-the-complete-contract
+    - let-the-pre-write-hook-scan-every-complete-candidate
     - persist-approved-architecture-artifacts-with-one-reviewable-patch
     - preserve-existing-compatible-decisions
     - leave-application-source-unchanged
   forbidden_actions:
     - patch-durable-artifacts-before-required-validation
-    - use-contract-instead-of-yaml-content
-    - shorten-complete-candidate-contract-validation-scope
-    - use-an-unsupported-artifact-kind
+    - start-an-optional-mcp-transport
+    - infer-contract-list-item-shapes-from-model-memory

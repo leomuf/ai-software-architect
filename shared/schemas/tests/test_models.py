@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import pytest
 from ai_architect_schemas import (
+    ArchitectureArtifactBundle,
     ArchitectureContract,
     ArchitectureDecision,
     ArchitectureOptionComparison,
@@ -32,6 +33,52 @@ def test_contract_rejects_coerced_priority_and_unknown_fields() -> None:
                     {"name": "Security", "priority": "5", "rationale": "Required"}
                 ],
                 "unexpected": True,
+            }
+        )
+
+
+def test_artifact_bundle_requires_exact_accepted_contract_decisions() -> None:
+    contract = ArchitectureContract.model_validate(
+        {
+            "schema_version": "1.0.0",
+            "revision": 1,
+            "scope": "sample",
+            "decision_ids": ["ADR-001"],
+        }
+    )
+    accepted = {
+        "schema_version": "1.0.0",
+        "revision": 1,
+        "decision": {
+            "id": "ADR-001",
+            "title": "Choose a boundary",
+            "status": "accepted",
+            "context": "A boundary is required.",
+            "drivers": ["Testability"],
+            "considered_option_ids": ["OPT-001"],
+            "selected_option_id": "OPT-001",
+            "decision": "Use one explicit boundary.",
+            "validation_criteria": ["Boundary tests pass."],
+        },
+    }
+    bundle = ArchitectureArtifactBundle.model_validate(
+        {
+            "contract": contract,
+            "decisions": [accepted],
+            "project_context": "# Context",
+            "coding_handoff": "# Handoff",
+        }
+    )
+    assert bundle.decisions[0].decision.id == "ADR-001"
+
+    accepted["decision"]["id"] = "ADR-002"
+    with pytest.raises(ValidationError, match="exactly match"):
+        ArchitectureArtifactBundle.model_validate(
+            {
+                "contract": contract,
+                "decisions": [accepted],
+                "project_context": "# Context",
+                "coding_handoff": "# Handoff",
             }
         )
 

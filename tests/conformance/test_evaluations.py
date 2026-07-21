@@ -57,7 +57,7 @@ def test_generated_acceptance_is_current_and_every_tag_is_mapped() -> None:
     expected = _spec_gherkin()
     assert FEATURE.read_text("utf-8") == expected
     tags = re.findall(r"^\s*@([A-Z]+-[0-9]{3})$", expected, re.MULTILINE)
-    assert len(tags) == len(set(tags)) == 44
+    assert len(tags) == len(set(tags)) == 45
     manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
     assert set(manifest["scenarios"]) == set(tags)
     assert {
@@ -128,5 +128,25 @@ def test_avoid_overengineering_fixture_requires_evidence_minimization() -> None:
     fixture = yaml.safe_load(AVOID_OVERENGINEERING_FIXTURE.read_text("utf-8"))
     assert fixture["scenario"] == "FLOW-002"
     assert "inspect-the-active-repository" in fixture["forbidden_actions"]
-    assert "call-any-mcp-tool" in fixture["forbidden_actions"]
+    assert "invoke-any-deterministic-transport" in fixture["forbidden_actions"]
     assert "ask-the-user-to-approve-revise-or-request-more-information" in fixture["expected"]
+
+
+def test_exploratory_fixtures_match_the_hook_only_codex_architecture() -> None:
+    comparison = yaml.safe_load(OPTION_COMPARISON_FIXTURE.read_text("utf-8"))
+    assert "start-an-optional-mcp-transport" in comparison["forbidden_actions"]
+    assert "load-canonical-artifact-templates-before-drafting" in (
+        comparison["continuation"]["expected"]
+    )
+
+    review = yaml.safe_load(
+        (
+            ROOT
+            / "shared"
+            / "evaluations"
+            / "model-fixtures"
+            / "read-only-architecture-review.yaml"
+        ).read_text("utf-8")
+    )
+    assert "use-host-native-static-reads" in review["expected"]
+    assert "start-an-optional-mcp-transport" in review["forbidden_actions"]

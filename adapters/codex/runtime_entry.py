@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
 # SPDX-License-Identifier: MIT
 
-"""PyInstaller entry point for the bundled MCP server and short-lived Codex hooks."""
+"""PyInstaller entry point for the short-lived Codex control-plane runtime."""
 
 from __future__ import annotations
 
@@ -20,12 +20,7 @@ def main() -> None:
         hook_main()
         return
 
-    if sys.argv[1:]:
-        raise SystemExit("unsupported runtime arguments")
-
-    from ai_architect_tools.mcp_server import main as mcp_main
-
-    mcp_main()
+    raise SystemExit("use --codex-hook; this runtime does not start a persistent server")
 
 if __name__ == "__main__":
     main()

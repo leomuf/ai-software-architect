@@ -19,7 +19,7 @@ expected:
   - ask-the-user-to-approve-revise-or-request-more-information
 forbidden_actions:
   - inspect-the-active-repository
-  - call-any-mcp-tool
+  - invoke-any-deterministic-transport
   - validate-an-architecture-contract
   - invent-distributed-system-requirements
   - recommend-a-pattern-stack

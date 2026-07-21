@@ -18,7 +18,7 @@ SPDX-License-Identifier: MIT
 6. Produce structured interview evidence for option evaluation; do not select a pattern during discovery.
 7. Treat conflicting platform or interface statements as material when they change the option set. For example, a request for a web interface implemented with a desktop GUI toolkit requires clarification before selecting the presentation architecture.
 8. Make that clarification terminal for the current turn: ask the focused question, explain its decision impact, and defer option comparison and recommendation until the user answers. Do not reinterpret one side of the contradiction as a correction.
-9. Do not call an MCP tool while asking a clarification or giving generic architecture guidance.
+9. Do not inspect the repository or invoke deterministic validators while asking a clarification or giving generic architecture guidance.
 
 ## Load references selectively
 

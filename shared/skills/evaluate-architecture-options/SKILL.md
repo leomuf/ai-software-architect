@@ -18,7 +18,7 @@ Use repository evidence only when implementation facts could materially change t
 
 ## Mandatory final-answer gate for an open selection
 
-Treat questions such as "which design patterns should I use?" as an open selection, not as permission to output a prioritized stack of complementary patterns. If a missing fact can materially change the option set, ask a focused clarification question and end the current turn without an option comparison, recommendation, or MCP call.
+Treat questions such as "which design patterns should I use?" as an open selection, not as permission to output a prioritized stack of complementary patterns. If a missing fact can materially change the option set, ask a focused clarification question and end the current turn without an option comparison, recommendation, or repository inspection.
 
 Before sending a final selection answer, verify that it uses these sections in this order:
 
@@ -29,7 +29,7 @@ Before sending a final selection answer, verify that it uses these sections in t
 5. `Supporting patterns`
 6. `Your decision`
 
-In `Alternatives`, compare three to five credible options that solve the same decision when that many exist. Use a table or equally explicit structure containing, for every option: categorized and linked name, ordinal `NN/100` fit, fit rationale, main benefit, main liability, and material assumption. When fewer than three credible alternatives exist, say why. Never count supporting patterns as alternatives merely to reach the target.
+In `Alternatives`, compare three to five credible options that solve the same decision when that many exist. Inside `Decision scope and criteria`, explicitly state that Fit is an ordinal score for this decision and is not a probability or measured percentage. Use a table or equally explicit structure containing, for every option: categorized and linked name, ordinal `NN/100` fit, fit rationale, main benefit, main liability, and material assumption. When fewer than three credible alternatives exist, say why. Never count supporting patterns as alternatives merely to reach the target.
 
 End `Your decision` by asking the user to approve, revise, or request more information. Do not continue to ADR creation or implementation without that response.
 
@@ -50,7 +50,7 @@ Use this compact response template exactly for an open selection:
 | [Category] [Linked name] | NN/100 | ... | ... | ... | ... |
 
 ## Recommendation
-<one option, uncertainty, and why the trade-off is justified>
+<the exact category and option name from one Alternatives row, uncertainty, and why the trade-off is justified>
 
 ## Supporting patterns
 - [Category] [Linked name] — <its non-competing role>
@@ -59,9 +59,9 @@ Use this compact response template exactly for an open selection:
 Please approve, revise, or request more information before I continue.
 ```
 
-Shape the same content as `ArchitectureOptionComparison` when a structured output is requested, including the language-neutral `offered_actions` values `approve`, `revise`, and `more-information`. Validate that complete shape in host-native structured-output mode; do not call an MCP tool merely to validate a recommendation. In Markdown, express those choices as ordinary visible guidance rather than machine-readable comments.
+Shape the same content as `ArchitectureOptionComparison` when a structured output is requested, including the language-neutral `offered_actions` values `approve`, `revise`, and `more-information`. Validate that complete shape in host-native structured-output mode. In Markdown, express those choices as ordinary visible guidance rather than machine-readable comments.
 
-Before sending the answer, perform the same deterministic rendering self-check used by the Codex control plane: all six headings appear in order, two to five genuine alternatives are rendered (normally three to five when that many are credible), category labels and canonical links are present, one compared option is recommended, and the final section contains visible decision guidance. Do not emit internal control markers or HTML comments; Codex may display them to the user. When the Codex Composite routes here for a comparison, a trusted Stop hook may request one complete corrected rendering.
+Before sending the answer, perform the same deterministic rendering self-check used by the Codex control plane: all six headings appear in order, `## Decision scope and criteria` explicitly says Fit is ordinal and not a probability or measured percentage, two to five genuine alternatives are rendered (normally three to five when that many are credible), category labels and canonical links are present, the recommendation repeats one exact table option, and the final section contains visible decision guidance. Do not emit internal control markers or HTML comments; Codex may display them to the user. When the Codex Composite routes here for a comparison, a trusted Stop hook may request one complete corrected rendering.
 
 1. Start from recorded constraints, risks, stakeholders, and ranked quality attributes.
 2. For an open-ended architecture or pattern-selection request, form three to five credible options within each material decision scope. Never pad the comparison with an option that does not address the same decision; when fewer than three credible alternatives exist, present the smaller set and explain why.
@@ -80,6 +80,7 @@ Before sending the answer, perform the same deterministic rendering self-check u
 - Prefix the first mention of every named option and supporting pattern with its category: `[GoF]`, `[Architecture]`, `[Presentation]`, `[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, or `[No pattern]`.
 - Link the first user-facing pattern name to its canonical public reference under `https://github.com/leomuf/ai-software-architect/blob/main/shared/skills/evaluate-architecture-options/references/`, using the routed reference filename. Use plain text if the host cannot render Markdown links.
 - For supporting patterns, add a one-line role explaining where each applies. Do not assign them competing fit scores unless they are genuine alternatives within the same decision.
+- Apply the same category-and-link rule when mentioning a canonical pattern only to discourage or defer it. Do not end a section with a bare list such as `Avoid Repository, Unit of Work, and MVC`; either render each named pattern with its category and canonical link or describe the rejected abstraction types generically without naming catalog entries.
 
 ## Implementation example requests
 
@@ -89,7 +90,7 @@ Before sending the answer, perform the same deterministic rendering self-check u
 - Reproduce the canonical example when a generic example is sufficient. For a repository-specific request, adapt the example to the user's domain and clearly identify the adaptation instead of presenting the canonical snippet as project-ready code.
 - Do not load unrelated pattern files or synthesize additional variants unless the user asks for them or a materially different variant is necessary.
 - Construct canonical public links from the routed filenames below. Do not browse or search the public repository merely to verify those deterministic links.
-- Do not call an MCP tool for a generic pattern explanation, implementation example, or architecture-guidance request. Use the routed skill reference directly. Call deterministic MCP tools only when the requested task actually requires repository evidence, architecture-artifact inspection, contract or boundary validation, or generated-artifact secret scanning.
+- Generic pattern explanations, implementation examples, and architecture guidance use the routed skill reference directly and need no deterministic tool call.
 
 ## Direct reference routing
 

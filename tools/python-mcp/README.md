@@ -5,9 +5,9 @@ SPDX-License-Identifier: MIT
 
 # AI Software Architect MCP Server
 
-This package contains `ai-software-architect-mcp`, the local Python STDIO Model
-Context Protocol (MCP) server used by AI Software Architect, plus related
-command-line tools. It gives a coding assistant bounded, deterministic
+This package contains `ai-software-architect-mcp`, an optional local Python STDIO
+Model Context Protocol (MCP) adapter for AI Software Architect, plus related
+command-line tools. It can give a compatible coding assistant bounded, deterministic
 architecture evidence and validation while the assistant's selected model
 remains responsible for architectural reasoning.
 
@@ -17,7 +17,36 @@ application code. Keeping these responsibilities separate makes deterministic
 results testable and lets every supported coding assistant use its own model,
 credits, tools, permissions, and reasoning behavior.
 
-## Why the MCP Server Is Used
+## Current Codex Packaging Decision
+
+The Python MCP adapter remains versioned and tested, but it is no longer registered
+or shipped as a persistent server in the Codex plugin. Codex now packages only a
+short-lived deterministic runtime for `UserPromptSubmit`, `PreToolUse`, and `Stop`
+hooks. Each hook process handles one bounded event and exits.
+
+Exploratory testing established an incompatible lifecycle trade-off in Codex Desktop
+for Windows:
+
+1. Codex can initialize and retain STDIO MCP transports even when a task never calls
+   a tool.
+2. Codex can refuse plugin uninstall while those transports or processes remain active,
+   even when the executable was copied outside the plugin cache.
+3. A short idle self-reaper makes uninstall reliable, but Codex does not reliably
+   relaunch that transport for a later tool call, producing `Transport closed` errors.
+
+Therefore the Codex release prioritizes reliable installation, upgrade, and removal.
+Complete proposed `.ai-architect/` writes are reconstructed and checked by the
+short-lived `PreToolUse` hook: contracts are validated with the same Pydantic/domain
+functions and generated artifacts are secret-scanned before the write. Repository
+dependency and boundary observations use host-native static inspection with disclosed
+limitations until a safe one-shot validator is added.
+
+This is an adapter decision, not deletion of MCP support. The STDIO server continues
+to wrap the shared Python domain functions and may be used by GitHub Copilot, Claude
+Code, Antigravity, other compatible hosts, or a future Codex version when lifecycle
+tests prove reliable startup, relaunch, shutdown, upgrade, and uninstall behavior.
+
+## Why the MCP Server Exists
 
 Language models can inspect code and reason about architecture, but factual
 operations such as parsing imports or validating a structured contract are more
@@ -25,13 +54,13 @@ reliable when implemented as ordinary deterministic code. The MCP server
 therefore supplies evidence and validation results that the host model can cite
 and interpret.
 
-Codex launches the packaged server as a managed local child process when an MCP
-tool is needed. Communication uses STDIO only: the process does not start a
-network listener or remain installed as a background service.
+Compatible hosts communicate with it over STDIO only: the process does not start a
+network listener or install a background service.
 
-## Codex Launch Architecture Decision
+## Historical Codex Launch Architecture
 
-For the Windows Codex package, Codex remains the MCP process host but invokes a
+The tagged `pre-release-mcp-server` Windows Codex package used Codex as the MCP
+process host and invoked a
 reviewed PowerShell launcher instead of executing the server binary directly
 from the versioned plugin cache. These are complementary layers, not competing
 launch modes:
@@ -50,7 +79,7 @@ packaged, validated runtime to a random per-session directory, changes its
 working directory out of the plugin cache, preserves inherited STDIO, and
 removes the private copy after the server exits.
 
-This decision is retained alongside the server's bounded idle self-reaping
+That historical design was retained alongside the server's bounded idle self-reaping
 because the two controls address different failure modes: the launcher prevents
 Windows file and working-directory locks in the plugin cache, while self-reaping
 releases MCP sessions that Codex may otherwise keep alive. The launcher uses
@@ -83,7 +112,7 @@ attempt. A successful cache deletion alone is not sufficient lifecycle proof.
 
 ## MCP Tool Surface
 
-The Codex integration exposes four read-only tools:
+The optional MCP adapter exposes four read-only tools:
 
 | Tool | Purpose |
 |---|---|
@@ -133,7 +162,7 @@ The server is intentionally narrow:
 - suspected secret values are never included in scan results;
 - standard output is reserved exclusively for MCP protocol messages.
 
-Codex starts the server through a small packaged PowerShell launcher. For each
+The tagged historical Codex package started the server through a small packaged PowerShell launcher. For each
 session, the launcher copies the reviewed, versioned runtime into a random
 directory below `%LOCALAPPDATA%/AI Software Architect/plugin-runtime/`, changes
 its own current directory out of the versioned plugin cache, and removes the
@@ -212,14 +241,16 @@ schemas and lock file. The self-contained Windows executable placed under
 not canonical source.
 
 Any change to this package, the shared schemas, its dependencies, or `uv.lock`
-requires a full runtime rebuild rather than reuse of an older executable:
+requires its tests and optional transport package to be rebuilt. The current Codex
+build also bundles the domain validation functions into its short-lived hook runtime:
 
 ```powershell
 .\scripts\build-codex-plugin.ps1
 ```
 
-The build packages the server and its dependencies into the plugin, validates
-the generated provenance, and smoke-tests the real MCP and hook entry points.
+The Codex build packages the short-lived hook runtime, validates generated provenance,
+and smoke-tests activation, write guards, contract validation, artifact scanning, and
+response checks. It does not create `.mcp.json` or package the historical launcher.
 See the repository's [build instructions](../../README.md#build-the-codex-adapter)
 and [release guide](../../docs/RELEASING.md) for the complete workflow.
 
@@ -227,4 +258,4 @@ and [release guide](../../docs/RELEASING.md) for the complete workflow.
 
 - [AI Software Architect specification](../../specs/AISoftwareArchitect.md#python-stdio-mcp-server)
 - [Main project README](../../README.md)
-- [Codex MCP configuration template](../../adapters/codex/templates/mcp.json)
+- [Codex adapter](../../adapters/codex)

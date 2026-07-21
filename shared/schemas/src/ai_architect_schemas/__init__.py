@@ -5,6 +5,7 @@
 
 from .models import (
     ArchitectureAnalysisResult,
+    ArchitectureArtifactBundle,
     ArchitectureContract,
     ArchitectureDecision,
     ArchitectureDecisionArtifact,
@@ -47,6 +48,7 @@ from .models import (
 
 __all__ = [
     "ArchitectureAnalysisResult",
+    "ArchitectureArtifactBundle",
     "ArchitectureContract",
     "ArchitectureDecision",
     "ArchitectureDecisionArtifact",

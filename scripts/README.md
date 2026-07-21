@@ -49,7 +49,7 @@ ignored `.uv-cache/` directory. An explicitly configured cache is preserved.
 ## Build and Validate the Codex Plugin
 
 Build a new self-contained runtime, assign an automatic cache-busted development
-version, validate the package, and smoke-test its MCP and hook runtime:
+version, validate the package, and smoke-test its short-lived hook runtime:
 
 ```powershell
 .\scripts\build-codex-plugin.ps1
@@ -68,7 +68,7 @@ reuse the existing reviewed runtime:
 .\scripts\build-codex-plugin.ps1 -ReuseRuntime
 ```
 
-Do not use `-ReuseRuntime` after runtime Python, MCP code, schemas, dependencies,
+Do not use `-ReuseRuntime` after runtime Python, shared domain code, schemas, dependencies,
 `uv.lock`, Python, or PyInstaller configuration changes. When uncertain, use the
 full build.
 

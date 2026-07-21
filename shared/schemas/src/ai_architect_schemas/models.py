@@ -236,8 +236,20 @@ class ExternalBoundary(StrictModel):
 class DependencyRule(StrictModel):
     source: ComponentId
     target: ComponentId
-    policy: Literal["allow", "deny", "allow-via-interface"]
-    via_interface: ShortText | None = None
+    policy: Literal["allow", "deny", "allow-via-interface"] = Field(
+        description=(
+            "Use allow for a direct permitted dependency, deny for a prohibited "
+            "dependency, and allow-via-interface only when via_interface names the "
+            "required public interface."
+        )
+    )
+    via_interface: ShortText | None = Field(
+        default=None,
+        description=(
+            "Required only when policy is allow-via-interface; omit this field for "
+            "allow and deny."
+        ),
+    )
     rationale: EvidenceText
 
     @model_validator(mode="after")
@@ -280,6 +292,28 @@ class ArchitectureContract(StrictModel):
         for rule in self.dependency_rules:
             if rule.source not in known_nodes or rule.target not in known_nodes:
                 raise ValueError("dependency rules must reference declared nodes")
+        return self
+
+
+class ArchitectureArtifactBundle(StrictModel):
+    """One atomically validated architecture record-and-handoff candidate."""
+
+    contract: ArchitectureContract
+    decisions: list[ArchitectureDecisionArtifact] = Field(min_length=1, max_length=200)
+    project_context: NarrativeText
+    coding_handoff: NarrativeText
+
+    @model_validator(mode="after")
+    def validate_cross_artifact_references(self) -> Self:
+        decision_ids = [artifact.decision.id for artifact in self.decisions]
+        if len(decision_ids) != len(set(decision_ids)):
+            raise ValueError("bundle decision ids must be unique")
+        if set(decision_ids) != set(self.contract.decision_ids):
+            raise ValueError(
+                "bundle decisions must exactly match architecture-contract decision_ids"
+            )
+        if any(artifact.decision.status != "accepted" for artifact in self.decisions):
+            raise ValueError("record-and-handoff bundles require accepted decisions")
         return self
 
 

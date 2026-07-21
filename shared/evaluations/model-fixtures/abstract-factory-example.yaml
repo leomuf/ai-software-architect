@@ -16,7 +16,7 @@ expected:
   - explain-abstract-factory-products-concrete-factories-and-client
   - link-to-the-canonical-evaluate-architecture-options-public-reference
 forbidden_actions:
-  - call-any-mcp-tool
+  - invoke-any-deterministic-transport
   - inspect-the-active-repository
   - create-or-modify-a-file
   - synthesize-an-unrequested-example

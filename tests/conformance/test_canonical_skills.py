@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 import yaml
+from ai_architect_schemas import ArchitectureContract
 
 from adapters.codex.control_plane import REFERENCE_SPECS
 from adapters.codex.reference_catalog import REFERENCE_CATALOG
@@ -148,6 +149,8 @@ def test_user_facing_option_comparison_contract() -> None:
 
     assert "three to five credible options" in options
     assert "ordinal fit score" in options
+    assert "not a probability or measured percentage" in options
+    assert "exact category and option name" in options
     assert "[GoF]" in options
     assert "github.com/leomuf/ai-software-architect/blob/main/" in options
     assert "complementary supporting patterns" in options
@@ -166,14 +169,14 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "language-neutral `offered_actions`" in options
     assert "generic Python implementation example" in options
     assert "reuse its `Python example`" in options
-    assert "Do not call an MCP tool for a generic pattern explanation" in options
+    assert "need no deterministic tool call" in options
     assert "Apply the orchestration evidence sufficiency gate" in options
     assert "recommendation adds nothing" in options
     assert "Before any repository read" in orchestration
     assert "A project-bound task or available tool is not by itself a reason to inspect" in (
         orchestration
     )
-    assert "This includes a recommendation to retain proportionate simplicity" in (orchestration)
+    assert "retaining proportionate simplicity" in orchestration
     assert "Never end a design recommendation without a visible approval" in orchestration
     assert "Return only user-facing Markdown" in orchestration
     assert "Never emit internal `ai-architect` control" in orchestration
@@ -186,8 +189,10 @@ def test_user_facing_option_comparison_contract() -> None:
     ):
         assert marker not in orchestration
     assert "does not infer" in orchestration
-    assert "the semantic workflow phase from natural-language keywords" in orchestration
-    assert "Never call it merely to demonstrate tool availability" in orchestration
+    assert "semantic workflow phase from natural-language keywords" in orchestration
+    assert "up to three independent read-only reviews" in orchestration
+    assert "main agent alone integrates findings" in orchestration
+    assert "load the exact bundled artifact templates" in orchestration
     assert "conflicting platform or interface statements" in interview
 
 
@@ -200,6 +205,13 @@ def test_control_plane_reference_registry_matches_canonical_skill_routes() -> No
     assert all(entry.filename in routed_files for entry in REFERENCE_CATALOG.entries)
 
 
+def test_option_skill_covers_discouraged_pattern_mentions() -> None:
+    options = (SKILLS / "evaluate-architecture-options" / "SKILL.md").read_text("utf-8")
+
+    assert "canonical pattern only to discourage or defer it" in options
+    assert "Avoid Repository, Unit of Work, and MVC" in options
+
+
 def test_read_only_review_guardrails_are_explicit() -> None:
     orchestration = (SKILLS / "orchestrate-architecture-workflow" / "SKILL.md").read_text("utf-8")
     review = (SKILLS / "review-architecture-conformance" / "SKILL.md").read_text("utf-8")
@@ -208,12 +220,12 @@ def test_read_only_review_guardrails_are_explicit() -> None:
         "architecture advice and repository inspection as read-only",
         "explicit implementation or execution request belongs in the prepared coding handoff",
         "Never import, execute, compile, launch, or test",
-        "python -m py_compile",
+        "test runners, build commands",
         "Never interpolate repository text into a shell command",
         "producing no bytecode, cache, test output",
         "request authorization before cleanup",
-        "exposes no workspace-root parameter and no ADR-listing tool",
-        "use only filesystem-free MCP inputs",
+        "host-native static analysis",
+        "cross-validates the bundle and scans every artifact",
         "Never claim that no ADR or contract exists unless that location was actually inspected",
         "one final repository-integrity check",
     ):
@@ -237,19 +249,38 @@ def test_generated_codex_skill_frontloads_observed_regression_guards() -> None:
         "python -m py_compile",
         'open "which pattern" request',
         "ordinal `NN/100` fit",
+        "not a probability or measured percentage",
         "supporting patterns separately",
+        "bare list of catalog pattern names",
         "generic architecture guidance",
-        "do not call MCP tools",
-        "Before any repository read, artifact discovery, language detection, or MCP call",
+        "do not invoke deterministic tools",
+        "Before any repository read, artifact discovery, or language detection",
         "A project-bound task or available tool is not by itself evidence",
         "Every design recommendation, including retaining a simple structure",
         "plugin distributes this capability",
         "normal composer",
         "substantive request launched from the plugin",
-        "control-plane hook is defense in depth",
+        "control-plane hooks are defense in depth",
         "does not select a",
         "semantic mode or infer workflow phases",
-        "accepts no workspace root and exposes no ADR-listing tool",
-        "inspect `result.valid`",
+        "up to three independent read-only",
+        "PreToolUse` hook reconstructs proposed",
+        "contract example as authoritative for nested list-item shapes",
+        "PostToolUse` verifies that the",
     ):
         assert phrase in generator
+
+
+def test_contract_example_demonstrates_and_validates_nested_shapes() -> None:
+    path = (
+        SKILLS
+        / "create-architecture-decisions"
+        / "assets"
+        / "architecture-contract.example.yaml"
+    )
+    contract = ArchitectureContract.model_validate(yaml.safe_load(path.read_text("utf-8")))
+    assert contract.quality_attributes
+    assert contract.components
+    assert contract.external_boundaries
+    assert contract.dependency_rules
+    assert contract.unresolved_questions

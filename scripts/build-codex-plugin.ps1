@@ -16,7 +16,7 @@ changes that cannot affect the reviewed runtime.
 Semantic Versioning value written into the plugin manifest and provenance.
 
 .PARAMETER ReuseRuntime
-Reuses build/runtime/ai-architect-mcp instead of rebuilding the runtime.
+Reuses build/runtime/ai-architect-runtime instead of rebuilding the runtime.
 
 .PARAMETER SkipSync
 Skips uv sync. Intended for the release-gate wrapper after it has already synced.
@@ -36,10 +36,10 @@ $RepositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $BuildProgram = Join-Path $RepositoryRoot "adapters\codex\build_plugin.py"
 $ValidatorProgram = Join-Path $RepositoryRoot "adapters\codex\validate_plugin.py"
 $SmokeProgram = Join-Path $RepositoryRoot "adapters\codex\smoke_test_runtime.py"
-$RuntimeDirectory = Join-Path $RepositoryRoot "build\runtime\ai-architect-mcp"
+$RuntimeDirectory = Join-Path $RepositoryRoot "build\runtime\ai-architect-runtime"
 $PackageDirectory = Join-Path $RepositoryRoot "dist\codex\ai-software-architect"
 $RuntimeExecutable = Join-Path $PackageDirectory `
-    "runtime\windows-x86_64\ai-architect-mcp\ai-architect-mcp.exe"
+    "runtime\windows-x86_64\ai-architect-runtime\ai-architect-runtime.exe"
 $RepositoryUvCache = Join-Path $RepositoryRoot ".uv-cache"
 $SemVerPattern = "^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
 
@@ -112,7 +112,7 @@ try {
         $PackageDirectory
     )
 
-    Write-Host "Smoke-testing the packaged hook and MCP runtime..."
+    Write-Host "Smoke-testing the packaged short-lived hook runtime..."
     Invoke-Checked $Uv @(
         "run",
         "python",

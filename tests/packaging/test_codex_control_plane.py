@@ -10,7 +10,18 @@ import sys
 import time
 from pathlib import Path
 
+from ai_architect_schemas import ArchitectureContract
+
 from adapters.codex import runtime_entry
+from adapters.codex.artifact_guard import (
+    ArtifactCandidate,
+    validate_artifact_bundle_candidates,
+)
+from adapters.codex.continuation import (
+    CheckpointPhase,
+    WorkflowCheckpoint,
+    WorkflowCheckpointManager,
+)
 from adapters.codex.control_plane import (
     CANONICAL_REFERENCE_BASE,
     REQUIRED_COMPARISON_SECTIONS,
@@ -25,10 +36,12 @@ from adapters.codex.hook_entry import (
     MAX_CONTINUATION_AGE_SECONDS,
     MAX_STATE_AGE_SECONDS,
     _cleanup_stale_contexts,
+    handle_post_compact,
     handle_pre_tool_use,
     handle_stop,
     handle_user_prompt_submit,
 )
+from adapters.codex.renderers import render_architecture_contract
 
 
 def _payload(event: str) -> dict[str, object]:
@@ -37,6 +50,69 @@ def _payload(event: str) -> dict[str, object]:
         "turn_id": "turn-1",
         "hook_event_name": event,
     }
+
+
+def test_contract_renderer_and_bundle_validator_are_deterministic() -> None:
+    contract = ArchitectureContract.model_validate(
+        {
+            "schema_version": "1.0.0",
+            "revision": 1,
+            "scope": "sample",
+            "decision_ids": ["ADR-001"],
+        }
+    )
+    rendered = render_architecture_contract(contract)
+    assert rendered.startswith("schema_version: 1.0.0\nrevision: 1\n")
+    candidates = (
+        ArtifactCandidate(
+            Path(".ai-architect/architecture-contract.yaml"), rendered, "contract"
+        ),
+        ArtifactCandidate(
+            Path(".ai-architect/decisions/ADR-001-boundary.md"),
+            """---
+schema_version: 1.0.0
+revision: 1
+decision:
+  id: ADR-001
+  title: Choose a boundary
+  status: accepted
+  context: A boundary is required.
+  drivers: [Testability]
+  considered_option_ids: [OPT-001]
+  selected_option_id: OPT-001
+  decision: Use one explicit boundary.
+  validation_criteria: [Boundary tests pass.]
+---
+# Decision
+""",
+            "adr",
+        ),
+        ArtifactCandidate(
+            Path(".ai-architect/project-context.md"), "# Context\n", "context"
+        ),
+        ArtifactCandidate(
+            Path(".ai-architect/coding-handoff.md"),
+            "# Coding handoff\n",
+            "implementation-plan",
+        ),
+    )
+    bundle = validate_artifact_bundle_candidates(candidates)
+    assert bundle is not None
+    assert bundle.contract.decision_ids == ["ADR-001"]
+
+
+def test_post_compact_restores_only_typed_checkpoint(tmp_path: Path) -> None:
+    WorkflowCheckpointManager(tmp_path).save(
+        "session-1",
+        WorkflowCheckpoint(
+            phase=CheckpointPhase.AWAIT_DECISION,
+            expected_artifacts=["adr", "contract", "context", "implementation-plan"],
+        ),
+    )
+    result = handle_post_compact(_payload("PostCompact"), tmp_path)
+    context = result["hookSpecificOutput"]["additionalContext"]  # type: ignore[index]
+    assert "phase=await_decision" in context
+    assert "prompt" not in context
 
 
 def test_activation_uses_host_and_skill_markers_not_natural_language() -> None:
@@ -99,7 +175,7 @@ def test_complete_workflow_context_frontloads_clarification_and_exact_sections()
     assert context.index("Apply the clarification gate") < context.index(
         "choose the response structure"
     )
-    assert "no repository inspection, no MCP call, and no recommendation" in context
+    assert "no repository inspection, no deterministic validation, and no recommendation" in context
     assert "Option, Fit, Rationale, Main benefit, Main liability, Material assumption" in context
     assert "[No pattern] Keep the script simple" in context
     assert "[GoF] [Strategy]" in context
@@ -122,7 +198,7 @@ def test_plugin_selection_with_request_enters_architecture_workflow(
     assert (tmp_path / "control-plane").is_dir()
 
 
-def test_plugin_selection_without_request_blocks_before_model_or_mcp(
+def test_plugin_selection_without_request_blocks_before_model_or_tools(
     tmp_path: Path,
 ) -> None:
     submit = _payload("UserPromptSubmit")
@@ -148,12 +224,8 @@ def test_single_skill_leaves_pattern_routing_to_the_model(
     )
     assert "do not answer from memory" in additional_context
     assert "do not report the skill unavailable" in additional_context
-    assert "complete-candidate-contract" in additional_context
-    assert "never patch durable artifacts first" in additional_context.casefold()
-
-    tool = _payload("PreToolUse")
-    tool["tool_name"] = "mcp__architect__analyze_python_dependencies"
-    assert handle_pre_tool_use(tool, tmp_path / "data") == {}
+    assert "PreToolUse` hook reconstructs" in additional_context
+    assert "never write durable artifacts first" in additional_context.casefold()
 
 
 def test_reference_hints_resolve_explicit_names_without_selecting_a_mode() -> None:
@@ -170,22 +242,6 @@ def test_reference_hints_resolve_explicit_names_without_selecting_a_mode() -> No
     assert with_reference_hints(classify_prompt(dependency), dependency).reference_paths == (
         "references/dependency-injection.md",
     )
-
-
-def test_single_skill_does_not_infer_mcp_permissions_from_prompt_words(
-    tmp_path: Path,
-) -> None:
-    submit = _payload("UserPromptSubmit")
-    submit["prompt"] = "$ai-software-architect Compare Strategy and State."
-    handle_user_prompt_submit(submit, tmp_path / "data")
-
-    validation = _payload("PreToolUse")
-    validation["tool_name"] = "mcp__architect__validate_complete_architecture_contract"
-    assert handle_pre_tool_use(validation, tmp_path / "data") == {}
-
-    analysis = _payload("PreToolUse")
-    analysis["tool_name"] = "mcp__architect__analyze_python_dependencies"
-    assert handle_pre_tool_use(analysis, tmp_path / "data") == {}
 
 
 def test_architecture_workflow_blocks_execution_and_allows_static_shell_reads(
@@ -339,7 +395,22 @@ def test_architect_uses_bundled_references_instead_of_web_search(tmp_path: Path)
         in additional
     )
     assert "assets/architecture-contract.example.yaml" in additional
+    assert "load all four of these exact bundled resources before drafting" in additional
+    assert "authoritative for nested list-item shapes" in additional
+    assert "not a probability or measured percentage" in additional
     assert "Never browse the web" in additional
+
+    plugin_root = tmp_path / "installed-plugin"
+    installed = handle_user_prompt_submit(submit, tmp_path / "installed-data", plugin_root)
+    installed_context = installed["hookSpecificOutput"]["additionalContext"]  # type: ignore[index]
+    assert str(
+        plugin_root
+        / "skills"
+        / "ai-software-architect"
+        / "assets"
+        / "architecture-contract.example.yaml"
+    ) in installed_context
+    assert "Exact installed record-and-handoff resource paths" in installed_context
 
 
 def test_model_selected_comparison_retains_architecture_artifact_patch_surface(
@@ -731,3 +802,72 @@ def test_runtime_entry_dispatches_hook_mode_as_a_source_script(tmp_path: Path) -
     response = json.loads(result.stdout)
     assert "model-selected workflow" in response["hookSpecificOutput"]["additionalContext"]
     assert result.stderr == ""
+
+
+def test_pre_write_hook_validates_complete_contract_without_mcp(tmp_path: Path) -> None:
+    data = tmp_path / "plugin-data"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Record the approved architecture."
+    handle_user_prompt_submit(submit, data)
+
+    invalid = _payload("PreToolUse")
+    invalid["cwd"] = str(workspace)
+    invalid["tool_name"] = "apply_patch"
+    invalid["tool_input"] = (
+        "*** Begin Patch\n"
+        "*** Add File: .ai-architect/architecture-contract.yaml\n"
+        "+schema_version: invalid\n"
+        "+revision: 0\n"
+        "+scope: test\n"
+        "*** End Patch"
+    )
+    denied = handle_pre_tool_use(invalid, data)
+    assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+    assert "complete architecture contract is invalid" in str(denied)
+    assert "architecture-contract.example.yaml" in str(denied)
+
+    valid_yaml = (
+        "schema_version: 1.0.0\nrevision: 1\nscope: test\n"
+        "architecture_style: null\nquality_attributes: []\ncomponents: []\n"
+        "external_boundaries: []\ndependency_rules: []\nrequired_practices: []\n"
+        "prohibited_practices: []\ndecision_ids: []\nunresolved_questions: []\n"
+    )
+    valid = dict(invalid)
+    valid["tool_input"] = (
+        "*** Begin Patch\n"
+        "*** Add File: .ai-architect/architecture-contract.yaml\n"
+        + "".join(f"+{line}\n" for line in valid_yaml.splitlines())
+        + "*** End Patch"
+    )
+    assert handle_pre_tool_use(valid, data) == {}
+
+
+def test_pre_write_hook_scans_artifacts_and_reconstructs_updates(tmp_path: Path) -> None:
+    data = tmp_path / "plugin-data"
+    workspace = tmp_path / "workspace"
+    decisions = workspace / ".ai-architect" / "decisions"
+    decisions.mkdir(parents=True)
+    adr = decisions / "ADR-001-example.md"
+    adr.write_text("# Decision\n\nToken: placeholder\n", encoding="utf-8")
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Update the approved decision."
+    handle_user_prompt_submit(submit, data)
+
+    tool = _payload("PreToolUse")
+    tool["cwd"] = str(workspace)
+    tool["tool_name"] = "apply_patch"
+    tool["tool_input"] = (
+        "*** Begin Patch\n"
+        "*** Update File: .ai-architect/decisions/ADR-001-example.md\n"
+        "@@\n"
+        " # Decision\n"
+        " \n"
+        "-Token: placeholder\n"
+        "+Token: sk-123456789012345678901234567890\n"
+        "*** End Patch"
+    )
+    denied = handle_pre_tool_use(tool, data)
+    assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
+    assert "pre-write secret scan" in str(denied)

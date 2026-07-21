@@ -95,6 +95,7 @@
       "additionalProperties": false,
       "properties": {
         "policy": {
+          "description": "Use allow for a direct permitted dependency, deny for a prohibited dependency, and allow-via-interface only when via_interface names the required public interface.",
           "enum": [
             "allow",
             "deny",
@@ -131,6 +132,7 @@
             }
           ],
           "default": null,
+          "description": "Required only when policy is allow-via-interface; omit this field for allow and deny.",
           "title": "Via Interface"
         }
       },

@@ -35,6 +35,7 @@ scenarios:
   STATE-004: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-005: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-006: {mode: deterministic-test, gate: GATE-SCHEMA}
+  STATE-007: {mode: deterministic-test, gate: GATE-CONTROL-PLANE}
   BUILD-001: {mode: deterministic-test, gate: GATE-BUILD-ENV}
   BUILD-002: {mode: scripted-host-test, gate: GATE-RUNTIME}
   MCP-001: {mode: scripted-host-test, gate: GATE-PLUGIN}

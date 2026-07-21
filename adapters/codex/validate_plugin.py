@@ -30,8 +30,8 @@ def validate(root: Path) -> None:
         raise ValueError(f"manifest fields missing: {sorted(missing)}")
     if manifest["name"] != root.name or not SEMVER.fullmatch(manifest["version"]):
         raise ValueError("plugin name or version is invalid")
-    if manifest["mcpServers"] != "./.mcp.json" or not (root / ".mcp.json").is_file():
-        raise ValueError("MCP companion file is missing")
+    if "mcpServers" in manifest or (root / ".mcp.json").exists():
+        raise ValueError("the Codex package must not register a persistent MCP server")
     if set(path.name for path in (root / ".codex-plugin").iterdir()) != {"plugin.json"}:
         raise ValueError("only plugin.json may exist inside .codex-plugin")
     for field in ("composerIcon", "logo"):
@@ -78,35 +78,22 @@ def validate(root: Path) -> None:
     openai = yaml.safe_load((skill_root / "agents" / "openai.yaml").read_text("utf-8"))
     if openai["policy"]["allow_implicit_invocation"] is not False:
         raise ValueError("implicit invocation must remain disabled")
-    mcp = json.loads((root / ".mcp.json").read_text("utf-8"))
-    server = mcp["mcpServers"]["ai-software-architect-mcp"]
-    expected_args = [
-        "-NoLogo",
-        "-NoProfile",
-        "-NonInteractive",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "./scripts/start-mcp.ps1",
-    ]
-    if (
-        set(server) != {"command", "args", "cwd"}
-        or server["command"] != "powershell.exe"
-        or server["args"] != expected_args
-        or server["cwd"] != "."
-    ):
-        raise ValueError(
-            "MCP startup must use the reviewed cache-safe PowerShell launcher"
-        )
-    launcher = root / "scripts" / "start-mcp.ps1"
-    executable = root / "runtime/windows-x86_64/ai-architect-mcp/ai-architect-mcp.exe"
-    if not launcher.is_file() or not executable.is_file():
-        raise ValueError("bundled MCP executable is missing")
+    executable = root / "runtime/windows-x86_64/ai-architect-runtime/ai-architect-runtime.exe"
+    if not executable.is_file():
+        raise ValueError("bundled short-lived Codex runtime is missing")
+    if (root / "scripts" / "start-mcp.ps1").exists():
+        raise ValueError("legacy persistent MCP launcher must not be packaged")
     hooks_path = root / "hooks" / "hooks.json"
     if not hooks_path.is_file():
         raise ValueError("the default Codex control-plane hook file is missing")
     hooks = json.loads(hooks_path.read_text("utf-8"))
-    if set(hooks["hooks"]) != {"UserPromptSubmit", "PreToolUse", "Stop"}:
+    if set(hooks["hooks"]) != {
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PostToolUse",
+        "PostCompact",
+        "Stop",
+    }:
         raise ValueError("the Codex control-plane hook events are incomplete")
     for groups in hooks["hooks"].values():
         for group in groups:
@@ -123,6 +110,8 @@ def validate(root: Path) -> None:
                     )
                 if "%PLUGIN_ROOT%" in windows_command:
                     raise ValueError("cmd.exe environment syntax is invalid in a PowerShell hook")
+                if "ai-architect-runtime.exe" not in windows_command:
+                    raise ValueError("hooks must use the short-lived Codex runtime")
     text_files = (
         path
         for path in root.rglob("*")

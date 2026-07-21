@@ -28,9 +28,9 @@ def test_codex_plugin_is_reproducible_and_complete(
     output = output_parent / "ai-software-architect"
     monkeypatch.setattr(build_plugin, "OUTPUT_PARENT", output_parent)
     monkeypatch.setattr(build_plugin, "OUTPUT", output)
-    runtime = tmp_path / "ai-architect-mcp"
+    runtime = tmp_path / "ai-architect-runtime"
     runtime.mkdir()
-    (runtime / "ai-architect-mcp.exe").write_bytes(b"reviewed-test-runtime")
+    (runtime / "ai-architect-runtime.exe").write_bytes(b"reviewed-test-runtime")
     (runtime / "python313.dll").write_bytes(b"reviewed-test-library")
 
     first = build_plugin.assemble(runtime)
@@ -46,7 +46,8 @@ def test_codex_plugin_is_reproducible_and_complete(
     assert all("plugin://ai-software-architect" not in prompt for prompt in default_prompts)
     assert "Suggest suitable design patterns for my current project." in default_prompts
     assert manifest["license"] == "MIT"
-    assert manifest["mcpServers"] == "./.mcp.json"
+    assert "mcpServers" not in manifest
+    assert not (second / ".mcp.json").exists()
     assert not (second / ".codex-plugin" / ".mcp.json").exists()
     assert not (second / ".codex").exists()
     assert not (second / "agents").exists()
@@ -75,23 +76,23 @@ def test_codex_plugin_is_reproducible_and_complete(
         "Suggest project-fit patterns and guide architecture decisions"
     )
     assert metadata["policy"]["allow_implicit_invocation"] is False
-    assert metadata["dependencies"]["tools"][0]["transport"] == "stdio"
-
-    mcp_config = json.loads((second / ".mcp.json").read_text("utf-8"))
-    server = mcp_config["mcpServers"]["ai-software-architect-mcp"]
-    assert server["command"] == "powershell.exe"
-    assert server["args"][-2:] == ["-File", "./scripts/start-mcp.ps1"]
-    assert (second / "scripts" / "start-mcp.ps1").is_file()
-    assert server["cwd"] == "."
+    assert "dependencies" not in metadata
+    assert not (second / "scripts" / "start-mcp.ps1").exists()
     assert (
         second
         / "runtime"
         / "windows-x86_64"
-        / "ai-architect-mcp"
-        / "ai-architect-mcp.exe"
+        / "ai-architect-runtime"
+        / "ai-architect-runtime.exe"
     ).is_file()
     hooks = json.loads((second / "hooks" / "hooks.json").read_text("utf-8"))
-    assert set(hooks["hooks"]) == {"UserPromptSubmit", "PreToolUse", "Stop"}
+    assert set(hooks["hooks"]) == {
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PostToolUse",
+        "PostCompact",
+        "Stop",
+    }
     assert "--codex-hook" in str(hooks)
     pre_tool_matcher = hooks["hooks"]["PreToolUse"][0]["matcher"]
     assert "Bash" in pre_tool_matcher

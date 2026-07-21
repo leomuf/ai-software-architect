@@ -230,18 +230,16 @@ def developer_context(
     return (
         base + " Route: model-selected workflow. First choose the smallest sufficient mode: "
         "focused explanation or example, option comparison, or complete architecture "
-        "lifecycle. Focused help does not inspect the repository, call MCP, or create "
-        "artifacts unless the request explicitly requires project evidence. The "
+        "lifecycle. Focused help does not inspect the repository, invoke deterministic "
+        "tools, or create artifacts unless the request explicitly requires project evidence. The "
         "complete lifecycle may understand, clarify, design, approve, record and "
-        "handoff, or review. Never treat a recommendation as approved. Use MCP only "
-        "for bounded repository evidence or artifact validation that the current "
-        "workflow phase actually requires. `analyze_python_dependencies` accepts "
-        "bounded `dependency_statements` only; never send complete `source_files` to "
-        "that tool. Reserve full source for an approved architecture-boundary check "
-        "when contract verification truly requires it. Apply the clarification gate before "
+        "handoff, or review. Never treat a recommendation as approved. Repository "
+        "dependency and boundary observations are host-native static analysis; disclose "
+        "that dynamic imports, reflection, generated code, and omitted files were not "
+        "deterministically verified. Apply the clarification gate before "
         "drafting a recommendation: materially conflicting platform or interface "
         "statements require one focused clarification, no repository inspection, no "
-        "MCP call, and no recommendation in that turn. Only after that gate passes "
+        "deterministic validation, and no recommendation in that turn. Only after that gate passes "
         "may host-native reasoning choose the response structure. An open request to "
         "choose "
         "architecture or design-pattern options is `comparison`: use the six stable "
@@ -253,15 +251,23 @@ def developer_context(
         "Data, Integration, Resilience, Modernization, and No pattern. Example Option "
         "cells are `[No pattern] Keep the script simple` and `[GoF] "
         f"[Strategy]({CANONICAL_REFERENCE_BASE}gof-strategy.md)`. Named options link "
-        "their bundled public reference, and Fit is ordinal NN/100. Compare genuine "
+        "their bundled public reference. Inside `## Decision scope and criteria`, "
+        "explicitly state that Fit is ordinal NN/100 for this decision, not a "
+        "probability or measured percentage. "
+        "Compare genuine "
         "alternatives for one decision. When the user explicitly requests one "
         "highest-leverage improvement or supplied constraints make one proportionate "
         "simplicity decision sufficient, present one recommendation rather than a "
         "comparison; never use a single recommendation to present a stack of patterns. "
+        "In Recommendation, repeat the selected Option cell exactly, including its "
+        "category and canonical link; put qualifiers after that exact label. "
         "Put all single-recommendation content first, then end with `## Your decision` "
         "and one visible prompt that offers approval, revision, and more information. "
         "Named supporting "
-        "patterns use `[Category] [Name](canonical public reference)`; ordinary coding "
+        "patterns use `[Category] [Name](canonical public reference)`; this also applies "
+        "when a canonical pattern is mentioned only to discourage it. Never append a "
+        "bare avoid/defer list of catalog names; either categorize and link every name "
+        "or describe the rejected abstraction types generically. Ordinary coding "
         "practices may remain plain bullets. Clarifications end with the focused "
         "visible question, and completed work states its result plainly. Never emit "
         "internal `ai-architect` response markers or HTML comments; Codex may display "
@@ -270,22 +276,32 @@ def developer_context(
         f"(metadata only; load bodies progressively): {catalog_index}. This complete "
         "index is authoritative for reference names, categories, filenames, and public "
         "links. Never browse the web or public repository to discover a canonical "
-        "reference path. During `record_and_handoff`, resolve these bundled paths "
+        "reference path. During `record_and_handoff`, load all four of these exact "
+        "bundled resources before drafting, and resolve them "
         "under the installed public skill root `skills/ai-software-architect/`: "
         "`assets/adr-template.md`, `assets/architecture-contract.example.yaml`, "
         "`references/adr-authoring.md`, and `assets/implementation-plan-template.md`. "
-        "Do not resolve them from the plugin root or search for artifact schemas or "
-        "examples."
+        "The contract example is authoritative for nested list-item shapes, including "
+        "quality attributes, components, external boundaries, dependency rules, and "
+        "unresolved questions; never infer those shapes from field names or model memory. "
+        "For dependency rules, `allow-via-interface` requires `via_interface`; `allow` "
+        "and `deny` must omit `via_interface`. "
+        "Do not resolve them from the plugin root or search for artifact schemas or examples."
+        " For a complete or high-impact workflow, ask Codex to delegate up to three "
+        "independent read-only reviews when subagents are available: architecture "
+        "simplicity and pattern fit; security and operations; maintainability and "
+        "testability. Do not delegate focused help or routine small comparisons. Give "
+        "subagents bounded evidence, prohibit file changes, and require evidence, "
+        "severity, action, and uncertainty. The main agent alone integrates findings "
+        "and owns the recommendation."
         " During `record_and_handoff`, create every complete candidate in memory before "
-        "any durable artifact patch. Validate the contract with exactly "
-        "`request: {yaml_content: <complete YAML>, validation_scope: "
-        "complete-candidate-contract}` and inspect `result.valid`. Scan each complete "
-        "candidate with exactly `request: {content: <complete content>, artifact_kind: "
-        "<adr|contract|context|implementation-plan>}` and inspect `result.safe_to_write`. "
-        "Do not use `contract`, `validation_scope: complete`, or any other artifact-kind "
-        "literal. Only after all required results pass may one reviewable patch persist "
-        "the approved set under `.ai-architect/`; never patch durable artifacts first and "
-        "validate the persisted files afterward."
+        "one durable artifact write containing the ADR, contract, project context, and "
+        "coding handoff. The trusted `PreToolUse` hook reconstructs proposed "
+        "`.ai-architect/` content, validates the complete cross-artifact bundle, and scans "
+        "every generated artifact before allowing the write. `PostToolUse` verifies the "
+        "persisted bundle. Never write durable artifacts "
+        "first and validate them afterward. If validation is unavailable or denied, "
+        "persist nothing and disclose the limitation."
         + continuation
         + reference_hint
     )
@@ -375,7 +391,16 @@ def _patch_is_limited_to_architecture_artifacts(
 ) -> bool:
     patch = _patch_text_from_tool_input(tool_input)
     if patch is None:
-        return False
+        if not isinstance(tool_input, dict):
+            return False
+        targets = tuple(
+            tool_input[key]
+            for key in ("file_path", "path", "target")
+            if isinstance(tool_input.get(key), str)
+        )
+        return len(targets) == 1 and _patch_target_is_architecture_artifact(
+            targets[0], workspace
+        )
     targets = tuple(
         (match.group(1) or match.group(2)).strip().replace("\\", "/")
         for match in PATCH_FILE_PATTERN.finditer(patch)

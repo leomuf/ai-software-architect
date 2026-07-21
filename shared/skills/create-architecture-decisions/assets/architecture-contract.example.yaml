@@ -6,16 +6,48 @@ schema_version: 1.0.0
 revision: 1
 scope: notification-subsystem
 architecture_style: modular-monolith-with-ports-and-adapters
-quality_attributes: []
+quality_attributes:
+  - name: reliable-delivery
+    priority: 1
+    rationale: Accepted notifications must not be silently lost.
+    measurable_signal: Delivery outcomes are recorded for every accepted notification.
 components:
   - id: domain
     responsibility: Own notification policy
     owns_data: []
-    public_interfaces: []
-external_boundaries: []
-dependency_rules: []
+    public_interfaces:
+      - submit-notification
+  - id: delivery-adapter
+    responsibility: Deliver approved notifications through an external provider
+    owns_data: []
+    public_interfaces:
+      - deliver-notification
+external_boundaries:
+  - id: notification-provider
+    responsibility: Accept notification delivery requests
+dependency_rules:
+  - source: domain
+    target: delivery-adapter
+    policy: allow-via-interface
+    via_interface: deliver-notification
+    rationale: Domain policy must not depend on provider implementation details.
+  - source: delivery-adapter
+    target: notification-provider
+    policy: allow
+    rationale: The delivery adapter may call its configured external provider directly.
+  - source: domain
+    target: notification-provider
+    policy: deny
+    rationale: Domain policy must never depend directly on an external provider.
+# Dependency policy rules:
+# - allow-via-interface requires via_interface.
+# - allow and deny must omit via_interface entirely.
 required_practices: []
 prohibited_practices: []
 decision_ids: []
-unresolved_questions: []
-
+unresolved_questions:
+  - id: Q-001
+    question: Which delivery latency objective is required?
+    decision_impact: The answer determines retry and timeout constraints.
+    critical: false
+    answer: null

@@ -20,8 +20,8 @@ TEMPLATES = ROOT / "adapters" / "codex" / "templates"
 OUTPUT_PARENT = ROOT / "dist" / "codex"
 OUTPUT = OUTPUT_PARENT / "ai-software-architect"
 BUILD = ROOT / "build"
-RUNTIME_NAME = "ai-architect-mcp.exe"
-RUNTIME_DIR_NAME = "ai-architect-mcp"
+RUNTIME_NAME = "ai-architect-runtime.exe"
+RUNTIME_DIR_NAME = "ai-architect-runtime"
 
 SKILL_ORDER = (
     "orchestrate-architecture-workflow",
@@ -59,26 +59,33 @@ selection without a request is incomplete. This single public skill chooses the
 smallest sufficient mode from the request: focused pattern help, option comparison,
 or the complete architecture lifecycle.
 Route a definition, implementation example, or named-pattern explanation to focused
-help without repository inspection, MCP, or artifacts. Route an open choice among
+help without repository inspection, deterministic tools, or artifacts. Route an open choice among
 architectures or patterns to option comparison. Route project analysis, approval,
 decision recording, coding handoff, and conformance review to the complete lifecycle.
 Architecture advice and repository inspection are read-only. The architect role never
 imports, executes, compiles (including `python -m py_compile`), launches, tests, or
 builds analyzed application code. Put an explicit implementation or execution request
 into the prepared coding handoff or an ordinary coding task.
-Before any repository read, artifact discovery, language detection, or MCP call,
+Before any repository read, artifact discovery, or language detection,
 decide whether additional evidence could materially change the next response. When
 the user's stated constraints are sufficient for proportionate guidance, use them as
-explicit assumptions and do not inspect the active repository or call an MCP tool.
+explicit assumptions and do not inspect the active repository.
 A project-bound task or available tool is not by itself evidence that inspection is
 needed.
 If platform or interface statements conflict materially, ask one focused clarification
-and end the current turn without a recommendation, repository inspection, or MCP call.
+and end the current turn without a recommendation or repository inspection.
 For an open "which pattern" request, compare three to five alternatives for one
 decision in the canonical six-column Markdown table, with categorized links and
-ordinal `NN/100` fit before recommending; list supporting patterns separately and ask
-the user to approve or revise. Prefix every named supporting pattern with its category
+ordinal `NN/100` fit before recommending. Explicitly say Fit is ordinal for this
+decision and not a probability or measured percentage, and repeat the exact category
+and option name from the selected table row in the recommendation. List
+supporting patterns separately and ask the user to approve or revise. Prefix every
+named supporting pattern with its category
 and canonical public-reference link; ordinary coding practices need no category.
+The same rule applies to canonical patterns mentioned only to discourage or defer
+them. Never finish a section with a bare list of catalog pattern names: either give
+each one its category and canonical link or describe the rejected abstraction types
+generically without naming catalog entries.
 Every design recommendation, including retaining a simple structure or using no
 named pattern, must end with a visible choice to approve, revise, or request more
 information.
@@ -98,15 +105,15 @@ revise, or request more information. For a single recommendation, put the full
 recommendation first and keep that final section limited to the user-decision
 prompt. Completed recording, handoff, review, or informational work states its
 result plainly.
+The ordinal Fit disclosure belongs inside `## Decision scope and criteria`, not
+under Evidence or Alternatives.
 For generic architecture guidance, pattern explanations, or implementation examples,
 loading the exact routed bundled reference is a hard gate: do not answer from model
 memory, and disclose an unavailable reference instead of inventing an example.
 Reproduce the canonical example for a generic request and do not browse merely to
 discover or verify deterministic canonical links; use the bundled generated
-reference catalog and do not call MCP tools for focused reference help. Call MCP
-tools only when the requested task actually requires repository
-evidence or artifact validation.
-The bundled Codex control-plane hook is defense in depth: it reinforces explicit
+reference catalog and do not invoke deterministic tools for focused reference help.
+The bundled Codex control-plane hooks are defense in depth: they reinforce explicit
 activation, blocks repository execution and application-code edits during architect
 turns, validates stable visible option-comparison rendering when present, and rejects
 leaked internal response markers when the user has trusted it. It does not select a
@@ -115,24 +122,29 @@ Correctness must not depend on hook availability.
 The installed Composite is already active when these instructions are present. Do
 not try to rediscover its `SKILL.md` with workspace tools and do not report the skill
 unavailable merely because its installation path is not exposed as a workspace file.
-For deterministic Python evidence in Codex, read only relevant workspace files with
-native file tools. `analyze_python_dependencies` accepts bounded
-`dependency_statements` only and never complete source files. Reserve `source_files`
-for approved higher-assurance `check_python_architecture_boundaries` calls; disclose
-the limitation when interactive data-transfer approval is unavailable. The Codex MCP
-surface accepts no workspace root and exposes no ADR-listing tool. Inspect
-`.ai-architect/` through host-native read-only tools.
-Call `validate_complete_architecture_contract` only for a complete candidate, set
-`validation_scope` to `complete-candidate-contract`, and inspect `result.valid` before
-claiming validation succeeded. During `record_and_handoff`, prepare all complete
-candidates before any durable patch. Call contract validation with exactly
-`request: {yaml_content: <complete YAML>, validation_scope:
-complete-candidate-contract}`. Scan each candidate with exactly
-`request: {content: <complete content>, artifact_kind:
-<adr|contract|context|implementation-plan>}` and inspect `result.safe_to_write`.
-Never patch durable artifacts first and validate them afterward. Only after every
-required result passes may one reviewable patch persist the approved set under
-`.ai-architect/`.
+For repository evidence in Codex, read only relevant workspace files with native
+file tools. Dependency and boundary observations are host-native static analysis;
+disclose that dynamic imports, reflection, generated code, and omitted files were
+not deterministically verified. Inspect `.ai-architect/` through host-native
+read-only tools.
+For complete or high-impact workflows, delegate up to three independent read-only
+reviews when Codex subagents are available: architecture simplicity and pattern fit;
+security and operations; maintainability and testability. Do not delegate focused
+help or routine small comparisons. Subagents receive bounded evidence, modify no
+files, and return findings with evidence, severity, action, and uncertainty. The main
+agent integrates their findings and owns the final recommendation.
+During `record_and_handoff`, prepare the ADR, contract, project context, and coding
+handoff as one complete bundle before one durable
+write. Before drafting, load the exact bundled ADR template, contract example,
+ADR-authoring reference, and implementation-plan template. Treat the
+contract example as authoritative for nested list-item shapes and never infer those shapes
+from field names or model memory. `allow-via-interface` requires `via_interface`; `allow`
+and `deny` omit it. The trusted `PreToolUse` hook reconstructs proposed
+`.ai-architect/` content, validates the complete cross-artifact bundle, and scans
+every generated artifact before allowing the write. `PostToolUse` verifies that the
+persisted files match the validated bundle.
+Never write durable artifacts first and validate them afterward. If deterministic
+validation is unavailable or denies the proposal, persist nothing and disclose the limitation.
 
 """
 
@@ -195,7 +207,7 @@ def _build_runtime() -> Path:
         "--clean",
         "--onedir",
         "--name",
-        "ai-architect-mcp",
+        "ai-architect-runtime",
         "--add-data",
         (
             f"{ROOT / 'adapters' / 'codex' / 'reference_catalog.json'}"
@@ -255,13 +267,9 @@ def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
         encoding="utf-8",
         newline="\n",
     )
-    shutil.copyfile(TEMPLATES / "mcp.json", OUTPUT / ".mcp.json")
     hooks = OUTPUT / "hooks"
     hooks.mkdir()
     shutil.copyfile(TEMPLATES / "hooks.json", hooks / "hooks.json")
-    scripts = OUTPUT / "scripts"
-    scripts.mkdir()
-    shutil.copyfile(TEMPLATES / "start-mcp.ps1", scripts / "start-mcp.ps1")
     shutil.copyfile(ROOT / "LICENSE", OUTPUT / "LICENSE")
     shutil.copyfile(ROOT / "NOTICE", OUTPUT / "NOTICE")
     shutil.copyfile(ROOT / "THIRD_PARTY_NOTICES.md", OUTPUT / "THIRD_PARTY_NOTICES.md")

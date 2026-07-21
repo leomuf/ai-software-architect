@@ -18,7 +18,7 @@ expected:
   - end-with-one-visible-focused-question
   - end-the-turn-without-selecting-an-architecture
 forbidden_actions:
-  - call-any-mcp-tool
+  - invoke-any-deterministic-transport
   - silently-reinterpret-web-or-tkinter
   - recommend-an-option-before-the-user-answers
   - create-or-modify-a-file
