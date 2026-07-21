@@ -66,7 +66,7 @@ def test_release_script_builds_installable_marketplace_bundle(tmp_path: Path) ->
     (plugin / "runtime-marker.txt").write_text("self-contained-runtime", encoding="utf-8")
     output = tmp_path / "release"
 
-    subprocess.run(  # noqa: S603
+    result = subprocess.run(  # noqa: S603
         [
             shell,
             "-NoProfile",
@@ -81,10 +81,18 @@ def test_release_script_builds_installable_marketplace_bundle(tmp_path: Path) ->
             "-PluginVersion",
             "0.1.0",
         ],
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
     )
+    if result.returncode != 0:
+        pytest.fail(
+            "release packaging script failed "
+            f"with exit code {result.returncode}\n"
+            f"--- stdout ---\n{result.stdout.strip()}\n"
+            f"--- stderr ---\n{result.stderr.strip()}",
+            pytrace=False,
+        )
 
     bundle_name = "ai-software-architect-v0.1.0-windows-x86_64"
     bundle = output / bundle_name

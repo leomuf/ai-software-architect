@@ -130,7 +130,7 @@ Set-Content -LiteralPath (Join-Path $BundleRoot "VERSION.txt") `
 $Tar = (Get-Command tar.exe -CommandType Application -ErrorAction Stop).Source
 & $Tar -a -c -f $ArchivePath -C $ReleaseRoot $BundleName
 if ($LASTEXITCODE -ne 0) {
-    throw "tar.exe failed to create the release archive."
+    throw "tar.exe failed to create '$ArchivePath' from '$BundleRoot' with exit code $LASTEXITCODE."
 }
 
 $ArchiveHash = (Get-FileHash -LiteralPath $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant()
