@@ -127,7 +127,8 @@ Set-Content -LiteralPath (Join-Path $BundleRoot "INSTALL.md") `
 Set-Content -LiteralPath (Join-Path $BundleRoot "VERSION.txt") `
     -Value "$PluginVersion`n" -Encoding ascii
 
-$Tar = (Get-Command tar.exe -CommandType Application -ErrorAction Stop).Source
+$Tar = Get-Command tar.exe -CommandType Application -ErrorAction Stop |
+    Select-Object -First 1 -ExpandProperty Source
 & $Tar -a -c -f $ArchivePath -C $ReleaseRoot $BundleName
 if ($LASTEXITCODE -ne 0) {
     throw "tar.exe failed to create '$ArchivePath' from '$BundleRoot' with exit code $LASTEXITCODE."

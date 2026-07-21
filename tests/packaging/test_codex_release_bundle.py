@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import zipfile
@@ -66,6 +67,34 @@ def test_release_script_builds_installable_marketplace_bundle(tmp_path: Path) ->
     (plugin / "runtime-marker.txt").write_text("self-contained-runtime", encoding="utf-8")
     output = tmp_path / "release"
 
+    system_root = os.environ.get("SystemRoot")
+    if system_root is None:
+        pytest.skip("Windows SystemRoot is required for the duplicate tar.exe regression test")
+    system_tar = Path(system_root) / "System32" / "tar.exe"
+    if not system_tar.is_file():
+        pytest.skip("Windows system tar.exe is required for the release-bundle test")
+    tar_directories = (tmp_path / "tar-one", tmp_path / "tar-two")
+    for directory in tar_directories:
+        directory.mkdir()
+        shutil.copy2(system_tar, directory / "tar.exe")
+    environment = os.environ.copy()
+    environment["PATH"] = os.pathsep.join(
+        [*(str(directory) for directory in tar_directories), environment.get("PATH", "")]
+    )
+    tar_probe = subprocess.run(  # noqa: S603
+        [
+            shell,
+            "-NoProfile",
+            "-Command",
+            "@(Get-Command tar.exe -CommandType Application).Count",
+        ],
+        check=True,
+        capture_output=True,
+        env=environment,
+        text=True,
+    )
+    assert int(tar_probe.stdout.strip()) >= 2
+
     result = subprocess.run(  # noqa: S603
         [
             shell,
@@ -83,6 +112,7 @@ def test_release_script_builds_installable_marketplace_bundle(tmp_path: Path) ->
         ],
         check=False,
         capture_output=True,
+        env=environment,
         text=True,
     )
     if result.returncode != 0:
