@@ -394,6 +394,8 @@ records fail with actionable messages; missing phases retain correct null semant
 - [x] Implement console, Markdown, CSV, and JSON output.
 - [x] Calculate grouped count, mean, sample standard deviation, median, minimum, and
       maximum.
+- [x] Add a clearly labeled cross-version fixture overview for descriptive typical
+      performance without weakening strict comparable groups.
 - [ ] Add explicit compatibility checks and baseline deltas.
 - [x] Add the PowerShell reporting entry point and usage documentation.
 - [x] Test null handling, single-observation groups, incompatible groups, and stable

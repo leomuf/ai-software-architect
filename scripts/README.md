@@ -250,6 +250,7 @@ Render the complete history as a console table plus Markdown, CSV, and JSON file
 ```
 
 The command prints the generated output directory. Missing continuations appear as
-an em dash and are excluded from continuation statistics. GitHub CI uses the same
-renderer for its Job Summary and uploads the three report files as an artifact; it
-never modifies the canonical ledger.
+an em dash and are excluded from continuation statistics. The report provides both
+a broad cross-version fixture overview and strict like-for-like comparable groups.
+GitHub CI uses the same renderer for its Job Summary and uploads the three report
+files as an artifact; it never modifies the canonical ledger.

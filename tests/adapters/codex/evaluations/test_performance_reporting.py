@@ -20,6 +20,7 @@ from adapters.codex.evaluations.performance_import import import_reports
 from adapters.codex.evaluations.performance_ledger import load_performance_ledger
 from adapters.codex.evaluations.performance_models import SpeedMode
 from adapters.codex.evaluations.performance_report import (
+    fixture_overview_statistics,
     grouped_statistics,
     observation_rows,
     write_reports,
@@ -162,4 +163,49 @@ def test_reporting_excludes_missing_continuation_from_statistics(tmp_path: Path)
     assert write_reports(ledger, output) == (2, 5)
     assert "—" in (output / "performance.md").read_text(encoding="utf-8")
     assert (output / "performance.csv").is_file()
-    assert (output / "performance.json").is_file()
+    performance_json = json.loads(
+        (output / "performance.json").read_text(encoding="utf-8")
+    )
+    assert len(performance_json["fixture_overview_statistics"]) == 5
+
+
+def test_fixture_overview_aggregates_revisions_but_reports_heterogeneity(
+    tmp_path: Path,
+) -> None:
+    report_path = tmp_path / "Run20" / "report.json"
+    ledger = tmp_path / "history.jsonl"
+    _write_report(report_path)
+    import_reports(
+        reports=[report_path],
+        ledger=ledger,
+        overrides_path=tmp_path / "missing.yaml",
+        default_speed=SpeedMode.STANDARD,
+        default_git_commit="commit-1",
+        default_host="windows-x86_64",
+        apply=True,
+    )
+    original = next(
+        record
+        for record in load_performance_ledger(ledger)
+        if record.test.fixture_id == "architecture-option-comparison"
+    )
+    another_revision = original.model_copy(
+        update={
+            "test": original.test.model_copy(
+                update={"fixture_revision": "b" * 64}
+            ),
+            "runtime": original.runtime.model_copy(
+                update={"model": "another-model", "speed": SpeedMode.FAST}
+            ),
+        }
+    )
+
+    overview = fixture_overview_statistics([original, another_revision])
+    initial = next(row for row in overview if row.phase == "initial")
+
+    assert initial.observation_count == 2
+    assert initial.revision_count == 2
+    assert initial.workload_count == 1
+    assert initial.model_count == 2
+    assert initial.speed_count == 2
+    assert initial.mean_seconds == 10

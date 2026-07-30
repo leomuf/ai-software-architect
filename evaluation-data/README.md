@@ -54,3 +54,13 @@ Render the complete reusable history with:
 
 The same renderer feeds the GitHub Actions Job Summary and uploads Markdown, CSV,
 and JSON views as a CI artifact. CI reads the ledger but never mutates it.
+
+Reports contain two complementary statistical views:
+
+- **Cross-version fixture overview** aggregates every eligible observation for a
+  fixture and phase, showing its typical historical duration plus the number of
+  contributing revisions, workloads, models, speed tiers, and execution modes.
+  This is descriptive and intentionally broad.
+- **Comparable-group statistics** separates observations by fixture revision,
+  workload, model, reasoning effort, speed, and execution mode. Use this stricter
+  view for release comparisons and regression conclusions.

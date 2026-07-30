@@ -63,6 +63,23 @@ class StatisticRow:
     maximum_seconds: float
 
 
+@dataclass(frozen=True)
+class FixtureOverviewStatisticRow:
+    fixture: str
+    phase: str
+    observation_count: int
+    revision_count: int
+    workload_count: int
+    model_count: int
+    speed_count: int
+    execution_mode_count: int
+    mean_seconds: float
+    sample_stddev_seconds: float | None
+    median_seconds: float
+    minimum_seconds: float
+    maximum_seconds: float
+
+
 def observation_rows(records: Sequence[PerformanceObservation]) -> list[PerformanceRow]:
     rows: list[PerformanceRow] = []
     for record in sorted(
@@ -91,6 +108,57 @@ def observation_rows(records: Sequence[PerformanceObservation]) -> list[Performa
                 campaign_wall_clock_seconds=record.campaign.wall_clock_seconds,
                 outcome=record.result.outcome.value,
                 quality=record.result.measurement_quality.value,
+            )
+        )
+    return rows
+
+
+def fixture_overview_statistics(
+    records: Sequence[PerformanceObservation],
+) -> list[FixtureOverviewStatisticRow]:
+    grouped: dict[tuple[str, str], list[tuple[PerformanceObservation, float]]] = (
+        defaultdict(list)
+    )
+    for record in records:
+        grouped[(record.test.fixture_id, "initial")].append(
+            (record, record.phases.initial.duration_seconds or 0.0)
+        )
+        if record.phases.continuation.status == PhaseStatus.COMPLETED:
+            grouped[(record.test.fixture_id, "continuation")].append(
+                (record, record.phases.continuation.duration_seconds or 0.0)
+            )
+        grouped[(record.test.fixture_id, "total")].append(
+            (record, record.timing.measured_phase_seconds)
+        )
+
+    rows: list[FixtureOverviewStatisticRow] = []
+    for (fixture, phase), observations in sorted(grouped.items()):
+        samples = [duration for _, duration in observations]
+        rows.append(
+            FixtureOverviewStatisticRow(
+                fixture=fixture,
+                phase=phase,
+                observation_count=len(samples),
+                revision_count=len(
+                    {record.test.fixture_revision for record, _ in observations}
+                ),
+                workload_count=len(
+                    {record.test.workload_fingerprint for record, _ in observations}
+                ),
+                model_count=len({record.runtime.model for record, _ in observations}),
+                speed_count=len(
+                    {record.runtime.speed.value for record, _ in observations}
+                ),
+                execution_mode_count=len(
+                    {record.campaign.execution_mode.value for record, _ in observations}
+                ),
+                mean_seconds=round(statistics.mean(samples), 3),
+                sample_stddev_seconds=(
+                    round(statistics.stdev(samples), 3) if len(samples) > 1 else None
+                ),
+                median_seconds=round(statistics.median(samples), 3),
+                minimum_seconds=round(min(samples), 3),
+                maximum_seconds=round(max(samples), 3),
             )
         )
     return rows
@@ -147,6 +215,7 @@ def _seconds(value: float | None) -> str:
 
 def render_markdown(
     rows: Sequence[PerformanceRow],
+    overview_rows: Sequence[FixtureOverviewStatisticRow],
     statistics_rows: Sequence[StatisticRow],
 ) -> str:
     lines = [
@@ -169,6 +238,33 @@ def render_markdown(
             f"{_seconds(observation_row.continuation_seconds)} | "
             f"{_seconds(observation_row.total_seconds)} | "
             f"{_seconds(observation_row.campaign_wall_clock_seconds)} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Cross-version fixture overview",
+            "",
+            "This descriptive overview answers how each fixture has typically performed "
+            "across the complete recorded history. It may combine different revisions, "
+            "workloads, models, speed tiers, and execution modes, so use the comparable-"
+            "group statistics below for release-to-release conclusions.",
+            "",
+            "| Fixture | Phase | Observations | Revisions | Workloads | Models | Speeds | "
+            "Modes | Mean (s) | Stddev (s) | Median (s) | Min (s) | Max (s) |",
+            "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for overview_row in overview_rows:
+        lines.append(
+            f"| {overview_row.fixture} | {overview_row.phase} | "
+            f"{overview_row.observation_count} | {overview_row.revision_count} | "
+            f"{overview_row.workload_count} | {overview_row.model_count} | "
+            f"{overview_row.speed_count} | {overview_row.execution_mode_count} | "
+            f"{_seconds(overview_row.mean_seconds)} | "
+            f"{_seconds(overview_row.sample_stddev_seconds)} | "
+            f"{_seconds(overview_row.median_seconds)} | "
+            f"{_seconds(overview_row.minimum_seconds)} | "
+            f"{_seconds(overview_row.maximum_seconds)} |"
         )
     lines.extend(
         [
@@ -206,10 +302,11 @@ def render_markdown(
 def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
     records = load_performance_ledger(ledger)
     rows = observation_rows(records)
+    overview_rows = fixture_overview_statistics(records)
     statistic_rows = grouped_statistics(records)
     output_directory.mkdir(parents=True, exist_ok=True)
 
-    markdown = render_markdown(rows, statistic_rows)
+    markdown = render_markdown(rows, overview_rows, statistic_rows)
     (output_directory / "performance.md").write_text(
         markdown,
         encoding="utf-8",
@@ -226,6 +323,7 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
     payload: dict[str, Any] = {
         "schema_version": "1.0.0",
         "observations": [asdict(row) for row in rows],
+        "fixture_overview_statistics": [asdict(row) for row in overview_rows],
         "statistics": [asdict(row) for row in statistic_rows],
     }
     (output_directory / "performance.json").write_text(
