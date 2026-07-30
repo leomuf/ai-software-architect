@@ -50,9 +50,9 @@ an explicit fallback.
       structures.
 - [ ] Add a second-language exploratory pass, beginning with German clarification,
       focused comparison, and approval responses.
-- [ ] Measure and reduce exploratory-response latency, especially comparison and
-      read-only-review workflows. Separate host/model latency, unnecessary tool
-      use, subagent cost, and Stop-hook correction cost before optimizing.
+- [ ] Collect at least five directly comparable observations per release baseline,
+      then use the versioned performance history to define a warning-only latency
+      regression policy before considering a blocking release gate.
 - [ ] Add operating-system packages only after their clean-machine runtime,
       lifecycle, and security gates pass.
 

@@ -36,3 +36,27 @@ switch, trust, disable, or uninstall a plugin.
 
 Use the repository-level PowerShell entry described in
 [`scripts/README.md`](../../../scripts/README.md#run-codex-exploratory-evaluations).
+
+## Performance history
+
+Real runner campaigns normalize every eligible completed fixture into the shared
+append-only ledger at `evaluation-data/exploratory-runs.jsonl`. The runner records
+initial and continuation time separately, campaign wall-clock time, fixture and
+workload hashes, model, reasoning effort, speed, Codex and plugin versions, Git
+commit, and host class. Dry runs and infrastructure failures never enter the
+ledger. Repeated recording is content-addressed and idempotent.
+
+Four focused modules keep responsibilities separate:
+
+- `performance_models.py` defines the strict canonical Pydantic contracts;
+- `performance_ledger.py` provides validated, locked, atomic JSONL updates;
+- `performance_import.py` migrates earlier machine-readable runner reports;
+- `performance_report.py` produces stable Markdown, CSV, and JSON tables and
+  like-for-like grouped statistics.
+
+`historical_review.py` is deliberately separate. It uses the documented local
+Codex App Server to export Desktop task evidence, but never automatically treats a
+completed status as semantic approval. A Codex-assisted or human review must record
+the fixture, phase, eligibility, reason, confidence, and evidence hash before an
+archived task can be added to the canonical history. Full task transcripts and
+hidden reasoning are not versioned.

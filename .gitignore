@@ -12,4 +12,6 @@ __pycache__/
 htmlcov/
 .test-tmp/
 .tmp/
+evaluation-data/*.lock
+evaluation-data/.exploratory-runs.jsonl.*.tmp
 pytest-cache-files-*/

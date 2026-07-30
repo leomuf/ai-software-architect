@@ -130,6 +130,20 @@ def test_codex_command_is_ephemeral_only_without_a_continuation() -> None:
     assert continuation[-3:] == ["resume", "thread-123", "Approve it."]
 
 
+def test_codex_command_sets_fast_service_tier_explicitly() -> None:
+    command = _codex_command(
+        executable="codex",
+        model="gpt-5.6",
+        reasoning_effort="medium",
+        prompt="$ai-software-architect Review this.",
+        sandbox="read-only",
+        ephemeral=True,
+        speed="fast",
+    )
+
+    assert 'service_tier="fast"' in command
+
+
 def test_installed_plugin_identity_uses_one_enabled_plugin_across_marketplaces(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

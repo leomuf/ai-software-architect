@@ -170,6 +170,12 @@ optional release safety check: a mismatch stops the campaign before model calls.
 It never installs, disables, or switches plugin versions. The former
 `-PluginVersion` spelling remains a backward-compatible PowerShell alias.
 
+Use `-Speed fast` to request Codex Fast mode explicitly. `-Speed standard` records
+the intended standard baseline but cannot override a Fast preference already
+persisted in the user's Codex configuration; confirm `/fast off` before that run.
+Use `-Speed unknown` when the effective tier cannot be established rather than
+mislabeling the observation.
+
 Validate fixture discovery and report generation without invoking Codex or using
 model credits:
 
@@ -190,3 +196,60 @@ semantic pass. Review every expected and forbidden behavior before release.
 See the [Codex runner documentation](../adapters/codex/evaluations/README.md) and
 the [shared fixture contract](../shared/evaluations/README.md) for the architectural
 separation.
+
+## Maintain Exploratory Performance History
+
+Every real campaign launched by `run-codex-exploratory-evaluations.ps1` now records
+eligible completed fixtures in `evaluation-data/exploratory-runs.jsonl`
+automatically. No additional import command is required. Dry runs and unusable
+phases are excluded.
+
+Archived or interactive Codex Desktop tasks require a review because a timestamp
+cannot prove that the plugin actually produced a usable architecture response.
+Export candidates first:
+
+```powershell
+.\scripts\export-codex-exploratory-history.ps1 `
+  -Output .tmp\evaluations\history\candidates.json
+```
+
+Create a structured draft:
+
+```powershell
+.\scripts\draft-codex-exploratory-history-review.ps1 `
+  -Export .tmp\evaluations\history\candidates.json `
+  -ReviewerSessionId <reviewing-codex-task-id> `
+  -Output .tmp\evaluations\history\review.json
+```
+
+The draft intentionally labels complete candidates `needs-review`. Ask Codex or a
+human reviewer to inspect the bounded response evidence, confirm fixture and phase
+mapping, and record `accepted` or `excluded`, a concise reason, and confidence.
+Do not approve an interrupted task or a response that only reports inactive hooks,
+plugin startup failure, cancellation, or another prerequisite failure.
+
+After reviewing the entire batch, apply it idempotently:
+
+```powershell
+.\scripts\apply-codex-exploratory-history-review.ps1 `
+  -Review .tmp\evaluations\history\review.json
+```
+
+Earlier machine-readable runner reports can be previewed and, after review,
+imported once:
+
+```powershell
+.\scripts\import-exploratory-performance-reports.ps1
+.\scripts\import-exploratory-performance-reports.ps1 -Apply
+```
+
+Render the complete history as a console table plus Markdown, CSV, and JSON files:
+
+```powershell
+.\scripts\show-exploratory-performance.ps1
+```
+
+The command prints the generated output directory. Missing continuations appear as
+an em dash and are excluded from continuation statistics. GitHub CI uses the same
+renderer for its Job Summary and uploads the three report files as an artifact; it
+never modifies the canonical ledger.

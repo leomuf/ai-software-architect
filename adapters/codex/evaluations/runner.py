@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import platform
 import shutil
 import subprocess
 import sys
@@ -31,9 +32,13 @@ from adapters.codex.evaluations.models import (
     VerificationPolicy,
     load_fixture,
 )
+from adapters.codex.evaluations.performance_import import _report_observations
+from adapters.codex.evaluations.performance_ledger import append_performance_observations
+from adapters.codex.evaluations.performance_models import ObservationSource, SpeedMode
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_MANIFEST = ROOT / "shared" / "evaluations" / "verification-manifest.yaml"
+DEFAULT_PERFORMANCE_LEDGER = ROOT / "evaluation-data" / "exploratory-runs.jsonl"
 INTERNAL_MARKER = "<!-- ai-architect-"
 PLUGIN_NAME = "ai-software-architect"
 
@@ -128,6 +133,7 @@ def _codex_command(
     prompt: str,
     sandbox: str,
     ephemeral: bool,
+    speed: str = "standard",
     resume_thread: str | None = None,
 ) -> list[str]:
     command = [
@@ -141,6 +147,8 @@ def _codex_command(
         "--config",
         f'model_reasoning_effort="{reasoning_effort}"',
     ]
+    if speed == "fast":
+        command.extend(["--config", 'service_tier="fast"'])
     if ephemeral:
         command.append("--ephemeral")
     if resume_thread:
@@ -237,6 +245,23 @@ def _codex_version(executable: str) -> str:
         detail = completed.stderr.strip() or f"exit code {completed.returncode}"
         raise OSError(f"Unable to execute Codex CLI: {detail}")
     return completed.stdout.strip()
+
+
+def _git_commit() -> str:
+    git = shutil.which("git")
+    if git is None:
+        return "unknown"
+    completed = subprocess.run(  # noqa: S603
+        [git, "rev-parse", "HEAD"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=10,
+        check=False,
+    )
+    return completed.stdout.strip() if completed.returncode == 0 else "unknown"
 
 
 def _provenance_digest(plugin: dict[str, Any]) -> str | None:
@@ -344,6 +369,7 @@ def _summary(report: CampaignReport) -> str:
         "",
         f"- Model: `{report.model}`",
         f"- Reasoning effort: `{report.reasoning_effort}`",
+        f"- Speed: `{report.speed}`",
         f"- Codex CLI: `{report.codex_version}`",
         f"- Installed plugin: `{report.installed_plugin_id or 'not-checked (dry run)'}`",
         f"- Installed marketplace: `{report.installed_plugin_marketplace or 'not-checked'}`",
@@ -353,6 +379,8 @@ def _summary(report: CampaignReport) -> str:
         f"`{report.installed_plugin_provenance_sha256 or 'not-reported'}`",
         f"- Expected plugin version: `{report.expected_plugin_version or 'not-specified'}`",
         f"- Started: `{report.started_at.isoformat()}`",
+        "- Campaign wall-clock duration: "
+        f"`{report.campaign_wall_clock_seconds or 0.0:.3f}s`",
         "",
         "| Fixture | Scenario | Status | Phases |",
         "|---|---|---|---:|",
@@ -434,6 +462,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                     prompt=initial_prompt,
                     sandbox="read-only",
                     ephemeral=fixture.continuation is None,
+                    speed=args.speed,
                 ),
                 workspace=workspace,
                 evidence=evidence,
@@ -460,6 +489,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                         prompt=continuation.prompt,
                         sandbox="workspace-write",
                         ephemeral=False,
+                        speed=args.speed,
                         resume_thread=initial.thread_id,
                     ),
                     workspace=workspace,
@@ -513,9 +543,12 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
             if not args.continue_on_failure:
                 break
 
+    completed_at = datetime.now(UTC)
+    elapsed = time.monotonic() - campaign_started
+    git_commit = _git_commit()
     report = CampaignReport(
         started_at=started,
-        completed_at=datetime.now(UTC),
+        completed_at=completed_at,
         codex_command=args.codex_command,
         codex_version=codex_version,
         installed_plugin_id=(installed_plugin.plugin_id if installed_plugin else None),
@@ -529,15 +562,32 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
         expected_plugin_version=args.expected_plugin_version,
         model=args.model,
         reasoning_effort=args.reasoning_effort,
+        speed=args.speed,
+        campaign_wall_clock_seconds=round(elapsed, 3),
+        git_commit=git_commit,
         results=results,
     )
-    (args.output_directory / "report.json").write_text(
+    report_path = args.output_directory / "report.json"
+    report_path.write_text(
         report.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n"
     )
     (args.output_directory / "SUMMARY.md").write_text(
         _summary(report), encoding="utf-8", newline="\n"
     )
-    elapsed = time.monotonic() - campaign_started
+    if not args.dry_run:
+        observations, exclusions = _report_observations(
+            report_path=report_path,
+            speed=SpeedMode(args.speed),
+            git_commit=git_commit,
+            host=f"{platform.system().lower()}-{platform.machine().lower()}",
+            source=ObservationSource.CODEX_CLI_RUNNER,
+        )
+        appended = append_performance_observations(args.performance_ledger, observations)
+        print(
+            f"Performance history: {appended} new observation(s), "
+            f"{len(exclusions)} exclusion(s).",
+            flush=True,
+        )
     print(f"Campaign finished in {elapsed:.1f}s.", flush=True)
     return report
 
@@ -549,6 +599,16 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-directory", type=Path, required=True)
     parser.add_argument("--codex-command", default="codex")
     parser.add_argument("--model", default="gpt-5.6-sol")
+    parser.add_argument(
+        "--speed",
+        choices=("standard", "fast", "unknown"),
+        default="standard",
+    )
+    parser.add_argument(
+        "--performance-ledger",
+        type=Path,
+        default=DEFAULT_PERFORMANCE_LEDGER,
+    )
     parser.add_argument(
         "--expected-plugin-version",
         "--plugin-version",

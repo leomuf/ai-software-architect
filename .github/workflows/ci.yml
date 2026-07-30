@@ -6,7 +6,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: read
@@ -33,6 +33,20 @@ jobs:
       - run: uv run ruff check shared/schemas tools/python-mcp adapters tests
       - run: uv run mypy
       - run: uv run pytest -q
+      - name: Render exploratory performance history
+        shell: pwsh
+        run: |
+          uv run python -m adapters.codex.evaluations.performance_report `
+            --output-directory .tmp/evaluations/performance-history `
+            --quiet
+          Get-Content .tmp/evaluations/performance-history/performance.md |
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY
+      - name: Upload exploratory performance reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: exploratory-performance-history
+          path: .tmp/evaluations/performance-history/
+          if-no-files-found: error
       - run: uv run python adapters/codex/build_plugin.py --build-runtime
       - run: uv run python adapters/codex/validate_plugin.py dist/codex/ai-software-architect
       - run: uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/windows-x86_64/ai-architect-runtime/ai-architect-runtime.exe

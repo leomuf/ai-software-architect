@@ -1,0 +1,120 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://github.com/leomuf/ai-software-architect/evaluation-data/exploratory-performance.schema.yaml
+title: Exploratory evaluation performance observation
+type: object
+additionalProperties: false
+required: [schema_version, record_id, campaign, test, runtime, phases, timing, result]
+properties:
+  schema_version:
+    const: 1.0.0
+  record_id:
+    type: string
+    pattern: "^[a-f0-9]{64}$"
+  campaign:
+    $ref: "#/$defs/campaign"
+  test:
+    $ref: "#/$defs/test"
+  runtime:
+    $ref: "#/$defs/runtime"
+  phases:
+    $ref: "#/$defs/phases"
+  timing:
+    $ref: "#/$defs/timing"
+  result:
+    $ref: "#/$defs/result"
+$defs:
+  nonnegative_number:
+    type: number
+    minimum: 0
+  campaign:
+    type: object
+    additionalProperties: false
+    required: [id, execution_mode, started_at, completed_at, wall_clock_seconds]
+    properties:
+      id: {type: string, minLength: 1, maxLength: 160}
+      execution_mode:
+        enum: [sequential-codex-cli, parallel-codex-tasks, interactive-codex-task]
+      started_at: {type: string, format: date-time}
+      completed_at: {type: string, format: date-time}
+      wall_clock_seconds: {$ref: "#/$defs/nonnegative_number"}
+  test:
+    type: object
+    additionalProperties: false
+    required: [fixture_id, fixture_revision, workload_fingerprint, task_name, task_id]
+    properties:
+      fixture_id: {type: string, minLength: 1, maxLength: 160}
+      fixture_revision: {type: string, pattern: "^[a-f0-9]{64}$"}
+      workload_fingerprint: {type: string, pattern: "^[a-f0-9]{64}$"}
+      task_name: {type: [string, "null"], maxLength: 240}
+      task_id: {type: [string, "null"], maxLength: 160}
+  runtime:
+    type: object
+    additionalProperties: false
+    required:
+      - model
+      - reasoning_effort
+      - speed
+      - codex_version
+      - plugin_version
+      - plugin_provenance
+      - git_commit
+      - host
+    properties:
+      model: {type: string, minLength: 1, maxLength: 160}
+      reasoning_effort: {type: string, minLength: 1, maxLength: 40}
+      speed: {enum: [standard, fast, unknown]}
+      codex_version: {type: string, minLength: 1, maxLength: 240}
+      plugin_version: {type: string, minLength: 1, maxLength: 160}
+      plugin_provenance:
+        type: [string, "null"]
+        pattern: "^(sha256:)?[a-f0-9]{64}$"
+      git_commit: {type: string, minLength: 1, maxLength: 160}
+      host: {type: string, minLength: 1, maxLength: 160}
+  phase:
+    type: object
+    additionalProperties: false
+    required: [status, duration_seconds]
+    properties:
+      status: {enum: [completed, not-run]}
+      duration_seconds:
+        anyOf:
+          - {$ref: "#/$defs/nonnegative_number"}
+          - {type: "null"}
+    allOf:
+      - if:
+          properties:
+            status: {const: completed}
+        then:
+          properties:
+            duration_seconds: {$ref: "#/$defs/nonnegative_number"}
+      - if:
+          properties:
+            status: {const: not-run}
+        then:
+          properties:
+            duration_seconds: {type: "null"}
+  phases:
+    type: object
+    additionalProperties: false
+    required: [initial, continuation]
+    properties:
+      initial: {$ref: "#/$defs/phase"}
+      continuation: {$ref: "#/$defs/phase"}
+  timing:
+    type: object
+    additionalProperties: false
+    required: [measured_phase_seconds]
+    properties:
+      measured_phase_seconds: {$ref: "#/$defs/nonnegative_number"}
+  result:
+    type: object
+    additionalProperties: false
+    required: [outcome, source, measurement_quality, notes]
+    properties:
+      outcome: {enum: [manual-review, passed, deterministic-failure]}
+      source: {enum: [codex-cli-runner, codex-task-history, report-import]}
+      measurement_quality: {enum: [measured, reconstructed, inferred]}
+      notes: {type: [string, "null"], maxLength: 2000}

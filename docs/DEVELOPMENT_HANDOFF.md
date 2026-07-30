@@ -184,7 +184,11 @@ Current behavior:
 - shows live `[current/total]` fixture and phase progress;
 - prints detailed fixture, phase, assertion, Codex, and stderr diagnostics on failure;
 - preserves responses, JSONL events, stderr, isolated repositories, and change
-  evidence under `.tmp/evaluations/<timestamp>/`.
+  evidence under `.tmp/evaluations/<timestamp>/`;
+- appends eligible completed phase timings and provenance to the canonical
+  `evaluation-data/exploratory-runs.jsonl` history; and
+- keeps dry runs, cancelled work, and infrastructure failures out of performance
+  statistics.
 
 `manual-review` means deterministic safeguards passed; it is not automatically a
 semantic pass. A human must still review expected and forbidden behavior.
@@ -223,19 +227,19 @@ Two non-blocking observations from the run:
 
 The existing GitHub workflows run deterministic tests, generation-diff checks,
 Ruff, mypy, pytest, plugin build/validation, runtime smoke testing, CodeQL, and
-release packaging. GitHub CI was green at this handoff.
+release packaging. CI also validates and renders the versioned exploratory
+performance history into the Job Summary and uploads its Markdown, CSV, and JSON
+views without modifying the ledger.
 
 Dependabot is configured separately for Python and GitHub Actions. It may create
 multiple temporary branches because ungrouped updates receive one branch and pull
 request each.
 
-### Recommended exploratory CI strategy (not yet implemented)
+### Protected live exploratory CI strategy (not yet implemented)
 
-Use two tiers:
-
-1. Add only the zero-credit exploratory `-DryRun` to ordinary push/PR CI.
-2. Add a separate protected Windows release workflow, initially triggered by
-   `workflow_dispatch`, for the live five-fixture campaign.
+The zero-credit historical reporting tier is implemented in ordinary CI. For live
+release-candidate evaluation, add a separate protected Windows workflow, initially
+triggered by `workflow_dispatch`.
 
 The protected workflow should:
 

@@ -21,6 +21,8 @@ backward-compatible alias.
 param(
     [string[]]$Fixture,
     [string]$Model = "gpt-5.6-sol",
+    [ValidateSet("standard", "fast", "unknown")]
+    [string]$Speed = "standard",
     [Alias("PluginVersion")]
     [string]$ExpectedPluginVersion,
     [ValidateSet("low", "medium", "high", "xhigh")]
@@ -162,9 +164,14 @@ $arguments = @(
     "--output-directory", $OutputDirectory,
     "--codex-command", $CodexCommand,
     "--model", $Model,
+    "--speed", $Speed,
     "--reasoning-effort", $ReasoningEffort,
     "--timeout-seconds", $TimeoutSeconds.ToString()
 )
+$uvArguments = @()
+if (-not $env:UV_CACHE_DIR) {
+    $uvArguments += @("--cache-dir", (Join-Path $repositoryRoot ".uv-cache"))
+}
 if ($ExpectedPluginVersion) {
     $arguments += @("--expected-plugin-version", $ExpectedPluginVersion)
 }
@@ -187,7 +194,7 @@ Write-Host "Evidence directory: $OutputDirectory"
 
 Push-Location $repositoryRoot
 try {
-    & uv @arguments
+    & uv @uvArguments @arguments
     if ($LASTEXITCODE -ne 0) {
         $exitCode = $LASTEXITCODE
         Write-EvaluationFailureDetails -EvidenceDirectory $OutputDirectory

@@ -116,6 +116,7 @@ ai-software-architect/
 │   ├── skills/                 # Canonical workflows and progressive pattern references
 │   ├── schemas/                # Pydantic contracts and generated JSON Schemas
 │   └── evaluations/            # Gherkin criteria and reusable exploratory fixtures
+├── evaluation-data/            # Versioned exploratory timing history and import evidence
 ├── tools/
 │   └── python-mcp/             # Deterministic domain tools, CLI, and optional MCP adapter
 ├── tests/                      # Cross-cutting conformance and packaging tests
@@ -533,7 +534,10 @@ cache. Detailed troubleshooting and clean-reinstall instructions are in
   coding-agent-neutral fixture contract, while
   [`adapters/codex/evaluations/`](adapters/codex/evaluations/README.md) executes
   that campaign through non-interactive Codex. Maintainers can start it with
-  `scripts/run-codex-exploratory-evaluations.ps1`.
+  `scripts/run-codex-exploratory-evaluations.ps1`. Eligible timings are appended
+  to the versioned [`evaluation-data`](evaluation-data/README.md) history; its
+  Markdown, CSV, and JSON reports are reproducible locally and published as
+  non-mutating CI evidence.
 - [`shared/evaluations/release-automation-plan.md`](shared/evaluations/release-automation-plan.md)
   describes the remaining work for protected CI automation; local execution is
   implemented, but it is not yet an unattended release workflow.

@@ -111,6 +111,9 @@ class CampaignReport(StrictModel):
     expected_plugin_version: str | None = None
     model: str
     reasoning_effort: str
+    speed: Literal["standard", "fast", "unknown"] = "unknown"
+    campaign_wall_clock_seconds: float | None = Field(default=None, ge=0)
+    git_commit: str = "unknown"
     results: list[FixtureResult]
 
 

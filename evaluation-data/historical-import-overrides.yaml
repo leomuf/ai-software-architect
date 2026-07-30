@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+overrides:
+  # Recorded in the release-candidate comparison discussed in the Codex task.
+  - campaign_id: 20260721T194020Z
+    speed: fast
+  - campaign_id: 20260721T195054Z
+    speed: standard
