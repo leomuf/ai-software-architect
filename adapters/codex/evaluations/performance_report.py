@@ -24,7 +24,7 @@ from adapters.codex.evaluations.performance_models import (
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_LEDGER = ROOT / "evaluation-data" / "exploratory-runs.jsonl"
-REPORT_SCHEMA_VERSION = "1.1.0"
+REPORT_SCHEMA_VERSION = "1.2.0"
 
 
 @dataclass(frozen=True)
@@ -45,6 +45,29 @@ class PerformanceRow:
     campaign_wall_clock_seconds: float
     outcome: str
     quality: str
+
+
+@dataclass(frozen=True)
+class TelemetryRow:
+    campaign: str
+    fixture: str
+    fixture_revision: str
+    phase: str
+    model: str
+    reasoning_effort: str
+    speed: str
+    execution_mode: str
+    phase_seconds: float
+    first_event_seconds: float | None
+    first_agent_message_seconds: float | None
+    last_agent_message_seconds: float | None
+    agent_message_count: int
+    tool_call_count: int
+    input_tokens: int | None
+    cached_input_tokens: int | None
+    output_tokens: int | None
+    item_counts: str
+    unavailable_metrics: str
 
 
 @dataclass(frozen=True)
@@ -178,6 +201,50 @@ def observation_rows(records: Sequence[PerformanceObservation]) -> list[Performa
     return rows
 
 
+def telemetry_rows(records: Sequence[PerformanceObservation]) -> list[TelemetryRow]:
+    rows: list[TelemetryRow] = []
+    for record in sorted(
+        records,
+        key=lambda item: (item.campaign.started_at, item.campaign.id, item.test.fixture_id),
+    ):
+        for phase_name, phase in (
+            ("initial", record.phases.initial),
+            ("continuation", record.phases.continuation),
+        ):
+            telemetry = phase.telemetry
+            if phase.status != PhaseStatus.COMPLETED or telemetry is None:
+                continue
+            rows.append(
+                TelemetryRow(
+                    campaign=record.campaign.id,
+                    fixture=record.test.fixture_id,
+                    fixture_revision=record.test.fixture_revision,
+                    phase=phase_name,
+                    model=record.runtime.model,
+                    reasoning_effort=record.runtime.reasoning_effort,
+                    speed=record.runtime.speed.value,
+                    execution_mode=record.campaign.execution_mode.value,
+                    phase_seconds=phase.duration_seconds or 0.0,
+                    first_event_seconds=telemetry.first_event_seconds,
+                    first_agent_message_seconds=telemetry.first_agent_message_seconds,
+                    last_agent_message_seconds=telemetry.last_agent_message_seconds,
+                    agent_message_count=telemetry.agent_message_count,
+                    tool_call_count=telemetry.tool_call_count,
+                    input_tokens=telemetry.input_tokens,
+                    cached_input_tokens=telemetry.cached_input_tokens,
+                    output_tokens=telemetry.output_tokens,
+                    item_counts=json.dumps(
+                        telemetry.item_counts,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    unavailable_metrics=",".join(telemetry.unavailable_metrics),
+                )
+            )
+    return rows
+
+
 def fixture_overview_statistics(
     records: Sequence[PerformanceObservation],
 ) -> list[FixtureOverviewStatisticRow]:
@@ -285,6 +352,7 @@ def _seconds(value: float | None) -> str:
 
 def render_markdown(
     rows: Sequence[PerformanceRow],
+    telemetry: Sequence[TelemetryRow],
     overview_rows: Sequence[FixtureOverviewStatisticRow],
     statistics_rows: Sequence[StatisticRow],
 ) -> str:
@@ -310,6 +378,55 @@ def render_markdown(
             f"{_seconds(observation_row.observed_total_seconds)} | "
             f"{_seconds(observation_row.completed_workflow_total_seconds)} | "
             f"{_seconds(observation_row.campaign_wall_clock_seconds)} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Runner-observed subphase telemetry",
+            "",
+            "These values are captured from Codex JSONL as the runner receives it. "
+            "First/last agent-message values mark completed message events, not "
+            "time-to-first-token. Hook, template-loading, patch-construction, and "
+            "subagent-duration timings remain unavailable unless Codex exposes them.",
+            "",
+            "| Campaign | Fixture | Revision | Phase | Model | Effort | Speed | Mode | "
+            "Phase (s) | First event (s) | First agent message (s) | "
+            "Last agent message (s) | Messages | Tool calls | Input tokens | "
+            "Cached input | Output tokens |",
+            "|---|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    if not telemetry:
+        lines.append(
+            "| — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |"
+        )
+    for telemetry_row in telemetry:
+        input_tokens = (
+            str(telemetry_row.input_tokens)
+            if telemetry_row.input_tokens is not None
+            else "—"
+        )
+        cached_input_tokens = (
+            str(telemetry_row.cached_input_tokens)
+            if telemetry_row.cached_input_tokens is not None
+            else "—"
+        )
+        output_tokens = (
+            str(telemetry_row.output_tokens)
+            if telemetry_row.output_tokens is not None
+            else "—"
+        )
+        lines.append(
+            f"| {telemetry_row.campaign} | {telemetry_row.fixture} | "
+            f"`{telemetry_row.fixture_revision[:8]}` | {telemetry_row.phase} | "
+            f"{telemetry_row.model} | {telemetry_row.reasoning_effort} | "
+            f"{telemetry_row.speed} | {telemetry_row.execution_mode} | "
+            f"{_seconds(telemetry_row.phase_seconds)} | "
+            f"{_seconds(telemetry_row.first_event_seconds)} | "
+            f"{_seconds(telemetry_row.first_agent_message_seconds)} | "
+            f"{_seconds(telemetry_row.last_agent_message_seconds)} | "
+            f"{telemetry_row.agent_message_count} | {telemetry_row.tool_call_count} | "
+            f"{input_tokens} | {cached_input_tokens} | {output_tokens} |"
         )
     lines.extend(
         [
@@ -387,11 +504,12 @@ def render_markdown(
 def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
     records = load_performance_ledger(ledger)
     rows = observation_rows(records)
+    telemetry = telemetry_rows(records)
     overview_rows = fixture_overview_statistics(records)
     statistic_rows = grouped_statistics(records)
     output_directory.mkdir(parents=True, exist_ok=True)
 
-    markdown = render_markdown(rows, overview_rows, statistic_rows)
+    markdown = render_markdown(rows, telemetry, overview_rows, statistic_rows)
     (output_directory / "performance.md").write_text(
         markdown,
         encoding="utf-8",
@@ -405,9 +523,18 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
         writer = csv.DictWriter(csv_file, fieldnames=list(PerformanceRow.__annotations__))
         writer.writeheader()
         writer.writerows(asdict(row) for row in rows)
+    with (output_directory / "performance-telemetry.csv").open(
+        "w",
+        encoding="utf-8-sig",
+        newline="",
+    ) as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=list(TelemetryRow.__annotations__))
+        writer.writeheader()
+        writer.writerows(asdict(row) for row in telemetry)
     payload: dict[str, Any] = {
         "schema_version": REPORT_SCHEMA_VERSION,
         "observations": [asdict(row) for row in rows],
+        "subphase_telemetry": [asdict(row) for row in telemetry],
         "fixture_overview_statistics": [asdict(row) for row in overview_rows],
         "statistics": [asdict(row) for row in statistic_rows],
     }

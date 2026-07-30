@@ -804,6 +804,9 @@ def test_decision_approval_continuation_requires_record_and_handoff(
     assert "do not merely acknowledge approval" in additional
     assert "Approval never authorizes application-code changes" in additional
     assert "original request explicitly prohibited" in additional
+    assert "Route: typed decision continuation" in additional
+    assert "Canonical reference index" not in additional
+    assert "three independent read-only reviews" not in additional
 
     workspace = tmp_path / "workspace"
     workspace.mkdir()

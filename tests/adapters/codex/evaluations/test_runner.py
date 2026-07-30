@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -20,9 +21,11 @@ from adapters.codex.evaluations.models import (
 from adapters.codex.evaluations.runner import (
     DEFAULT_MANIFEST,
     InstalledPluginIdentity,
+    _capture_process,
     _codex_command,
     _installed_plugin_identity,
     _parse_events,
+    _phase_telemetry,
     main,
 )
 
@@ -103,6 +106,81 @@ def test_jsonl_parser_extracts_thread_final_response_and_item_types() -> None:
     assert event_types == {"thread.started", "item.completed", "agent_message"}
     assert thread_id == "thread-123"
     assert response == "Done"
+
+
+def test_phase_telemetry_uses_only_runner_observed_jsonl_data() -> None:
+    lines = [
+        (
+            0.25,
+            json.dumps({"type": "thread.started", "thread_id": "thread-123"}),
+        ),
+        (
+            1.5,
+            json.dumps(
+                {
+                    "type": "item.completed",
+                    "item": {"type": "command_execution"},
+                }
+            ),
+        ),
+        (
+            3.0,
+            json.dumps(
+                {
+                    "type": "item.completed",
+                    "item": {"type": "agent_message", "text": "Done"},
+                }
+            ),
+        ),
+        (
+            3.1,
+            json.dumps(
+                {
+                    "type": "turn.completed",
+                    "usage": {
+                        "input_tokens": 120,
+                        "cached_input_tokens": 80,
+                        "output_tokens": 30,
+                    },
+                }
+            ),
+        ),
+    ]
+
+    telemetry = _phase_telemetry(lines)
+
+    assert telemetry.first_event_seconds == 0.25
+    assert telemetry.first_agent_message_seconds == 3.0
+    assert telemetry.last_agent_message_seconds == 3.0
+    assert telemetry.agent_message_count == 1
+    assert telemetry.tool_call_count == 1
+    assert telemetry.item_counts == {"agent_message": 1, "command_execution": 1}
+    assert telemetry.input_tokens == 120
+    assert telemetry.cached_input_tokens == 80
+    assert telemetry.output_tokens == 30
+    assert "pre_tool_use_hook_seconds" in telemetry.unavailable_metrics
+
+
+def test_process_capture_preserves_stdout_and_observed_line_order(tmp_path: Path) -> None:
+    capture = _capture_process(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import time; "
+                "print('{\"type\":\"thread.started\"}', flush=True); "
+                "time.sleep(0.02); "
+                "print('{\"type\":\"turn.completed\"}', flush=True)"
+            ),
+        ],
+        workspace=tmp_path,
+        timeout_seconds=5,
+    )
+
+    assert capture.returncode == 0
+    assert len(capture.stdout_lines) == 2
+    assert capture.stdout_lines[0][0] <= capture.stdout_lines[1][0]
+    assert capture.stdout.count("\n") == 2
 
 
 def test_codex_command_is_ephemeral_only_without_a_continuation() -> None:

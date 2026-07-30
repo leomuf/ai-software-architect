@@ -536,8 +536,8 @@ cache. Detailed troubleshooting and clean-reinstall instructions are in
   that campaign through non-interactive Codex. Maintainers can start it with
   `scripts/run-codex-exploratory-evaluations.ps1`. Eligible timings are appended
   to the versioned [`evaluation-data`](evaluation-data/README.md) history; its
-  Markdown, CSV, and JSON reports are reproducible locally and published as
-  non-mutating CI evidence.
+  Markdown, primary and telemetry CSV, and JSON reports are reproducible locally
+  and published as non-mutating CI evidence.
 - [`shared/evaluations/release-automation-plan.md`](shared/evaluations/release-automation-plan.md)
   describes the remaining work for protected CI automation; local execution is
   implemented, but it is not yet an unattended release workflow.

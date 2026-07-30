@@ -68,6 +68,21 @@ class DeterministicAssertion(StrictModel):
     evidence: str
 
 
+class PhaseTelemetry(StrictModel):
+    """Runner-observed Codex event timing and usage; never inferred."""
+
+    first_event_seconds: float | None = Field(default=None, ge=0)
+    first_agent_message_seconds: float | None = Field(default=None, ge=0)
+    last_agent_message_seconds: float | None = Field(default=None, ge=0)
+    agent_message_count: int = Field(default=0, ge=0)
+    tool_call_count: int = Field(default=0, ge=0)
+    item_counts: dict[str, int] = Field(default_factory=dict)
+    input_tokens: int | None = Field(default=None, ge=0)
+    cached_input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    unavailable_metrics: list[str] = Field(default_factory=list)
+
+
 class PhaseResult(StrictModel):
     name: Literal["initial", "continuation"]
     exit_code: int
@@ -80,6 +95,7 @@ class PhaseResult(StrictModel):
     repository_changes: list[str]
     assertions: list[DeterministicAssertion]
     manual_review: list[str]
+    telemetry: PhaseTelemetry | None = None
 
 
 class EvaluationStatus(StrEnum):
@@ -99,7 +115,7 @@ class FixtureResult(StrictModel):
 
 
 class CampaignReport(StrictModel):
-    schema_version: str = "1.0.0"
+    schema_version: str = "1.1.0"
     started_at: datetime
     completed_at: datetime
     codex_command: str

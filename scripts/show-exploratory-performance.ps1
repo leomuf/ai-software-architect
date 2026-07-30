@@ -3,7 +3,7 @@
 
 <#
 .SYNOPSIS
-Renders the canonical exploratory performance history as Markdown, CSV, and JSON.
+Renders performance history as Markdown, primary and telemetry CSV, and JSON.
 #>
 
 [CmdletBinding()]

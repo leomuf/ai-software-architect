@@ -14,6 +14,7 @@ from adapters.codex.evaluations.historical_review import (
     HistoricalReviewBatch,
     ReviewDecision,
 )
+from adapters.codex.evaluations.models import PhaseTelemetry
 from adapters.codex.evaluations.performance_ledger import (
     append_performance_observations,
     load_performance_ledger,
@@ -41,10 +42,26 @@ HASH = "a" * 64
 ROOT = Path(__file__).resolve().parents[4]
 
 
-def observation(*, continuation: float | None = None):
+def observation(*, continuation: float | None = None, telemetry: bool = False):
     started = datetime(2026, 7, 21, 19, 50, tzinfo=UTC)
     phases = PhaseMeasurements(
-        initial=PhaseMeasurement(status=PhaseStatus.COMPLETED, duration_seconds=12.5),
+        initial=PhaseMeasurement(
+            status=PhaseStatus.COMPLETED,
+            duration_seconds=12.5,
+            telemetry=(
+                PhaseTelemetry(
+                    first_event_seconds=0.1,
+                    first_agent_message_seconds=12.0,
+                    last_agent_message_seconds=12.0,
+                    agent_message_count=1,
+                    tool_call_count=0,
+                    input_tokens=100,
+                    output_tokens=20,
+                )
+                if telemetry
+                else None
+            ),
+        ),
         continuation=(
             PhaseMeasurement(status=PhaseStatus.COMPLETED, duration_seconds=continuation)
             if continuation is not None
@@ -122,6 +139,17 @@ def test_record_id_is_stable_and_content_addressed() -> None:
     assert changed.record_id != first.record_id
 
 
+def test_telemetry_uses_new_schema_without_changing_legacy_serialization() -> None:
+    legacy = observation()
+    instrumented = observation(telemetry=True)
+
+    assert legacy.schema_version == "1.0.0"
+    assert "telemetry" not in legacy.model_dump(mode="json")["phases"]["initial"]
+    assert instrumented.schema_version == "1.1.0"
+    assert instrumented.phases.initial.telemetry is not None
+    assert instrumented.record_id != legacy.record_id
+
+
 def test_ledger_append_is_atomic_and_idempotent(tmp_path: Path) -> None:
     ledger = tmp_path / "history.jsonl"
     record = observation()
@@ -130,6 +158,20 @@ def test_ledger_append_is_atomic_and_idempotent(tmp_path: Path) -> None:
     assert append_performance_observations(ledger, [record]) == 0
     assert load_performance_ledger(ledger) == [record]
     assert not ledger.with_suffix(".jsonl.lock").exists()
+
+
+def test_instrumented_append_preserves_legacy_record_identity(tmp_path: Path) -> None:
+    ledger = tmp_path / "history.jsonl"
+    legacy = observation()
+    instrumented = observation(telemetry=True)
+
+    assert append_performance_observations(ledger, [legacy]) == 1
+    assert append_performance_observations(ledger, [instrumented]) == 1
+
+    loaded = load_performance_ledger(ledger)
+    assert [record.schema_version for record in loaded] == ["1.0.0", "1.1.0"]
+    assert loaded[0].record_id == legacy.record_id
+    assert loaded[1].phases.initial.telemetry is not None
 
 
 def test_ledger_rejects_duplicate_lines(tmp_path: Path) -> None:

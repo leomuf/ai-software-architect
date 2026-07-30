@@ -161,6 +161,7 @@ def developer_context(
     *,
     continued: bool = False,
     continuation_instruction: str = "",
+    continuation_interaction: str | None = None,
 ) -> str:
     base = (
         "AI Software Architect Codex control plane is active because an architect "
@@ -179,6 +180,26 @@ def developer_context(
         if continued
         else ""
     )
+    if continued and continuation_interaction == "decision":
+        return (
+            base
+            + " Route: typed decision continuation. Preserve the preceding decision "
+            "scope, evidence, recommendation, user constraints, and explicit read-only "
+            "or no-write restrictions. Interpret the reply host-natively. If it is an "
+            "approval for a project-bound material decision, perform only "
+            "`record_and_handoff`: load the exact installed ADR, contract, context, and "
+            "implementation-plan resources supplied below; prepare all four complete "
+            "candidates in memory; then submit one reviewable architecture-artifact "
+            "write under `.ai-architect/`. The trusted `PreToolUse` hook reconstructs, "
+            "secret-scans, and cross-validates the complete bundle before allowing the "
+            "write, and `PostToolUse` verifies the persisted files. Never modify "
+            "application source, never bypass a denied validation, and never replace "
+            "the four-artifact write with multiple partial writes. If the reply revises, "
+            "rejects, or requests evidence, persist nothing and return to the smallest "
+            "necessary decision step. State the completed or blocked result plainly; "
+            "never emit internal response markers or HTML comments."
+            + continuation
+        )
     reference_hint = ""
     if context.reference_paths:
         rendered_paths = ", ".join(

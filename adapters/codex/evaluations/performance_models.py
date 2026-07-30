@@ -13,9 +13,10 @@ from typing import Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from adapters.codex.evaluations.models import StrictModel
+from adapters.codex.evaluations.models import PhaseTelemetry, StrictModel
 
-PERFORMANCE_SCHEMA_VERSION: Literal["1.0.0"] = "1.0.0"
+PerformanceSchemaVersion = Literal["1.0.0", "1.1.0"]
+PERFORMANCE_SCHEMA_VERSION: PerformanceSchemaVersion = "1.1.0"
 
 
 class ExecutionMode(StrEnum):
@@ -99,6 +100,10 @@ class RuntimeMetadata(StrictModel):
 class PhaseMeasurement(StrictModel):
     status: PhaseStatus
     duration_seconds: float | None = Field(default=None, ge=0)
+    telemetry: PhaseTelemetry | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
     @model_validator(mode="after")
     def duration_matches_status(self) -> PhaseMeasurement:
@@ -128,7 +133,7 @@ class ResultMetadata(StrictModel):
 
 
 class PerformanceObservation(StrictModel):
-    schema_version: Literal["1.0.0"] = PERFORMANCE_SCHEMA_VERSION
+    schema_version: PerformanceSchemaVersion = PERFORMANCE_SCHEMA_VERSION
     record_id: str = Field(pattern=r"^[a-f0-9]{64}$")
     campaign: CampaignMetadata
     test: TestMetadata
@@ -148,7 +153,12 @@ class PerformanceObservation(StrictModel):
             raise ValueError(
                 "timing.measured_phase_seconds must equal the sum of completed phases"
             )
-        expected = performance_record_id(self.model_dump(mode="json", exclude={"record_id"}))
+        if self.schema_version == "1.0.0" and any(
+            phase.telemetry is not None
+            for phase in (self.phases.initial, self.phases.continuation)
+        ):
+            raise ValueError("schema version 1.0.0 cannot contain phase telemetry")
+        expected = performance_record_id(_identity_payload(self))
         if self.record_id != expected:
             raise ValueError("record_id does not match the canonical observation identity")
         return self
@@ -166,18 +176,33 @@ def performance_record_id(observation_without_id: dict[str, Any]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _identity_payload(observation: PerformanceObservation) -> dict[str, Any]:
+    payload = observation.model_dump(mode="json", exclude={"record_id"})
+    if observation.schema_version == "1.0.0":
+        for phase in payload["phases"].values():
+            phase.pop("telemetry", None)
+    return payload
+
+
 def build_performance_observation(**fields: Any) -> PerformanceObservation:
     """Build an observation and derive its content-addressed record ID."""
 
+    phases = fields.get("phases")
+    has_telemetry = isinstance(phases, PhaseMeasurements) and any(
+        phase.telemetry is not None for phase in (phases.initial, phases.continuation)
+    )
+    schema_version: PerformanceSchemaVersion = (
+        PERFORMANCE_SCHEMA_VERSION if has_telemetry else "1.0.0"
+    )
     unvalidated = PerformanceObservation.model_construct(
-        schema_version=PERFORMANCE_SCHEMA_VERSION,
+        schema_version=schema_version,
         record_id="0" * 64,
         **fields,
     )
-    raw = unvalidated.model_dump(mode="json", exclude={"record_id"})
+    raw = _identity_payload(unvalidated)
     return PerformanceObservation.model_validate(
         {
-            "schema_version": PERFORMANCE_SCHEMA_VERSION,
+            "schema_version": schema_version,
             "record_id": performance_record_id(raw),
             **fields,
         }

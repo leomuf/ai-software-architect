@@ -343,6 +343,14 @@ Reports distinguish `observed-total`, the sum of phases actually measured, from
 completed. Coverage is rendered as samples over recorded runs. P90 is provisional
 below ten samples, and groups below five samples are descriptive only.
 
+New schema `1.1.0` observations retain runner-observed Codex telemetry when it is
+available: first JSONL event, first and last completed agent-message events,
+message and tool-call counts, item-type counts, and token usage. These measurements
+must remain clearly distinguished from unavailable time-to-first-token, individual
+hook, template-loading, patch-construction, and subagent-duration measurements.
+Never infer an unavailable subphase. Schema `1.0.0` history remains valid and keeps
+its existing content-addressed record IDs.
+
 ## Comparison Policy
 
 Mark observations as directly comparable only when these dimensions match:
@@ -404,6 +412,8 @@ records fail with actionable messages; missing phases retain correct null semant
       performance without weakening strict comparable groups.
 - [x] Separate observed totals from completed multi-phase workflow totals and show
       phase coverage without converting missing continuations to zero.
+- [x] Capture runner-observed event timing, item/tool counts, and token usage in
+      schema `1.1.0` without changing legacy record identity.
 - [ ] Add explicit compatibility checks and baseline deltas.
 - [x] Add the PowerShell reporting entry point and usage documentation.
 - [x] Test null handling, single-observation groups, incompatible groups, and stable

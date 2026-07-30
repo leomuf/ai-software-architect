@@ -268,6 +268,9 @@ def handle_user_prompt_submit(
             if continuation is not None
             else ""
         ),
+        continuation_interaction=(
+            continuation.interaction.value if continuation is not None else None
+        ),
     )
     if plugin_root is not None:
         skill_root = plugin_root.resolve(strict=False) / "skills" / "ai-software-architect"

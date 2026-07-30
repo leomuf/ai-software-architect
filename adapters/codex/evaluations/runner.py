@@ -12,6 +12,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -29,6 +30,7 @@ from adapters.codex.evaluations.models import (
     EvaluationStatus,
     FixtureResult,
     PhaseResult,
+    PhaseTelemetry,
     VerificationPolicy,
     load_fixture,
 )
@@ -49,6 +51,143 @@ class InstalledPluginIdentity:
     marketplace: str
     version: str
     provenance_sha256: str | None = None
+
+
+@dataclass(frozen=True)
+class _ProcessCapture:
+    returncode: int
+    stdout: str
+    stderr: str
+    duration_seconds: float
+    stdout_lines: list[tuple[float, str]]
+
+
+def _capture_process(
+    command: list[str],
+    *,
+    workspace: Path,
+    timeout_seconds: int,
+) -> _ProcessCapture:
+    """Capture Codex output while preserving runner-observed JSONL arrival times."""
+
+    started = time.monotonic()
+    process = subprocess.Popen(  # noqa: S603
+        command,
+        cwd=workspace,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if process.stdout is None or process.stderr is None:
+        process.kill()
+        raise OSError("Codex process streams were unavailable.")
+
+    stdout_lines: list[tuple[float, str]] = []
+    stderr_lines: list[str] = []
+
+    def read_stdout() -> None:
+        assert process.stdout is not None
+        for line in process.stdout:
+            stdout_lines.append((time.monotonic() - started, line))
+
+    def read_stderr() -> None:
+        assert process.stderr is not None
+        stderr_lines.extend(process.stderr)
+
+    stdout_thread = threading.Thread(target=read_stdout, daemon=True)
+    stderr_thread = threading.Thread(target=read_stderr, daemon=True)
+    stdout_thread.start()
+    stderr_thread.start()
+    try:
+        returncode = process.wait(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+        stdout_thread.join()
+        stderr_thread.join()
+        raise
+    stdout_thread.join()
+    stderr_thread.join()
+    duration = time.monotonic() - started
+    return _ProcessCapture(
+        returncode=returncode,
+        stdout="".join(line for _, line in stdout_lines),
+        stderr="".join(stderr_lines),
+        duration_seconds=duration,
+        stdout_lines=stdout_lines,
+    )
+
+
+def _phase_telemetry(stdout_lines: Sequence[tuple[float, str]]) -> PhaseTelemetry:
+    """Extract only telemetry explicitly exposed by Codex JSONL."""
+
+    first_event: float | None = None
+    agent_message_times: list[float] = []
+    item_counts: dict[str, int] = {}
+    usage: dict[str, Any] | None = None
+    for observed_seconds, line in stdout_lines:
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        if first_event is None:
+            first_event = observed_seconds
+        candidate_usage = event.get("usage")
+        if isinstance(candidate_usage, dict):
+            usage = candidate_usage
+        item = event.get("item")
+        if not isinstance(item, dict) or event.get("type") != "item.completed":
+            continue
+        item_type = str(item.get("type", "unknown"))
+        item_counts[item_type] = item_counts.get(item_type, 0) + 1
+        if item_type == "agent_message":
+            agent_message_times.append(observed_seconds)
+
+    tool_call_count = sum(
+        count
+        for item_type, count in item_counts.items()
+        if item_type in {"command_execution", "file_change", "mcp_tool_call"}
+        or item_type.endswith("_tool_call")
+    )
+
+    def token_value(name: str) -> int | None:
+        value = usage.get(name) if usage is not None else None
+        return value if isinstance(value, int) and value >= 0 else None
+
+    unavailable = [
+        "time_to_first_token_seconds",
+        "user_prompt_submit_hook_seconds",
+        "pre_tool_use_hook_seconds",
+        "post_tool_use_hook_seconds",
+        "stop_hook_seconds",
+        "stop_hook_correction_count",
+        "template_loading_seconds",
+        "patch_creation_seconds",
+        "durable_write_seconds",
+        "subagent_duration_seconds",
+    ]
+    if usage is None:
+        unavailable.append("token_usage")
+    return PhaseTelemetry(
+        first_event_seconds=round(first_event, 3) if first_event is not None else None,
+        first_agent_message_seconds=(
+            round(agent_message_times[0], 3) if agent_message_times else None
+        ),
+        last_agent_message_seconds=(
+            round(agent_message_times[-1], 3) if agent_message_times else None
+        ),
+        agent_message_count=len(agent_message_times),
+        tool_call_count=tool_call_count,
+        item_counts=dict(sorted(item_counts.items())),
+        input_tokens=token_value("input_tokens"),
+        cached_input_tokens=token_value("cached_input_tokens"),
+        output_tokens=token_value("output_tokens"),
+        unavailable_metrics=unavailable,
+    )
 
 
 def _snapshot(root: Path) -> dict[str, str]:
@@ -169,18 +308,11 @@ def _run_phase(
     timeout_seconds: int,
 ) -> PhaseResult:
     before = _snapshot(workspace)
-    started = time.monotonic()
-    completed = subprocess.run(  # noqa: S603
+    completed = _capture_process(
         command,
-        cwd=workspace,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=timeout_seconds,
-        check=False,
+        workspace=workspace,
+        timeout_seconds=timeout_seconds,
     )
-    duration = time.monotonic() - started
     _, event_types, thread_id, final_response = _parse_events(completed.stdout)
     changed = _changes(before, _snapshot(workspace))
 
@@ -204,7 +336,7 @@ def _run_phase(
     return PhaseResult(
         name=name,
         exit_code=completed.returncode,
-        duration_seconds=round(duration, 3),
+        duration_seconds=round(completed.duration_seconds, 3),
         thread_id=thread_id,
         final_response_file=response_file.name if response_file else None,
         event_log_file=event_file.name,
@@ -216,6 +348,7 @@ def _run_phase(
             *(f"expected:{item}" for item in expected),
             *(f"forbidden:{item}" for item in forbidden_actions),
         ],
+        telemetry=_phase_telemetry(completed.stdout_lines),
     )
 
 
@@ -390,6 +523,41 @@ def _summary(report: CampaignReport) -> str:
             f"| `{result.fixture_id}` | `{result.scenario}` | "
             f"{result.status.value} | {len(result.phases)} |"
         )
+    telemetry_phases = [
+        (result.fixture_id, phase)
+        for result in report.results
+        for phase in result.phases
+        if phase.telemetry is not None
+    ]
+    if telemetry_phases:
+        lines.extend(
+            [
+                "",
+                "## Runner-observed telemetry",
+                "",
+                "| Fixture | Phase | Duration (s) | First event (s) | "
+                "First agent message (s) | Last agent message (s) | "
+                "Messages | Tool calls | Input tokens | Cached input | Output tokens |",
+                "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for fixture_id, phase in telemetry_phases:
+            telemetry = phase.telemetry
+            assert telemetry is not None
+
+            def value(raw: float | int | None) -> str:
+                return "—" if raw is None else str(raw)
+
+            lines.append(
+                f"| `{fixture_id}` | {phase.name} | {phase.duration_seconds:.3f} | "
+                f"{value(telemetry.first_event_seconds)} | "
+                f"{value(telemetry.first_agent_message_seconds)} | "
+                f"{value(telemetry.last_agent_message_seconds)} | "
+                f"{telemetry.agent_message_count} | {telemetry.tool_call_count} | "
+                f"{value(telemetry.input_tokens)} | "
+                f"{value(telemetry.cached_input_tokens)} | "
+                f"{value(telemetry.output_tokens)} |"
+            )
     lines.extend(
         [
             "",

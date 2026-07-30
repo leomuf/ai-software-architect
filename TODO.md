@@ -64,15 +64,24 @@ P90 for slow-user latency, and MAD plus P90-P50 for consistency. Collect at leas
 five observations before acting on a group and treat P90 as provisional until ten
 observations exist.
 
-- [ ] Add subphase telemetry for UserPromptSubmit, time to first model output,
+- [x] Add subphase telemetry for UserPromptSubmit, time to first model output,
       model completion, tool calls, subagents, template loading, patch creation,
       PreToolUse validation, durable writes, PostToolUse verification, Stop-hook
       corrections, and input/output tokens where Codex exposes them.
+      The runner now records runner-observed first event, first and last completed
+      agent-message events, item/tool counts, and token usage in schema `1.1.0`.
+      Codex currently does not expose individual hook, template-loading,
+      patch-construction, or subagent-duration timings; these remain explicitly
+      listed as unavailable rather than inferred.
 - [ ] Optimize `architecture-option-comparison` approval continuations first. Use
       the existing typed `PendingInteraction.DECISION` state to inject a minimal
       record-and-handoff context without natural-language regex routing, and measure
       whether one compact template bundle or deterministic artifact rendering
       reduces sequential reads, output generation, validation retries, and P90.
+      The typed minimal-context fast path is implemented and covered by control-plane
+      tests; keep this item open until a rebuilt plugin and comparable instrumented
+      campaign demonstrate the latency effect and the four-artifact workflow still
+      passes semantic review.
 - [ ] Optimize the initial `read-only-architecture-review` next. Prototype one
       bounded, short-lived repository snapshot helper rather than a persistent MCP
       process; add a small-repository path, an evidence budget, early stopping, and
@@ -96,6 +105,10 @@ observations exist.
 
 ## Deferred until evidence justifies them
 
+- [ ] Consider an explicit, opt-in local diagnostic export for end-user support
+      only after its redaction, consent, retention, size, and no-network contract
+      is specified and tested. Keep evaluation telemetry outside the packaged
+      runtime, and never collect prompts, source content, secrets, or personal data.
 - [ ] Consider another deterministic language parser only after its syntax,
       dependency semantics, budgets, and malicious-input fixtures are specified.
 - [ ] Consider a focused structural-evidence MCP tool only if repeated reviews still

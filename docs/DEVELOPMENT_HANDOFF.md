@@ -228,8 +228,8 @@ Two non-blocking observations from the run:
 The existing GitHub workflows run deterministic tests, generation-diff checks,
 Ruff, mypy, pytest, plugin build/validation, runtime smoke testing, CodeQL, and
 release packaging. CI also validates and renders the versioned exploratory
-performance history into the Job Summary and uploads its Markdown, CSV, and JSON
-views without modifying the ledger.
+performance history into the Job Summary and uploads its Markdown, primary and
+telemetry CSV, and JSON views without modifying the ledger.
 
 Dependabot is configured separately for Python and GitHub Actions. It may create
 multiple temporary branches because ungrouped updates receive one branch and pull
