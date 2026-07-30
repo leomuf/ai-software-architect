@@ -54,6 +54,18 @@ Four focused modules keep responsibilities separate:
 - `performance_report.py` produces stable Markdown, CSV, and JSON tables and
   like-for-like grouped statistics.
 
+The report uses median (P50), P75, P90, median absolute deviation (MAD), and the
+P90-P50 tail gap as its primary cross-version latency indicators. Mean, sample
+standard deviation, minimum, and maximum remain available in comparable-group
+details and JSON for diagnosis. P90 is provisional below ten samples, and groups
+below five samples are descriptive rather than decision-grade.
+
+`observed-total` is the sum of phases actually measured for an observation.
+`completed-workflow-total` is reported only when both the initial and continuation
+phases completed. This prevents an initial-only interaction from appearing to be a
+fast end-to-end workflow. The `Samples/Runs` coverage column makes missing
+continuations visible and never treats them as zero.
+
 `historical_review.py` is deliberately separate. It uses the documented local
 Codex App Server to export Desktop task evidence, but never automatically treats a
 completed status as semantic approval. A Codex-assisted or human review must record

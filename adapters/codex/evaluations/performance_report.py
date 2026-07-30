@@ -14,7 +14,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from adapters.codex.evaluations.performance_ledger import load_performance_ledger
 from adapters.codex.evaluations.performance_models import (
@@ -24,6 +24,7 @@ from adapters.codex.evaluations.performance_models import (
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_LEDGER = ROOT / "evaluation-data" / "exploratory-runs.jsonl"
+REPORT_SCHEMA_VERSION = "1.1.0"
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,8 @@ class PerformanceRow:
     execution_mode: str
     initial_seconds: float
     continuation_seconds: float | None
-    total_seconds: float
+    observed_total_seconds: float
+    completed_workflow_total_seconds: float | None
     campaign_wall_clock_seconds: float
     outcome: str
     quality: str
@@ -56,9 +58,14 @@ class StatisticRow:
     fixture_revision: str
     workload_fingerprint: str
     count: int
+    group_observation_count: int
     mean_seconds: float
     sample_stddev_seconds: float | None
     median_seconds: float
+    percentile_75_seconds: float
+    percentile_90_seconds: float
+    median_absolute_deviation_seconds: float
+    percentile_90_median_gap_seconds: float
     minimum_seconds: float
     maximum_seconds: float
 
@@ -68,6 +75,7 @@ class FixtureOverviewStatisticRow:
     fixture: str
     phase: str
     observation_count: int
+    fixture_observation_count: int
     revision_count: int
     workload_count: int
     model_count: int
@@ -76,8 +84,60 @@ class FixtureOverviewStatisticRow:
     mean_seconds: float
     sample_stddev_seconds: float | None
     median_seconds: float
+    percentile_75_seconds: float
+    percentile_90_seconds: float
+    median_absolute_deviation_seconds: float
+    percentile_90_median_gap_seconds: float
     minimum_seconds: float
     maximum_seconds: float
+
+
+class _Distribution(TypedDict):
+    mean_seconds: float
+    sample_stddev_seconds: float | None
+    median_seconds: float
+    percentile_75_seconds: float
+    percentile_90_seconds: float
+    median_absolute_deviation_seconds: float
+    percentile_90_median_gap_seconds: float
+    minimum_seconds: float
+    maximum_seconds: float
+
+
+def _distribution(samples: Sequence[float]) -> _Distribution:
+    """Calculate conventional and robust descriptive latency statistics."""
+
+    median = statistics.median(samples)
+    if len(samples) == 1:
+        percentile_75 = samples[0]
+        percentile_90 = samples[0]
+    else:
+        percentile_75 = statistics.quantiles(
+            samples,
+            n=4,
+            method="inclusive",
+        )[2]
+        percentile_90 = statistics.quantiles(
+            samples,
+            n=10,
+            method="inclusive",
+        )[8]
+    return {
+        "mean_seconds": round(statistics.mean(samples), 3),
+        "sample_stddev_seconds": (
+            round(statistics.stdev(samples), 3) if len(samples) > 1 else None
+        ),
+        "median_seconds": round(median, 3),
+        "percentile_75_seconds": round(percentile_75, 3),
+        "percentile_90_seconds": round(percentile_90, 3),
+        "median_absolute_deviation_seconds": round(
+            statistics.median(abs(sample - median) for sample in samples),
+            3,
+        ),
+        "percentile_90_median_gap_seconds": round(percentile_90 - median, 3),
+        "minimum_seconds": round(min(samples), 3),
+        "maximum_seconds": round(max(samples), 3),
+    }
 
 
 def observation_rows(records: Sequence[PerformanceObservation]) -> list[PerformanceRow]:
@@ -104,7 +164,12 @@ def observation_rows(records: Sequence[PerformanceObservation]) -> list[Performa
                 execution_mode=record.campaign.execution_mode.value,
                 initial_seconds=record.phases.initial.duration_seconds or 0.0,
                 continuation_seconds=continuation,
-                total_seconds=record.timing.measured_phase_seconds,
+                observed_total_seconds=record.timing.measured_phase_seconds,
+                completed_workflow_total_seconds=(
+                    record.timing.measured_phase_seconds
+                    if continuation is not None
+                    else None
+                ),
                 campaign_wall_clock_seconds=record.campaign.wall_clock_seconds,
                 outcome=record.result.outcome.value,
                 quality=record.result.measurement_quality.value,
@@ -127,11 +192,18 @@ def fixture_overview_statistics(
             grouped[(record.test.fixture_id, "continuation")].append(
                 (record, record.phases.continuation.duration_seconds or 0.0)
             )
-        grouped[(record.test.fixture_id, "total")].append(
+        grouped[(record.test.fixture_id, "observed-total")].append(
             (record, record.timing.measured_phase_seconds)
         )
+        if record.phases.continuation.status == PhaseStatus.COMPLETED:
+            grouped[(record.test.fixture_id, "completed-workflow-total")].append(
+                (record, record.timing.measured_phase_seconds)
+            )
 
     rows: list[FixtureOverviewStatisticRow] = []
+    fixture_counts: dict[str, int] = defaultdict(int)
+    for record in records:
+        fixture_counts[record.test.fixture_id] += 1
     for (fixture, phase), observations in sorted(grouped.items()):
         samples = [duration for _, duration in observations]
         rows.append(
@@ -139,6 +211,7 @@ def fixture_overview_statistics(
                 fixture=fixture,
                 phase=phase,
                 observation_count=len(samples),
+                fixture_observation_count=fixture_counts[fixture],
                 revision_count=len(
                     {record.test.fixture_revision for record, _ in observations}
                 ),
@@ -152,13 +225,7 @@ def fixture_overview_statistics(
                 execution_mode_count=len(
                     {record.campaign.execution_mode.value for record, _ in observations}
                 ),
-                mean_seconds=round(statistics.mean(samples), 3),
-                sample_stddev_seconds=(
-                    round(statistics.stdev(samples), 3) if len(samples) > 1 else None
-                ),
-                median_seconds=round(statistics.median(samples), 3),
-                minimum_seconds=round(min(samples), 3),
-                maximum_seconds=round(max(samples), 3),
+                **_distribution(samples),
             )
         )
     return rows
@@ -166,6 +233,7 @@ def fixture_overview_statistics(
 
 def grouped_statistics(records: Sequence[PerformanceObservation]) -> list[StatisticRow]:
     values: dict[tuple[str, ...], list[float]] = defaultdict(list)
+    group_counts: dict[tuple[str, ...], int] = defaultdict(int)
     for record in records:
         common = (
             record.test.fixture_id,
@@ -176,12 +244,19 @@ def grouped_statistics(records: Sequence[PerformanceObservation]) -> list[Statis
             record.test.fixture_revision,
             record.test.workload_fingerprint,
         )
+        group_counts[common] += 1
         values[(*common, "initial")].append(record.phases.initial.duration_seconds or 0.0)
         if record.phases.continuation.status == PhaseStatus.COMPLETED:
             values[(*common, "continuation")].append(
                 record.phases.continuation.duration_seconds or 0.0
             )
-        values[(*common, "total")].append(record.timing.measured_phase_seconds)
+        values[(*common, "observed-total")].append(
+            record.timing.measured_phase_seconds
+        )
+        if record.phases.continuation.status == PhaseStatus.COMPLETED:
+            values[(*common, "completed-workflow-total")].append(
+                record.timing.measured_phase_seconds
+            )
 
     rows: list[StatisticRow] = []
     for key, samples in sorted(values.items()):
@@ -197,13 +272,8 @@ def grouped_statistics(records: Sequence[PerformanceObservation]) -> list[Statis
                 fixture_revision=revision,
                 workload_fingerprint=workload,
                 count=len(samples),
-                mean_seconds=round(statistics.mean(samples), 3),
-                sample_stddev_seconds=(
-                    round(statistics.stdev(samples), 3) if len(samples) > 1 else None
-                ),
-                median_seconds=round(statistics.median(samples), 3),
-                minimum_seconds=round(min(samples), 3),
-                maximum_seconds=round(max(samples), 3),
+                group_observation_count=group_counts[key[:-1]],
+                **_distribution(samples),
             )
         )
     return rows
@@ -224,8 +294,9 @@ def render_markdown(
         "## Observations",
         "",
         "| Campaign | Task | Fixture | Revision | Plugin | Model | Effort | Speed | Mode | "
-        "Initial (s) | Continuation (s) | Total (s) | Campaign wall (s) |",
-        "|---|---|---|---|---|---|---|---|---|---:|---:|---:|---:|",
+        "Initial (s) | Continuation (s) | Observed total (s) | "
+        "Completed workflow total (s) | Campaign wall (s) |",
+        "|---|---|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|",
     ]
     for observation_row in rows:
         lines.append(
@@ -236,7 +307,8 @@ def render_markdown(
             f"{observation_row.speed} | {observation_row.execution_mode} | "
             f"{_seconds(observation_row.initial_seconds)} | "
             f"{_seconds(observation_row.continuation_seconds)} | "
-            f"{_seconds(observation_row.total_seconds)} | "
+            f"{_seconds(observation_row.observed_total_seconds)} | "
+            f"{_seconds(observation_row.completed_workflow_total_seconds)} | "
             f"{_seconds(observation_row.campaign_wall_clock_seconds)} |"
         )
     lines.extend(
@@ -247,24 +319,27 @@ def render_markdown(
             "This descriptive overview answers how each fixture has typically performed "
             "across the complete recorded history. It may combine different revisions, "
             "workloads, models, speed tiers, and execution modes, so use the comparable-"
-            "group statistics below for release-to-release conclusions.",
+            "group statistics below for release-to-release conclusions. Robust P50, "
+            "P75, P90, and MAD values lead this overview so isolated historical "
+            "outliers do not dominate optimization priorities.",
             "",
-            "| Fixture | Phase | Observations | Revisions | Workloads | Models | Speeds | "
-            "Modes | Mean (s) | Stddev (s) | Median (s) | Min (s) | Max (s) |",
+            "| Fixture | Phase | Samples/Runs | Revisions | Workloads | Models | Speeds | "
+            "Modes | P50 (s) | P75 (s) | P90 (s) | MAD (s) | P90-P50 (s) |",
             "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
     )
     for overview_row in overview_rows:
         lines.append(
             f"| {overview_row.fixture} | {overview_row.phase} | "
-            f"{overview_row.observation_count} | {overview_row.revision_count} | "
+            f"{overview_row.observation_count}/{overview_row.fixture_observation_count} | "
+            f"{overview_row.revision_count} | "
             f"{overview_row.workload_count} | {overview_row.model_count} | "
             f"{overview_row.speed_count} | {overview_row.execution_mode_count} | "
-            f"{_seconds(overview_row.mean_seconds)} | "
-            f"{_seconds(overview_row.sample_stddev_seconds)} | "
             f"{_seconds(overview_row.median_seconds)} | "
-            f"{_seconds(overview_row.minimum_seconds)} | "
-            f"{_seconds(overview_row.maximum_seconds)} |"
+            f"{_seconds(overview_row.percentile_75_seconds)} | "
+            f"{_seconds(overview_row.percentile_90_seconds)} | "
+            f"{_seconds(overview_row.median_absolute_deviation_seconds)} | "
+            f"{_seconds(overview_row.percentile_90_median_gap_seconds)} |"
         )
     lines.extend(
         [
@@ -272,8 +347,9 @@ def render_markdown(
             "## Comparable-group statistics",
             "",
             "| Fixture | Revision | Workload | Phase | Model | Effort | Speed | Mode | "
-            "n | Mean (s) | Stddev (s) | Median (s) | Min (s) | Max (s) |",
-            "|---|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|",
+            "Samples/Runs | Mean (s) | Stddev (s) | P50 (s) | P75 (s) | P90 (s) | "
+            "MAD (s) | P90-P50 (s) | Min (s) | Max (s) |",
+            "|---|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
     )
     for statistic_row in statistics_rows:
@@ -282,17 +358,26 @@ def render_markdown(
             f"`{statistic_row.workload_fingerprint[:8]}` | {statistic_row.phase} | "
             f"{statistic_row.model} | {statistic_row.reasoning_effort} | "
             f"{statistic_row.speed} | {statistic_row.execution_mode} | "
-            f"{statistic_row.count} | {_seconds(statistic_row.mean_seconds)} | "
+            f"{statistic_row.count}/{statistic_row.group_observation_count} | "
+            f"{_seconds(statistic_row.mean_seconds)} | "
             f"{_seconds(statistic_row.sample_stddev_seconds)} | "
             f"{_seconds(statistic_row.median_seconds)} | "
+            f"{_seconds(statistic_row.percentile_75_seconds)} | "
+            f"{_seconds(statistic_row.percentile_90_seconds)} | "
+            f"{_seconds(statistic_row.median_absolute_deviation_seconds)} | "
+            f"{_seconds(statistic_row.percentile_90_median_gap_seconds)} | "
             f"{_seconds(statistic_row.minimum_seconds)} | "
             f"{_seconds(statistic_row.maximum_seconds)} |"
         )
     lines.extend(
         [
             "",
-            "Missing continuations are excluded from continuation statistics and are never "
-            "treated as zero.",
+            "`observed-total` is the sum of every phase actually completed in an "
+            "observation. `completed-workflow-total` is emitted only when both the "
+            "initial and continuation phases completed. Missing continuations are "
+            "excluded from continuation and completed-workflow statistics and are "
+            "never treated as zero. P90 is provisional for fewer than ten samples; "
+            "groups with fewer than five samples are descriptive only.",
             "",
         ]
     )
@@ -321,7 +406,7 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
         writer.writeheader()
         writer.writerows(asdict(row) for row in rows)
     payload: dict[str, Any] = {
-        "schema_version": "1.0.0",
+        "schema_version": REPORT_SCHEMA_VERSION,
         "observations": [asdict(row) for row in rows],
         "fixture_overview_statistics": [asdict(row) for row in overview_rows],
         "statistics": [asdict(row) for row in statistic_rows],

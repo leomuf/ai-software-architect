@@ -328,14 +328,20 @@ Required table columns:
 Required statistics for each comparable group:
 
 - observation count;
-- arithmetic mean;
-- sample standard deviation;
-- median;
-- minimum and maximum;
-- optionally P95 when the sample is sufficiently large;
+- median (P50) as the primary typical-user measure;
+- P75 and P90 for upper-quartile and tail latency;
+- median absolute deviation (MAD) as the primary robust spread measure;
+- the P90-P50 gap as a directly understandable tail-latency measure;
+- arithmetic mean, sample standard deviation, minimum, and maximum as secondary
+  diagnostic measures;
+- optionally P95 only when the sample is sufficiently large;
 - absolute and percentage difference from a selected baseline.
 
 Missing phases are excluded from phase statistics and are never converted to zero.
+Reports distinguish `observed-total`, the sum of phases actually measured, from
+`completed-workflow-total`, which is emitted only when both initial and continuation
+completed. Coverage is rendered as samples over recorded runs. P90 is provisional
+below ten samples, and groups below five samples are descriptive only.
 
 ## Comparison Policy
 
@@ -392,10 +398,12 @@ records fail with actionable messages; missing phases retain correct null semant
 ### Phase 2 — Reporter
 
 - [x] Implement console, Markdown, CSV, and JSON output.
-- [x] Calculate grouped count, mean, sample standard deviation, median, minimum, and
-      maximum.
+- [x] Calculate grouped count, P50, P75, P90, MAD, P90-P50, mean, sample standard
+      deviation, minimum, and maximum.
 - [x] Add a clearly labeled cross-version fixture overview for descriptive typical
       performance without weakening strict comparable groups.
+- [x] Separate observed totals from completed multi-phase workflow totals and show
+      phase coverage without converting missing continuations to zero.
 - [ ] Add explicit compatibility checks and baseline deltas.
 - [x] Add the PowerShell reporting entry point and usage documentation.
 - [x] Test null handling, single-observation groups, incompatible groups, and stable

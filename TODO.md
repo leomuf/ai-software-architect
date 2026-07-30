@@ -56,6 +56,44 @@ an explicit fallback.
 - [ ] Add operating-system packages only after their clean-machine runtime,
       lifecycle, and security gates pass.
 
+## Performance optimization sequence
+
+Keep all latency comparisons bounded to the same fixture revision, workload, model,
+reasoning effort, speed mode, and execution mode. Use P50 for typical user latency,
+P90 for slow-user latency, and MAD plus P90-P50 for consistency. Collect at least
+five observations before acting on a group and treat P90 as provisional until ten
+observations exist.
+
+- [ ] Add subphase telemetry for UserPromptSubmit, time to first model output,
+      model completion, tool calls, subagents, template loading, patch creation,
+      PreToolUse validation, durable writes, PostToolUse verification, Stop-hook
+      corrections, and input/output tokens where Codex exposes them.
+- [ ] Optimize `architecture-option-comparison` approval continuations first. Use
+      the existing typed `PendingInteraction.DECISION` state to inject a minimal
+      record-and-handoff context without natural-language regex routing, and measure
+      whether one compact template bundle or deterministic artifact rendering
+      reduces sequential reads, output generation, validation retries, and P90.
+- [ ] Optimize the initial `read-only-architecture-review` next. Prototype one
+      bounded, short-lived repository snapshot helper rather than a persistent MCP
+      process; add a small-repository path, an evidence budget, early stopping, and
+      no subagent delegation by default for small scopes.
+- [ ] Reduce the universal Codex control-plane context through progressive
+      disclosure: retain a compact activation and safety envelope, inject exact
+      pattern references only when needed, artifact instructions only for approved
+      handoff, and review instructions only for repository analysis. Remove
+      duplicated Composite-skill and hook wording only behind behavioral
+      evaluation coverage.
+- [ ] Optimize clarification continuations after the first two bottlenecks, then
+      re-evaluate focused examples and proportional no-pattern advice. Do not spend
+      optimization effort on initial clarification while its comparable P50 remains
+      near the current 7–9 second baseline.
+- [ ] Introduce warning-only latency objectives after the telemetry and sample-size
+      gates are met: comparison continuation P50/P90 at 120/180 seconds, read-only
+      initial at 75/120 seconds, clarification continuation at 50/75 seconds,
+      comparison initial at 40/75 seconds, focused examples at 20/35 seconds, and
+      initial clarification at 10/15 seconds. Revisit these objectives from measured
+      baselines before making any release gate blocking.
+
 ## Deferred until evidence justifies them
 
 - [ ] Consider another deterministic language parser only after its syntax,

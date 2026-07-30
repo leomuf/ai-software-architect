@@ -154,19 +154,36 @@ def test_reporting_excludes_missing_continuation_from_statistics(tmp_path: Path)
 
     avoid = next(row for row in rows if row.fixture == "avoid-overengineering")
     assert avoid.continuation_seconds is None
+    assert avoid.completed_workflow_total_seconds is None
     assert not any(
         row.fixture == "avoid-overengineering" and row.phase == "continuation"
         for row in statistics_rows
     )
+    assert not any(
+        row.fixture == "avoid-overengineering"
+        and row.phase == "completed-workflow-total"
+        for row in statistics_rows
+    )
+    comparison = next(
+        row for row in rows if row.fixture == "architecture-option-comparison"
+    )
+    assert comparison.observed_total_seconds == 30
+    assert comparison.completed_workflow_total_seconds == 30
 
     output = tmp_path / "rendered"
-    assert write_reports(ledger, output) == (2, 5)
+    assert write_reports(ledger, output) == (2, 6)
     assert "—" in (output / "performance.md").read_text(encoding="utf-8")
     assert (output / "performance.csv").is_file()
     performance_json = json.loads(
         (output / "performance.json").read_text(encoding="utf-8")
     )
-    assert len(performance_json["fixture_overview_statistics"]) == 5
+    assert performance_json["schema_version"] == "1.1.0"
+    assert len(performance_json["fixture_overview_statistics"]) == 6
+    phases = {
+        row["phase"] for row in performance_json["fixture_overview_statistics"]
+    }
+    assert "observed-total" in phases
+    assert "completed-workflow-total" in phases
 
 
 def test_fixture_overview_aggregates_revisions_but_reports_heterogeneity(
@@ -197,6 +214,19 @@ def test_fixture_overview_aggregates_revisions_but_reports_heterogeneity(
             "runtime": original.runtime.model_copy(
                 update={"model": "another-model", "speed": SpeedMode.FAST}
             ),
+            "phases": original.phases.model_copy(
+                update={
+                    "initial": original.phases.initial.model_copy(
+                        update={"duration_seconds": 20.0}
+                    ),
+                    "continuation": original.phases.continuation.model_copy(
+                        update={"duration_seconds": 40.0}
+                    ),
+                }
+            ),
+            "timing": original.timing.model_copy(
+                update={"measured_phase_seconds": 60.0}
+            ),
         }
     )
 
@@ -208,4 +238,17 @@ def test_fixture_overview_aggregates_revisions_but_reports_heterogeneity(
     assert initial.workload_count == 1
     assert initial.model_count == 2
     assert initial.speed_count == 2
-    assert initial.mean_seconds == 10
+    assert initial.fixture_observation_count == 2
+    assert initial.mean_seconds == 15
+    assert initial.median_seconds == 15
+    assert initial.percentile_75_seconds == 17.5
+    assert initial.percentile_90_seconds == 19
+    assert initial.median_absolute_deviation_seconds == 5
+    assert initial.percentile_90_median_gap_seconds == 4
+
+    completed_total = next(
+        row for row in overview if row.phase == "completed-workflow-total"
+    )
+    assert completed_total.observation_count == 2
+    assert completed_total.fixture_observation_count == 2
+    assert completed_total.median_seconds == 45
