@@ -16,6 +16,7 @@ from adapters.codex.evaluations.models import (
     FixtureResult,
     PhaseResult,
     PhaseTelemetry,
+    ToolTimelineEvent,
 )
 from adapters.codex.evaluations.performance_import import import_reports
 from adapters.codex.evaluations.performance_ledger import load_performance_ledger
@@ -61,6 +62,16 @@ def _phase(
             input_tokens=100,
             cached_input_tokens=50,
             output_tokens=25,
+            tool_events=[
+                ToolTimelineEvent(
+                    ordinal=1,
+                    tool_type="command_execution",
+                    started_seconds=1.0,
+                    completed_seconds=2.5,
+                    duration_seconds=1.5,
+                    status="completed",
+                )
+            ],
             unavailable_metrics=["pre_tool_use_hook_seconds"],
         ),
     )
@@ -188,10 +199,11 @@ def test_reporting_excludes_missing_continuation_from_statistics(tmp_path: Path)
     assert "—" in (output / "performance.md").read_text(encoding="utf-8")
     assert (output / "performance.csv").is_file()
     assert (output / "performance-telemetry.csv").is_file()
+    assert (output / "performance-tool-timeline.csv").is_file()
     performance_json = json.loads(
         (output / "performance.json").read_text(encoding="utf-8")
     )
-    assert performance_json["schema_version"] == "1.2.0"
+    assert performance_json["schema_version"] == "1.3.0"
     assert len(performance_json["fixture_overview_statistics"]) == 6
     phases = {
         row["phase"] for row in performance_json["fixture_overview_statistics"]
@@ -200,6 +212,8 @@ def test_reporting_excludes_missing_continuation_from_statistics(tmp_path: Path)
     assert "completed-workflow-total" in phases
     assert len(performance_json["subphase_telemetry"]) == 3
     assert performance_json["subphase_telemetry"][0]["first_event_seconds"] == 0.2
+    assert len(performance_json["tool_timeline"]) == 3
+    assert performance_json["tool_timeline"][0]["tool_type"] == "command_execution"
 
 
 def test_fixture_overview_aggregates_revisions_but_reports_heterogeneity(

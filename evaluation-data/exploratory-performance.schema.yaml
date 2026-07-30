@@ -9,7 +9,7 @@ additionalProperties: false
 required: [schema_version, record_id, campaign, test, runtime, phases, timing, result]
 properties:
   schema_version:
-    enum: [1.0.0, 1.1.0]
+    enum: [1.0.0, 1.1.0, 1.2.0]
   record_id:
     type: string
     pattern: "^[a-f0-9]{64}$"
@@ -144,9 +144,34 @@ $defs:
         anyOf:
           - {type: integer, minimum: 0}
           - {type: "null"}
+      tool_events:
+        type: array
+        items: {$ref: "#/$defs/tool_timeline_event"}
       unavailable_metrics:
         type: array
         items: {type: string}
+  tool_timeline_event:
+    type: object
+    additionalProperties: false
+    required:
+      - ordinal
+      - tool_type
+      - started_seconds
+      - completed_seconds
+      - duration_seconds
+      - gap_from_previous_tool_seconds
+      - status
+    properties:
+      ordinal: {type: integer, minimum: 1}
+      tool_type: {type: string, minLength: 1, maxLength: 80}
+      started_seconds: {$ref: "#/$defs/nonnegative_number"}
+      completed_seconds: {$ref: "#/$defs/nonnegative_number"}
+      duration_seconds: {$ref: "#/$defs/nonnegative_number"}
+      gap_from_previous_tool_seconds:
+        anyOf:
+          - {$ref: "#/$defs/nonnegative_number"}
+          - {type: "null"}
+      status: {type: string, minLength: 1, maxLength: 40}
   phases:
     type: object
     additionalProperties: false

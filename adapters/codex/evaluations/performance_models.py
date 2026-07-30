@@ -15,8 +15,8 @@ from pydantic import Field, field_validator, model_validator
 
 from adapters.codex.evaluations.models import PhaseTelemetry, StrictModel
 
-PerformanceSchemaVersion = Literal["1.0.0", "1.1.0"]
-PERFORMANCE_SCHEMA_VERSION: PerformanceSchemaVersion = "1.1.0"
+PerformanceSchemaVersion = Literal["1.0.0", "1.1.0", "1.2.0"]
+PERFORMANCE_SCHEMA_VERSION: PerformanceSchemaVersion = "1.2.0"
 
 
 class ExecutionMode(StrEnum):
@@ -158,6 +158,11 @@ class PerformanceObservation(StrictModel):
             for phase in (self.phases.initial, self.phases.continuation)
         ):
             raise ValueError("schema version 1.0.0 cannot contain phase telemetry")
+        if self.schema_version == "1.1.0" and any(
+            phase.telemetry is not None and phase.telemetry.tool_events
+            for phase in (self.phases.initial, self.phases.continuation)
+        ):
+            raise ValueError("schema version 1.1.0 cannot contain tool timeline events")
         expected = performance_record_id(_identity_payload(self))
         if self.record_id != expected:
             raise ValueError("record_id does not match the canonical observation identity")
@@ -181,6 +186,11 @@ def _identity_payload(observation: PerformanceObservation) -> dict[str, Any]:
     if observation.schema_version == "1.0.0":
         for phase in payload["phases"].values():
             phase.pop("telemetry", None)
+    elif observation.schema_version == "1.1.0":
+        for phase in payload["phases"].values():
+            telemetry = phase.get("telemetry")
+            if telemetry is not None:
+                telemetry.pop("tool_events", None)
     return payload
 
 
@@ -191,9 +201,17 @@ def build_performance_observation(**fields: Any) -> PerformanceObservation:
     has_telemetry = isinstance(phases, PhaseMeasurements) and any(
         phase.telemetry is not None for phase in (phases.initial, phases.continuation)
     )
-    schema_version: PerformanceSchemaVersion = (
-        PERFORMANCE_SCHEMA_VERSION if has_telemetry else "1.0.0"
+    has_tool_events = isinstance(phases, PhaseMeasurements) and any(
+        phase.telemetry is not None and phase.telemetry.tool_events
+        for phase in (phases.initial, phases.continuation)
     )
+    schema_version: PerformanceSchemaVersion
+    if has_tool_events:
+        schema_version = PERFORMANCE_SCHEMA_VERSION
+    elif has_telemetry:
+        schema_version = "1.1.0"
+    else:
+        schema_version = "1.0.0"
     unvalidated = PerformanceObservation.model_construct(
         schema_version=schema_version,
         record_id="0" * 64,

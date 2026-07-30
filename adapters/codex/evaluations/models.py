@@ -68,6 +68,18 @@ class DeterministicAssertion(StrictModel):
     evidence: str
 
 
+class ToolTimelineEvent(StrictModel):
+    """Privacy-preserving timing for one runner-observed Codex tool item."""
+
+    ordinal: int = Field(ge=1)
+    tool_type: str = Field(min_length=1, max_length=80)
+    started_seconds: float = Field(ge=0)
+    completed_seconds: float = Field(ge=0)
+    duration_seconds: float = Field(ge=0)
+    gap_from_previous_tool_seconds: float | None = Field(default=None, ge=0)
+    status: str = Field(min_length=1, max_length=40)
+
+
 class PhaseTelemetry(StrictModel):
     """Runner-observed Codex event timing and usage; never inferred."""
 
@@ -80,6 +92,7 @@ class PhaseTelemetry(StrictModel):
     input_tokens: int | None = Field(default=None, ge=0)
     cached_input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
+    tool_events: list[ToolTimelineEvent] = Field(default_factory=list)
     unavailable_metrics: list[str] = Field(default_factory=list)
 
 
@@ -115,7 +128,7 @@ class FixtureResult(StrictModel):
 
 
 class CampaignReport(StrictModel):
-    schema_version: str = "1.1.0"
+    schema_version: str = "1.2.0"
     started_at: datetime
     completed_at: datetime
     codex_command: str

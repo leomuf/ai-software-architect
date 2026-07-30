@@ -77,7 +77,11 @@ continuations visible and never treats them as zero.
 The renderer writes `performance-telemetry.csv` alongside the primary Markdown,
 CSV, and JSON reports. The Markdown report includes a runner-observed telemetry
 section, while `performance.json` exposes the same rows under
-`subphase_telemetry`.
+`subphase_telemetry`. Schema `1.2.0` observations also retain a
+privacy-preserving tool timeline. `performance-tool-timeline.csv`, the Markdown
+timeline, and `performance.json` record only tool category, order, relative
+start/end/duration, gap, and status. They never copy commands, paths, prompts,
+source text, or tool output.
 
 `historical_review.py` is deliberately separate. It uses the documented local
 Codex App Server to export Desktop task evidence, but never automatically treats a

@@ -24,7 +24,7 @@ from adapters.codex.evaluations.performance_models import (
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_LEDGER = ROOT / "evaluation-data" / "exploratory-runs.jsonl"
-REPORT_SCHEMA_VERSION = "1.2.0"
+REPORT_SCHEMA_VERSION = "1.3.0"
 
 
 @dataclass(frozen=True)
@@ -68,6 +68,21 @@ class TelemetryRow:
     output_tokens: int | None
     item_counts: str
     unavailable_metrics: str
+
+
+@dataclass(frozen=True)
+class ToolTimelineRow:
+    campaign: str
+    fixture: str
+    fixture_revision: str
+    phase: str
+    ordinal: int
+    tool_type: str
+    started_seconds: float
+    completed_seconds: float
+    duration_seconds: float
+    gap_from_previous_tool_seconds: float | None
+    status: str
 
 
 @dataclass(frozen=True)
@@ -245,6 +260,41 @@ def telemetry_rows(records: Sequence[PerformanceObservation]) -> list[TelemetryR
     return rows
 
 
+def tool_timeline_rows(
+    records: Sequence[PerformanceObservation],
+) -> list[ToolTimelineRow]:
+    rows: list[ToolTimelineRow] = []
+    for record in sorted(
+        records,
+        key=lambda item: (item.campaign.started_at, item.campaign.id, item.test.fixture_id),
+    ):
+        for phase_name, phase in (
+            ("initial", record.phases.initial),
+            ("continuation", record.phases.continuation),
+        ):
+            if phase.status != PhaseStatus.COMPLETED or phase.telemetry is None:
+                continue
+            for event in phase.telemetry.tool_events:
+                rows.append(
+                    ToolTimelineRow(
+                        campaign=record.campaign.id,
+                        fixture=record.test.fixture_id,
+                        fixture_revision=record.test.fixture_revision,
+                        phase=phase_name,
+                        ordinal=event.ordinal,
+                        tool_type=event.tool_type,
+                        started_seconds=event.started_seconds,
+                        completed_seconds=event.completed_seconds,
+                        duration_seconds=event.duration_seconds,
+                        gap_from_previous_tool_seconds=(
+                            event.gap_from_previous_tool_seconds
+                        ),
+                        status=event.status,
+                    )
+                )
+    return rows
+
+
 def fixture_overview_statistics(
     records: Sequence[PerformanceObservation],
 ) -> list[FixtureOverviewStatisticRow]:
@@ -353,6 +403,7 @@ def _seconds(value: float | None) -> str:
 def render_markdown(
     rows: Sequence[PerformanceRow],
     telemetry: Sequence[TelemetryRow],
+    tool_timeline: Sequence[ToolTimelineRow],
     overview_rows: Sequence[FixtureOverviewStatisticRow],
     statistics_rows: Sequence[StatisticRow],
 ) -> str:
@@ -431,6 +482,30 @@ def render_markdown(
     lines.extend(
         [
             "",
+            "## Privacy-preserving tool timeline",
+            "",
+            "The timeline records only tool category, order, relative timing, and "
+            "status. Commands, paths, prompts, source text, and tool output are never "
+            "copied into the performance ledger.",
+            "",
+            "| Campaign | Fixture | Revision | Phase | # | Tool type | Start (s) | "
+            "End (s) | Duration (s) | Gap from prior tool (s) | Status |",
+            "|---|---|---|---|---:|---|---:|---:|---:|---:|---|",
+        ]
+    )
+    if not tool_timeline:
+        lines.append("| â€” | â€” | â€” | â€” | â€” | â€” | â€” | â€” | â€” | â€” | â€” |")
+    for event in tool_timeline:
+        lines.append(
+            f"| {event.campaign} | {event.fixture} | "
+            f"`{event.fixture_revision[:8]}` | {event.phase} | {event.ordinal} | "
+            f"{event.tool_type} | {_seconds(event.started_seconds)} | "
+            f"{_seconds(event.completed_seconds)} | {_seconds(event.duration_seconds)} | "
+            f"{_seconds(event.gap_from_previous_tool_seconds)} | {event.status} |"
+        )
+    lines.extend(
+        [
+            "",
             "## Cross-version fixture overview",
             "",
             "This descriptive overview answers how each fixture has typically performed "
@@ -505,11 +580,18 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
     records = load_performance_ledger(ledger)
     rows = observation_rows(records)
     telemetry = telemetry_rows(records)
+    tool_timeline = tool_timeline_rows(records)
     overview_rows = fixture_overview_statistics(records)
     statistic_rows = grouped_statistics(records)
     output_directory.mkdir(parents=True, exist_ok=True)
 
-    markdown = render_markdown(rows, telemetry, overview_rows, statistic_rows)
+    markdown = render_markdown(
+        rows,
+        telemetry,
+        tool_timeline,
+        overview_rows,
+        statistic_rows,
+    )
     (output_directory / "performance.md").write_text(
         markdown,
         encoding="utf-8",
@@ -531,10 +613,22 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
         writer = csv.DictWriter(csv_file, fieldnames=list(TelemetryRow.__annotations__))
         writer.writeheader()
         writer.writerows(asdict(row) for row in telemetry)
+    with (output_directory / "performance-tool-timeline.csv").open(
+        "w",
+        encoding="utf-8-sig",
+        newline="",
+    ) as csv_file:
+        writer = csv.DictWriter(
+            csv_file,
+            fieldnames=list(ToolTimelineRow.__annotations__),
+        )
+        writer.writeheader()
+        writer.writerows(asdict(row) for row in tool_timeline)
     payload: dict[str, Any] = {
         "schema_version": REPORT_SCHEMA_VERSION,
         "observations": [asdict(row) for row in rows],
         "subphase_telemetry": [asdict(row) for row in telemetry],
+        "tool_timeline": [asdict(row) for row in tool_timeline],
         "fixture_overview_statistics": [asdict(row) for row in overview_rows],
         "statistics": [asdict(row) for row in statistic_rows],
     }

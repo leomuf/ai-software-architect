@@ -243,8 +243,8 @@ imported once:
 .\scripts\import-exploratory-performance-reports.ps1 -Apply
 ```
 
-Render the complete history as a console table plus Markdown, primary and telemetry
-CSV, and JSON files:
+Render the complete history as a console table plus Markdown, primary CSV,
+telemetry CSV, privacy-preserving tool-timeline CSV, and JSON files:
 
 ```powershell
 .\scripts\show-exploratory-performance.ps1
@@ -254,5 +254,6 @@ The command prints the generated output directory. Missing continuations appear 
 an em dash and are excluded from continuation statistics. The report provides both
 a broad cross-version fixture overview and strict like-for-like comparable groups.
 GitHub CI uses the same renderer for its Job Summary and uploads the Markdown,
-primary CSV, telemetry CSV, and JSON report files as an artifact; it never
+primary CSV, telemetry CSV, tool-timeline CSV, and JSON report files as an
+artifact; it never
 modifies the canonical ledger.

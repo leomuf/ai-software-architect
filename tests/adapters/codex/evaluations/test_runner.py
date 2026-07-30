@@ -122,11 +122,30 @@ def test_phase_telemetry_uses_only_runner_observed_jsonl_data() -> None:
             json.dumps({"type": "thread.started", "thread_id": "thread-123"}),
         ),
         (
+            0.75,
+            json.dumps(
+                {
+                    "type": "item.started",
+                    "item": {
+                        "id": "tool-1",
+                        "type": "command_execution",
+                        "command": "private command",
+                    },
+                }
+            ),
+        ),
+        (
             1.5,
             json.dumps(
                 {
                     "type": "item.completed",
-                    "item": {"type": "command_execution"},
+                    "item": {
+                        "id": "tool-1",
+                        "type": "command_execution",
+                        "command": "private command",
+                        "aggregated_output": "private output",
+                        "status": "completed",
+                    },
                 }
             ),
         ),
@@ -165,6 +184,19 @@ def test_phase_telemetry_uses_only_runner_observed_jsonl_data() -> None:
     assert telemetry.input_tokens == 120
     assert telemetry.cached_input_tokens == 80
     assert telemetry.output_tokens == 30
+    assert len(telemetry.tool_events) == 1
+    tool_event = telemetry.tool_events[0]
+    assert tool_event.model_dump() == {
+        "ordinal": 1,
+        "tool_type": "command_execution",
+        "started_seconds": 0.75,
+        "completed_seconds": 1.5,
+        "duration_seconds": 0.75,
+        "gap_from_previous_tool_seconds": None,
+        "status": "completed",
+    }
+    assert "private command" not in telemetry.model_dump_json()
+    assert "private output" not in telemetry.model_dump_json()
     assert "pre_tool_use_hook_seconds" in telemetry.unavailable_metrics
 
 

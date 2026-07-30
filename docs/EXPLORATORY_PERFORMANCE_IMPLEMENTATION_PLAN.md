@@ -343,13 +343,18 @@ Reports distinguish `observed-total`, the sum of phases actually measured, from
 completed. Coverage is rendered as samples over recorded runs. P90 is provisional
 below ten samples, and groups below five samples are descriptive only.
 
-New schema `1.1.0` observations retain runner-observed Codex telemetry when it is
+Schema `1.1.0` observations retain runner-observed Codex telemetry when it is
 available: first JSONL event, first and last completed agent-message events,
 message and tool-call counts, item-type counts, and token usage. These measurements
 must remain clearly distinguished from unavailable time-to-first-token, individual
 hook, template-loading, patch-construction, and subagent-duration measurements.
 Never infer an unavailable subphase. Schema `1.0.0` history remains valid and keeps
 its existing content-addressed record IDs.
+
+Schema `1.2.0` adds runner-observed tool timelines. The canonical record stores
+only tool type, ordinal, relative start/end/duration, inter-tool gap, and status.
+Commands, file paths, prompts, source content, and outputs are intentionally
+excluded.
 
 ## Comparison Policy
 
@@ -524,3 +529,4 @@ reasoning.
 | 2026-07-22 | Delay a blocking CI threshold until a comparable baseline exists. | Model and host latency vary; premature thresholds would produce misleading release failures. |
 | 2026-07-22 | Exclude aborted and prerequisite-failed tests from the canonical performance ledger. | Their elapsed time measures setup or failure handling rather than usable AI Software Architect behavior. |
 | 2026-07-29 | Review archived Desktop tasks with Codex and persist accepted structured results. | Titles and timestamps alone cannot reliably identify phases, usable outcomes, or prerequisite failures; later evaluations need an auditable reusable baseline rather than repeated reinterpretation. |
+| 2026-07-30 | Store privacy-preserving tool timelines in schema `1.2.0`. | Tool-level timing makes latency bottlenecks diagnosable without retaining repository content or user commands. |

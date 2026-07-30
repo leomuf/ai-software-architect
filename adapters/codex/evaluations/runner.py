@@ -31,6 +31,7 @@ from adapters.codex.evaluations.models import (
     FixtureResult,
     PhaseResult,
     PhaseTelemetry,
+    ToolTimelineEvent,
     VerificationPolicy,
     load_fixture,
 )
@@ -126,6 +127,9 @@ def _phase_telemetry(stdout_lines: Sequence[tuple[float, str]]) -> PhaseTelemetr
     first_event: float | None = None
     agent_message_times: list[float] = []
     item_counts: dict[str, int] = {}
+    started_tools: dict[str, tuple[float, str]] = {}
+    tool_events: list[ToolTimelineEvent] = []
+    previous_completion: float | None = None
     usage: dict[str, Any] | None = None
     for observed_seconds, line in stdout_lines:
         try:
@@ -140,12 +144,49 @@ def _phase_telemetry(stdout_lines: Sequence[tuple[float, str]]) -> PhaseTelemetr
         if isinstance(candidate_usage, dict):
             usage = candidate_usage
         item = event.get("item")
-        if not isinstance(item, dict) or event.get("type") != "item.completed":
+        event_type = event.get("type")
+        if not isinstance(item, dict):
             continue
         item_type = str(item.get("type", "unknown"))
+        item_id = item.get("id")
+        is_tool = (
+            item_type in {"command_execution", "file_change", "mcp_tool_call"}
+            or item_type.endswith("_tool_call")
+        )
+        if (
+            event_type == "item.started"
+            and is_tool
+            and isinstance(item_id, str)
+        ):
+            started_tools[item_id] = (observed_seconds, item_type)
+            continue
+        if event_type != "item.completed":
+            continue
         item_counts[item_type] = item_counts.get(item_type, 0) + 1
         if item_type == "agent_message":
             agent_message_times.append(observed_seconds)
+        if is_tool and isinstance(item_id, str) and item_id in started_tools:
+            started_seconds, started_type = started_tools.pop(item_id)
+            duration = max(0.0, observed_seconds - started_seconds)
+            gap = (
+                None
+                if previous_completion is None
+                else max(0.0, started_seconds - previous_completion)
+            )
+            tool_events.append(
+                ToolTimelineEvent(
+                    ordinal=len(tool_events) + 1,
+                    tool_type=started_type,
+                    started_seconds=round(started_seconds, 3),
+                    completed_seconds=round(observed_seconds, 3),
+                    duration_seconds=round(duration, 3),
+                    gap_from_previous_tool_seconds=(
+                        round(gap, 3) if gap is not None else None
+                    ),
+                    status=str(item.get("status", "unknown")),
+                )
+            )
+            previous_completion = observed_seconds
 
     tool_call_count = sum(
         count
@@ -186,6 +227,7 @@ def _phase_telemetry(stdout_lines: Sequence[tuple[float, str]]) -> PhaseTelemetr
         input_tokens=token_value("input_tokens"),
         cached_input_tokens=token_value("cached_input_tokens"),
         output_tokens=token_value("output_tokens"),
+        tool_events=tool_events,
         unavailable_metrics=unavailable,
     )
 
