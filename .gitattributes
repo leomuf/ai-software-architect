@@ -1,0 +1,29 @@
+# Normalize text files in the Git repository.
+* text=auto
+
+# Cross-platform source, configuration, and documentation.
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.lock text eol=lf
+*.feature text eol=lf
+*.sh text eol=lf
+
+# Windows-native scripts.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary assets must never be line-ending normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.exe binary
+*.pdf binary
