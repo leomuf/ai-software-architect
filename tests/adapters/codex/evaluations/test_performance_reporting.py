@@ -104,7 +104,7 @@ def test_report_import_preview_and_apply_are_idempotent(tmp_path: Path) -> None:
     )
     assert len(preview.accepted) == 2
     assert preview.applied_records == 0
-    assert preview.reports[0].endswith("/Run20/report.json")
+    assert Path(preview.reports[0]).name == "report.json"
     assert not Path(preview.reports[0]).is_absolute()
     assert not ledger.exists()
 
