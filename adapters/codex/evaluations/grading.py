@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from fnmatch import fnmatchcase
 from pathlib import PurePosixPath
 
 from adapters.codex.evaluations.models import (
@@ -81,4 +82,22 @@ def grade_phase(
             ),
         )
     )
+    for required_pattern in policy.required_repository_changes:
+        normalized_pattern = required_pattern.replace("\\", "/")
+        matches = [
+            path
+            for path in repository_changes
+            if fnmatchcase(path.replace("\\", "/"), normalized_pattern)
+        ]
+        assertions.append(
+            DeterministicAssertion(
+                name=f"required-repository-change:{required_pattern}",
+                status=AssertionStatus.PASS if matches else AssertionStatus.FAIL,
+                evidence=(
+                    "Required repository change matched: " + ", ".join(matches)
+                    if matches
+                    else f"No repository change matched {required_pattern!r}."
+                ),
+            )
+        )
     return assertions

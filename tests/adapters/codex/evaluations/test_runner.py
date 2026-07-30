@@ -59,6 +59,12 @@ def test_all_campaign_fixtures_satisfy_the_shared_typed_contract() -> None:
     assert "describe-subagent-results-accurately" in review.expected
     assert comparison.continuation is not None
     assert comparison.continuation.verification.repository_changes == "architecture-artifacts-only"
+    assert comparison.continuation.verification.required_repository_changes == [
+        ".ai-architect/project-context.md",
+        ".ai-architect/architecture-contract.yaml",
+        ".ai-architect/implementation-plan.md",
+        ".ai-architect/decisions/ADR-*.md",
+    ]
 
 
 def test_fixture_contract_rejects_repository_path_escape(tmp_path: Path) -> None:
@@ -91,6 +97,38 @@ def test_grading_enforces_markers_events_and_architecture_only_writes() -> None:
         "response-marker-absent:<!-- ai-architect-",
         "event-type-absent:mcp_tool_call",
         "repository-change-policy",
+    }
+
+
+def test_grading_requires_every_configured_architecture_artifact() -> None:
+    policy = VerificationPolicy(
+        repository_changes="architecture-artifacts-only",
+        required_repository_changes=[
+            ".ai-architect/project-context.md",
+            ".ai-architect/architecture-contract.yaml",
+            ".ai-architect/implementation-plan.md",
+            ".ai-architect/decisions/ADR-*.md",
+        ],
+    )
+
+    assertions = grade_phase(
+        exit_code=0,
+        final_response="Validation blocked the write.",
+        event_types={"item.completed"},
+        repository_changes=[],
+        policy=policy,
+    )
+
+    failures = {
+        assertion.name
+        for assertion in assertions
+        if assertion.status == AssertionStatus.FAIL
+    }
+    assert failures == {
+        "required-repository-change:.ai-architect/project-context.md",
+        "required-repository-change:.ai-architect/architecture-contract.yaml",
+        "required-repository-change:.ai-architect/implementation-plan.md",
+        "required-repository-change:.ai-architect/decisions/ADR-*.md",
     }
 
 

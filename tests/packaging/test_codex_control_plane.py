@@ -185,6 +185,8 @@ def test_complete_workflow_context_frontloads_clarification_and_exact_sections()
         "`skills/ai-software-architect/assets/artifact-authoring-bundle.md`"
         in context
     )
+    assert "`.ai-architect/implementation-plan.md`" in context
+    assert "never a filename invented from the phrase coding handoff" in context
     assert "Do not resolve them from the plugin root" in context
     assert (
         "this or the current application, project, repository, or codebase requires"
@@ -493,6 +495,7 @@ def test_architect_uses_bundled_references_instead_of_web_search(tmp_path: Path)
         / "artifact-authoring-bundle.md"
     ) in installed_context
     assert "Exact installed record-and-handoff resource path" in installed_context
+    assert "artifact-authoring-bundle.md" in installed_context
 
 
 def test_model_selected_comparison_retains_architecture_artifact_patch_surface(

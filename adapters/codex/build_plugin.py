@@ -162,7 +162,10 @@ During `record_and_handoff`, prepare the ADR, contract, project context, and cod
 handoff as one complete bundle before one durable write. Before drafting, load the
 single exact bundled `assets/artifact-authoring-bundle.md` resource once; it contains
 the canonical ADR template, contract example, ADR-authoring reference, and
-implementation-plan template. Treat the
+implementation-plan template. Use exactly `.ai-architect/project-context.md`,
+`.ai-architect/architecture-contract.yaml`, `.ai-architect/implementation-plan.md`,
+and `.ai-architect/decisions/ADR-NNN[-slug].md`; do not invent alternate handoff
+filenames. Treat the
 contract example as authoritative for nested list-item shapes and never infer those shapes
 from field names or model memory. `allow-via-interface` requires `via_interface`; `allow`
 and `deny` omit it. The trusted `PreToolUse` hook reconstructs proposed
@@ -234,7 +237,15 @@ def _write_authoring_bundle(destination: Path) -> dict[str, str]:
         "-->\n\n",
         "# Artifact Authoring Bundle\n\n",
         "Load this generated resource once during Codex `record_and_handoff`. "
-        "The separately maintained canonical sources below remain authoritative.\n",
+        "The separately maintained canonical sources below remain authoritative.\n\n",
+        "## Required output paths\n\n",
+        "Submit exactly one complete candidate at each required path:\n\n",
+        "- `.ai-architect/project-context.md`\n",
+        "- `.ai-architect/architecture-contract.yaml`\n",
+        "- `.ai-architect/implementation-plan.md`\n",
+        "- `.ai-architect/decisions/ADR-NNN[-slug].md`\n\n",
+        "Do not rename `implementation-plan.md` to coding-handoff, handoff, plan, "
+        "or any other variant. The host adapter rejects alternate paths.\n",
     ]
     provenance: dict[str, str] = {}
     for heading, source in AUTHORING_BUNDLE_SOURCES:

@@ -24,6 +24,7 @@ class Activation(StrictModel):
 
 class VerificationPolicy(StrictModel):
     repository_changes: Literal["forbid", "architecture-artifacts-only", "allow"]
+    required_repository_changes: list[str] = Field(default_factory=list)
     forbidden_event_types: list[str] = Field(default_factory=list)
     forbidden_response_markers: list[str] = Field(default_factory=list)
 

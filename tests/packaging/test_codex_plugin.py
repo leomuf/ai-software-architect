@@ -76,6 +76,14 @@ def test_codex_plugin_is_reproducible_and_complete(
     for heading, source in build_plugin.AUTHORING_BUNDLE_SOURCES:
         assert f"## {heading}" in bundle_text
         assert build_plugin._relative(source) in bundle_text
+    for required_path in (
+        ".ai-architect/project-context.md",
+        ".ai-architect/architecture-contract.yaml",
+        ".ai-architect/implementation-plan.md",
+        ".ai-architect/decisions/ADR-NNN[-slug].md",
+    ):
+        assert required_path in bundle_text
+    assert "Do not rename `implementation-plan.md`" in bundle_text
 
     metadata = yaml.safe_load((skill / "agents" / "openai.yaml").read_text("utf-8"))
     assert metadata["interface"]["short_description"] == (
