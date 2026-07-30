@@ -123,15 +123,21 @@ response. Stabilize the contract before interpreting another single pass as proo
 - [x] Permit claims of completed independent reviews only when successful subagent
       results are available. If delegation is rejected or unavailable, disclose it
       and describe any main-model perspective review accurately.
-- [ ] Rebuild and install the corrected plugin, then run only
+- [x] Rebuild and install the corrected plugin, then run only
       `architecture-option-comparison` and `read-only-architecture-review` through
-      `scripts/run-codex-exploratory-evaluations.ps1`.
-- [ ] Repeat the corrected architecture-option-comparison three times without
+      `scripts/run-codex-exploratory-evaluations.ps1`. Plugin
+      `0.1.0+codex.20260730153925` passed both targeted semantic reviews in campaigns
+      `20260730T154200Z` and `20260730T154503Z`.
+- [x] Repeat the corrected architecture-option-comparison three times without
       retrying or discarding a failure; require all three runs to use bounded static
-      repository evidence before treating the behavior as stable.
-- [ ] After the targeted stability checks pass, run one complete five-fixture
+      repository evidence before treating the behavior as stable. Campaigns
+      `20260730T154200Z`, `20260730T154642Z`, and `20260730T154927Z` all passed
+      deterministic and human semantic review.
+- [x] After the targeted stability checks pass, run one complete five-fixture
       campaign and record its human semantic review separately from deterministic
-      runner status.
+      runner status. Campaign `20260730T155213Z` passed all five semantic reviews;
+      only the approved four-file architecture bundle changed its isolated comparison
+      workspace.
 
 ## Deferred until evidence justifies them
 
