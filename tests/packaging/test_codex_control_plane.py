@@ -183,6 +183,12 @@ def test_complete_workflow_context_frontloads_clarification_and_exact_sections()
     assert "[GoF] [Strategy]" in context
     assert "installed public skill root `skills/ai-software-architect/`" in context
     assert "Do not resolve them from the plugin root" in context
+    assert (
+        "this or the current application, project, repository, or codebase requires"
+        in context
+    )
+    assert "Never claim repository evidence is unavailable" in context
+    assert "never claim independent reviews completed" in context
     positions = [context.index(section) for section in REQUIRED_COMPARISON_SECTIONS]
     assert positions == sorted(positions)
 

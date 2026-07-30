@@ -16,6 +16,8 @@ Apply the orchestration evidence sufficiency gate before reading the active repo
 
 Use repository evidence only when implementation facts could materially change the option set or the user requests review, verification, or repository-specific advice. Tool availability is not evidence of need.
 
+Treat a request to improve or choose patterns for "this" or the current application, project, repository, or codebase as repository-specific advice. Inspect the smallest relevant source set with host-native static reads before recommending unless the user forbids inspection or has already supplied complete decision evidence. Do not claim that repository evidence was unavailable when relevant workspace files were accessible.
+
 ## Mandatory final-answer gate for an open selection
 
 Treat questions such as "which design patterns should I use?" as an open selection, not as permission to output a prioritized stack of complementary patterns. If a missing fact can materially change the option set, ask a focused clarification question and end the current turn without an option comparison, recommendation, or repository inspection.

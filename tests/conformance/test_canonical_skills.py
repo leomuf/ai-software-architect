@@ -176,6 +176,11 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "A project-bound task or available tool is not by itself a reason to inspect" in (
         orchestration
     )
+    assert "Treat a request to improve or choose architecture or design patterns" in (
+        orchestration
+    )
+    assert "Inspect the smallest relevant source set" in options
+    assert "Do not claim that repository evidence was unavailable" in options
     assert "retaining proportionate simplicity" in orchestration
     assert "Never end a design recommendation without a visible approval" in orchestration
     assert "Return only user-facing Markdown" in orchestration
@@ -192,6 +197,8 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "semantic workflow phase from natural-language keywords" in orchestration
     assert "up to three independent read-only reviews" in orchestration
     assert "main agent alone integrates findings" in orchestration
+    assert "only when successful subagent results were returned" in orchestration
+    assert "never claim that independent reviews completed" in orchestration
     assert "load the exact bundled artifact templates" in orchestration
     assert "conflicting platform or interface statements" in interview
 

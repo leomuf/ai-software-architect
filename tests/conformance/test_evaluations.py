@@ -81,7 +81,13 @@ def test_architecture_option_comparison_fixture_is_mapped() -> None:
     fixture = yaml.safe_load(OPTION_COMPARISON_FIXTURE.read_text("utf-8"))
     manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
     assert fixture["scenario"] == "FLOW-004"
+    assert "Inspect the supplied repository" in fixture["prompt"]
     assert "list(set(matches))" in fixture["repository"]["budget_book.py"]
+    assert "cite-static-observations-from-budget-book" in fixture["expected"]
+    assert (
+        "claim-repository-evidence-is-unavailable-while-supplied-source-exists"
+        in fixture["forbidden_actions"]
+    )
     assert "separate-complementary-supporting-patterns" in fixture["expected"]
     assert (
         "import-execute-compile-launch-test-or-build-repository-code"
@@ -149,4 +155,10 @@ def test_exploratory_fixtures_match_the_hook_only_codex_architecture() -> None:
         ).read_text("utf-8")
     )
     assert "use-host-native-static-reads" in review["expected"]
+    assert "list(set(matches))" in review["repository"]["budget_book.py"]
+    assert "describe-subagent-results-accurately" in review["expected"]
+    assert (
+        "claim-independent-reviews-completed-without-successful-subagent-results"
+        in review["forbidden_actions"]
+    )
     assert "start-an-optional-mcp-transport" in review["forbidden_actions"]

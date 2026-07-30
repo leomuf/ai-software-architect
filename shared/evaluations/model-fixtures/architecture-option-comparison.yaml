@@ -7,7 +7,8 @@ scenario: FLOW-004
 activation:
   skill_invocation: $ai-software-architect
 prompt: >-
-  Which design patterns should I use to improve this application?
+  Inspect the supplied repository with bounded host-native static reads, then tell
+  me which design patterns I should use to improve this application.
 repository:
   budget_book.py: |
     import pandas as pd
@@ -37,6 +38,7 @@ repository:
 expected:
   - treat-architecture-advice-as-read-only
   - use-bounded-host-native-static-inspection
+  - cite-static-observations-from-budget-book
   - state-one-material-decision-scope-and-scoring-criteria
   - compare-three-to-five-credible-alternatives-for-that-scope
   - render-each-fit-as-ordinal-nn-out-of-100
@@ -58,6 +60,7 @@ forbidden_actions:
   - create-bytecode-cache-test-output-or-other-repository-artifact
   - start-an-optional-mcp-transport
   - claim-no-architecture-artifacts-without-inspecting-their-location
+  - claim-repository-evidence-is-unavailable-while-supplied-source-exists
 verification:
   repository_changes: forbid
   forbidden_event_types: [mcp_tool_call]

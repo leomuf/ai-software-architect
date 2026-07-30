@@ -153,10 +153,13 @@ Feature: Architecture workflow routing
 
   @FLOW-004
   Scenario: Compare patterns before asking the user to choose
-    Given the user asks which design pattern should be used
+    Given the user asks which design pattern should improve this or the current application, project, repository, or codebase
+    And relevant repository source is available
     And at least three credible alternatives address the same material decision
     When the agent evaluates the architecture options
-    Then it treats repository inspection as read-only
+    Then it performs the smallest relevant host-native static inspection unless the user forbids inspection or already supplied complete decision evidence
+    And it does not claim that repository evidence is unavailable while relevant workspace files are accessible
+    And it treats repository inspection as read-only
     And it presents "Decision scope and criteria", "Evidence and assumptions", and between 3 and 5 "Alternatives" before its "Recommendation"
     And every alternative has a category label, a fit score out of 100, and a fit rationale
     And every alternative states its main benefit, main liability, and material assumption
@@ -437,6 +440,8 @@ Feature: Architecture conformance review
     Then it classifies claims as confirmed facts, static indications, runtime observations, assumptions, or unverified possibilities
     And every environment, dependency, and artifact-attribution claim cites its supporting observation
     And contradictory claims are reconciled or disclosed as an unresolved limitation
+    And it describes reviews as independent and completed only when successful subagent results were returned
+    And rejected or unavailable delegation is disclosed as a limitation rather than represented as completed independent review
     And it recommends the highest-leverage architectural improvement
     And it performs one final repository-integrity check after the last potentially mutating action
     And it reports any side effect and requests authorization before cleanup

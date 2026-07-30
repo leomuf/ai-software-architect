@@ -103,6 +103,36 @@ observations exist.
       initial clarification at 10/15 seconds. Revisit these objectives from measured
       baselines before making any release gate blocking.
 
+## Exploratory semantic stability
+
+The `20260730T150924Z` campaign exposed a longstanding ambiguity rather than an
+initial-route regression: project-specific pattern advice could either inspect the
+available repository or treat it as generic guidance, while the fixture required
+inspection. Historical semantic review also accepted at least one no-inspection
+response. Stabilize the contract before interpreting another single pass as proof.
+
+- [x] Make project-specific improvement and pattern-selection requests require the
+      smallest relevant host-native static inspection unless the user forbids
+      inspection or has already supplied complete decision evidence.
+- [x] Make the architecture-option-comparison fixture explicitly request bounded
+      inspection of its supplied source and forbid claiming that repository evidence
+      is unavailable.
+- [x] Give the read-only architecture-review fixture a small representative Python
+      repository so it tests architecture analysis rather than only missing-evidence
+      handling.
+- [x] Permit claims of completed independent reviews only when successful subagent
+      results are available. If delegation is rejected or unavailable, disclose it
+      and describe any main-model perspective review accurately.
+- [ ] Rebuild and install the corrected plugin, then run only
+      `architecture-option-comparison` and `read-only-architecture-review` through
+      `scripts/run-codex-exploratory-evaluations.ps1`.
+- [ ] Repeat the corrected architecture-option-comparison three times without
+      retrying or discarding a failure; require all three runs to use bounded static
+      repository evidence before treating the behavior as stable.
+- [ ] After the targeted stability checks pass, run one complete five-fixture
+      campaign and record its human semantic review separately from deterministic
+      runner status.
+
 ## Deferred until evidence justifies them
 
 - [ ] Consider an explicit, opt-in local diagnostic export for end-user support
