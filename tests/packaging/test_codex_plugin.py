@@ -65,11 +65,17 @@ def test_codex_plugin_is_reproducible_and_complete(
     ):
         assert marker not in skill_text
     assert len(list((skill / "references").iterdir())) == 51
-    assert len(list((skill / "assets").iterdir())) == 3
+    assert len(list((skill / "assets").iterdir())) == 4
     assert {path.name for path in (second / "skills").iterdir() if path.is_dir()} == {
         "ai-software-architect"
     }
     assert (skill / "references" / "gof-abstract-factory.md").is_file()
+    authoring_bundle = skill / "assets" / "artifact-authoring-bundle.md"
+    assert authoring_bundle.is_file()
+    bundle_text = authoring_bundle.read_text("utf-8")
+    for heading, source in build_plugin.AUTHORING_BUNDLE_SOURCES:
+        assert f"## {heading}" in bundle_text
+        assert build_plugin._relative(source) in bundle_text
 
     metadata = yaml.safe_load((skill / "agents" / "openai.yaml").read_text("utf-8"))
     assert metadata["interface"]["short_description"] == (
@@ -101,7 +107,10 @@ def test_codex_plugin_is_reproducible_and_complete(
     provenance = json.loads((second / "provenance.json").read_text("utf-8"))
     assert provenance["generator"] == "adapters/codex/build_plugin.py"
     assert len(provenance["source_to_output"]) == 60
-    assert provenance["additional_source_to_output"] == {}
+    assert len(provenance["additional_source_to_output"]) == 4
+    assert set(provenance["additional_source_to_output"].values()) == {
+        "skills/ai-software-architect/assets/artifact-authoring-bundle.md"
+    }
     for relative, expected_hash in provenance["output_sha256"].items():
         assert hashlib.sha256((second / relative).read_bytes()).hexdigest() == expected_hash
 

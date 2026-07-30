@@ -160,6 +160,23 @@ def test_ledger_append_is_atomic_and_idempotent(tmp_path: Path) -> None:
     assert not ledger.with_suffix(".jsonl.lock").exists()
 
 
+def test_ledger_append_preserves_existing_serialized_bytes(tmp_path: Path) -> None:
+    ledger = tmp_path / "history.jsonl"
+    legacy = observation(telemetry=True)
+    legacy_line = legacy.model_dump_json().replace(',"tool_events":[]', "")
+    ledger.write_bytes((legacy_line + "\n").encode("utf-8"))
+    before = ledger.read_bytes()
+
+    assert append_performance_observations(
+        ledger,
+        [observation(continuation=2.0)],
+    ) == 1
+
+    after = ledger.read_bytes()
+    assert after.startswith(before)
+    assert after.count(b"\n") == 2
+
+
 def test_instrumented_append_preserves_legacy_record_identity(tmp_path: Path) -> None:
     ledger = tmp_path / "history.jsonl"
     legacy = observation()

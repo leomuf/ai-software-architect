@@ -274,17 +274,12 @@ def handle_user_prompt_submit(
     )
     if plugin_root is not None:
         skill_root = plugin_root.resolve(strict=False) / "skills" / "ai-software-architect"
-        resources = (
-            skill_root / "assets" / "adr-template.md",
-            skill_root / "assets" / "architecture-contract.example.yaml",
-            skill_root / "references" / "adr-authoring.md",
-            skill_root / "assets" / "implementation-plan-template.md",
-        )
+        resource = skill_root / "assets" / "artifact-authoring-bundle.md"
         additional_context += (
-            " Exact installed record-and-handoff resource paths (authoritative; read "
-            "these files directly with host-native static file tools and do not search "
-            "for alternatives): "
-            + "; ".join(str(path) for path in resources)
+            " Exact installed record-and-handoff resource path (authoritative; read "
+            "this generated bundle once with a host-native static file tool and do not "
+            "search for or separately load its canonical source files): "
+            + str(resource)
             + "."
         )
     return {

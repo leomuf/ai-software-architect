@@ -181,7 +181,10 @@ def test_complete_workflow_context_frontloads_clarification_and_exact_sections()
     assert "Option, Fit, Rationale, Main benefit, Main liability, Material assumption" in context
     assert "[No pattern] Keep the script simple" in context
     assert "[GoF] [Strategy]" in context
-    assert "installed public skill root `skills/ai-software-architect/`" in context
+    assert (
+        "`skills/ai-software-architect/assets/artifact-authoring-bundle.md`"
+        in context
+    )
     assert "Do not resolve them from the plugin root" in context
     assert (
         "this or the current application, project, repository, or codebase requires"
@@ -473,8 +476,8 @@ def test_architect_uses_bundled_references_instead_of_web_search(tmp_path: Path)
         "[Architecture] Hexagonal Architecture=references/architecture-hexagonal.md"
         in additional
     )
-    assert "assets/architecture-contract.example.yaml" in additional
-    assert "load all four of these exact bundled resources before drafting" in additional
+    assert "assets/artifact-authoring-bundle.md" in additional
+    assert "load exactly one generated resource before drafting" in additional
     assert "authoritative for nested list-item shapes" in additional
     assert "not a probability or measured percentage" in additional
     assert "Never browse the web" in additional
@@ -487,9 +490,9 @@ def test_architect_uses_bundled_references_instead_of_web_search(tmp_path: Path)
         / "skills"
         / "ai-software-architect"
         / "assets"
-        / "architecture-contract.example.yaml"
+        / "artifact-authoring-bundle.md"
     ) in installed_context
-    assert "Exact installed record-and-handoff resource paths" in installed_context
+    assert "Exact installed record-and-handoff resource path" in installed_context
 
 
 def test_model_selected_comparison_retains_architecture_artifact_patch_surface(
@@ -951,7 +954,7 @@ def test_pre_write_hook_validates_complete_contract_without_mcp(tmp_path: Path) 
     denied = handle_pre_tool_use(invalid, data)
     assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
     assert "complete architecture contract is invalid" in str(denied)
-    assert "architecture-contract.example.yaml" in str(denied)
+    assert "artifact-authoring-bundle.md" in str(denied)
 
     valid_yaml = (
         "schema_version: 1.0.0\nrevision: 1\nscope: test\n"

@@ -72,7 +72,9 @@ observations exist.
       agent-message events, item/tool counts, and token usage in schema `1.1.0`.
       Codex currently does not expose individual hook, template-loading,
       patch-construction, or subagent-duration timings; these remain explicitly
-      listed as unavailable rather than inferred.
+      listed as unavailable rather than inferred. Schema `1.2.0` additionally
+      records privacy-preserving per-tool order, duration, and inter-tool gaps
+      without commands, paths, prompts, source, or output.
 - [ ] Optimize `architecture-option-comparison` approval continuations first. Use
       the existing typed `PendingInteraction.DECISION` state to inject a minimal
       record-and-handoff context without natural-language regex routing, and measure
@@ -81,7 +83,9 @@ observations exist.
       The typed minimal-context fast path is implemented and covered by control-plane
       tests; keep this item open until a rebuilt plugin and comparable instrumented
       campaign demonstrate the latency effect and the four-artifact workflow still
-      passes semantic review.
+      passes semantic review. The build now consolidates the four separately
+      maintained authoring sources into one provenance-tracked installed bundle so
+      Codex can replace four sequential reads with one.
 - [ ] Optimize the initial `read-only-architecture-review` next. Prototype one
       bounded, short-lived repository snapshot helper rather than a persistent MCP
       process; add a small-repository path, an evidence budget, early stopping, and

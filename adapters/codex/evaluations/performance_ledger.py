@@ -82,6 +82,7 @@ def append_performance_observations(
         return 0
     path.parent.mkdir(parents=True, exist_ok=True)
     with _ledger_lock(path):
+        existing_bytes = path.read_bytes() if path.exists() else b""
         existing = load_performance_ledger(path)
         by_id = {record.record_id: record for record in existing}
         additions: list[PerformanceObservation] = []
@@ -98,19 +99,20 @@ def append_performance_observations(
         if not additions:
             return 0
 
-        serialized = "".join(
-            record.model_dump_json() + "\n" for record in (*existing, *additions)
-        )
+        separator = b"" if not existing_bytes or existing_bytes.endswith(b"\n") else b"\n"
+        serialized_additions = "".join(
+            record.model_dump_json() + "\n" for record in additions
+        ).encode("utf-8")
         with NamedTemporaryFile(
-            "w",
-            encoding="utf-8",
-            newline="\n",
+            "wb",
             dir=path.parent,
             prefix=f".{path.name}.",
             suffix=".tmp",
             delete=False,
         ) as temporary:
-            temporary.write(serialized)
+            temporary.write(existing_bytes)
+            temporary.write(separator)
+            temporary.write(serialized_additions)
             temporary.flush()
             os.fsync(temporary.fileno())
             temporary_path = Path(temporary.name)

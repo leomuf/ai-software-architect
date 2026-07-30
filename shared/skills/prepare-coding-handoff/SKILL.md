@@ -18,5 +18,4 @@ SPDX-License-Identifier: MIT
 6. Do not redesign approved decisions or write application code. Route changed requirements back to architecture approval.
 7. Scan the candidate plan for likely secrets before writing it safely.
 
-Use the [implementation plan template](assets/implementation-plan-template.md) for structure and remove its SPDX source header from generated output.
-
+Use the [implementation plan template](assets/implementation-plan-template.md) for structure and remove its SPDX source header from generated output. When the active host supplies this template inside one generated artifact-authoring bundle, use that already-loaded copy instead of reading the canonical source again.

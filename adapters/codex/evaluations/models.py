@@ -92,7 +92,10 @@ class PhaseTelemetry(StrictModel):
     input_tokens: int | None = Field(default=None, ge=0)
     cached_input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
-    tool_events: list[ToolTimelineEvent] = Field(default_factory=list)
+    tool_events: list[ToolTimelineEvent] = Field(
+        default_factory=list,
+        exclude_if=lambda value: not value,
+    )
     unavailable_metrics: list[str] = Field(default_factory=list)
 
 

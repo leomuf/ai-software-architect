@@ -312,8 +312,9 @@ def architecture_artifact_denial_reason(
                 return (
                     f"AI Software Architect blocked `{candidate.path.as_posix()}` because "
                     f"the complete architecture contract is invalid: {summary}. Before "
-                    "retrying, load `assets/architecture-contract.example.yaml` from the "
-                    "installed AI Software Architect skill and preserve its nested object shapes."
+                    "retrying, reload `assets/artifact-authoring-bundle.md` from the "
+                    "installed AI Software Architect skill and preserve the contract "
+                    "example's nested object shapes."
                 )
         if candidate.kind == "adr":
             try:
