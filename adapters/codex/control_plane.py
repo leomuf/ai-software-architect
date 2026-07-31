@@ -220,6 +220,20 @@ def developer_context(
             "blocked result plainly."
             + continuation
         )
+    if continued and continuation_interaction == "clarification":
+        return (
+            safety
+            + " Route: typed clarification continuation. Interpret the reply as the "
+            "answer to the immediately preceding focused question, retain the "
+            "clarified constraints, and resume the smallest sufficient mode from the "
+            "already-active Composite. Load only the internal workflow module selected "
+            "by that mode; do not rediscover the public skill or load unrelated "
+            "workflow modules. Do not repeat a resolved question. Repository inspection "
+            "remains unnecessary unless the clarified task makes additional evidence "
+            "material. Persist nothing unless a later project-bound material "
+            "recommendation is explicitly approved."
+            + continuation
+        )
 
     reference_hint = ""
     if context.reference_paths:

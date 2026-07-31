@@ -24,6 +24,7 @@ from adapters.codex.evaluations.performance_models import SpeedMode
 from adapters.codex.evaluations.performance_report import (
     fixture_overview_statistics,
     grouped_statistics,
+    latency_objective_rows,
     observation_rows,
     write_reports,
 )
@@ -77,8 +78,17 @@ def _phase(
     )
 
 
-def _write_report(path: Path) -> None:
-    started = datetime(2026, 7, 21, 19, 50, tzinfo=UTC)
+def _write_report(
+    path: Path,
+    *,
+    plugin_version: str = "0.1.0",
+    comparison_initial: float = 10.0,
+    comparison_continuation: float = 20.0,
+    started_offset_minutes: int = 0,
+) -> None:
+    started = datetime(2026, 7, 21, 19, 50, tzinfo=UTC) + timedelta(
+        minutes=started_offset_minutes
+    )
     report = CampaignReport(
         started_at=started,
         completed_at=started + timedelta(seconds=50),
@@ -86,7 +96,7 @@ def _write_report(path: Path) -> None:
         codex_version="codex-cli test",
         installed_plugin_id="ai-software-architect@personal",
         installed_plugin_marketplace="personal",
-        installed_plugin_version="0.1.0",
+        installed_plugin_version=plugin_version,
         installed_plugin_provenance_sha256="a" * 64,
         model="gpt-5.6-sol",
         reasoning_effort="medium",
@@ -96,7 +106,10 @@ def _write_report(path: Path) -> None:
                 scenario="FLOW-004",
                 status=EvaluationStatus.MANUAL_REVIEW,
                 workspace="bounded-workspace",
-                phases=[_phase("initial", 10.0), _phase("continuation", 20.0)],
+                phases=[
+                    _phase("initial", comparison_initial),
+                    _phase("continuation", comparison_continuation),
+                ],
             ),
             FixtureResult(
                 fixture_id="avoid-overengineering",
@@ -203,7 +216,7 @@ def test_reporting_excludes_missing_continuation_from_statistics(tmp_path: Path)
     performance_json = json.loads(
         (output / "performance.json").read_text(encoding="utf-8")
     )
-    assert performance_json["schema_version"] == "1.3.0"
+    assert performance_json["schema_version"] == "1.4.0"
     assert len(performance_json["fixture_overview_statistics"]) == 6
     phases = {
         row["phase"] for row in performance_json["fixture_overview_statistics"]
@@ -214,6 +227,54 @@ def test_reporting_excludes_missing_continuation_from_statistics(tmp_path: Path)
     assert performance_json["subphase_telemetry"][0]["first_event_seconds"] == 0.2
     assert len(performance_json["tool_timeline"]) == 3
     assert performance_json["tool_timeline"][0]["tool_type"] == "command_execution"
+    assert performance_json["latency_objectives"] == []
+
+
+def test_latency_objectives_are_release_specific_warning_only(tmp_path: Path) -> None:
+    report_paths = []
+    for index in range(5):
+        report_path = tmp_path / f"Run-{index}" / "report.json"
+        _write_report(
+            report_path,
+            plugin_version="0.2.0",
+            comparison_initial=50.0 + index,
+            comparison_continuation=100.0 + index,
+            started_offset_minutes=index,
+        )
+        report_paths.append(report_path)
+
+    ledger = tmp_path / "history.jsonl"
+    import_reports(
+        reports=report_paths,
+        ledger=ledger,
+        overrides_path=tmp_path / "missing.yaml",
+        default_speed=SpeedMode.STANDARD,
+        default_git_commit="commit-1",
+        default_host="windows-x86_64",
+        apply=True,
+    )
+
+    records = load_performance_ledger(ledger)
+    unknown_records = [
+        record.model_copy(
+            update={
+                "runtime": record.runtime.model_copy(
+                    update={"plugin_version": "unknown"}
+                )
+            }
+        )
+        for record in records
+    ]
+    objectives = latency_objective_rows([*records, *unknown_records])
+    initial = next(row for row in objectives if row.phase == "initial")
+    continuation = next(row for row in objectives if row.phase == "continuation")
+
+    assert initial.plugin_version == "0.2.0"
+    assert initial.count == 5
+    assert initial.status == "warn"
+    assert initial.percentile_90_provisional is True
+    assert continuation.status == "pass"
+    assert all(row.plugin_version != "unknown" for row in objectives)
 
 
 def test_fixture_overview_aggregates_revisions_but_reports_heterogeneity(

@@ -135,16 +135,35 @@ observations exist.
       proportionate simplicity 10.9 seconds. These release-level observations are
       descriptive until each comparable group reaches the documented sample-size
       threshold.
-- [ ] Optimize clarification continuations after the first two bottlenecks, then
-      re-evaluate focused examples and proportional no-pattern advice. Do not spend
-      optimization effort on initial clarification while its comparable P50 remains
-      near the current 7–9 second baseline.
-- [ ] Introduce warning-only latency objectives after the telemetry and sample-size
+- [x] Optimize clarification continuations after the first two bottlenecks, then
+      re-evaluate focused examples and proportional no-pattern advice. A typed
+      clarification continuation now receives a compact resume-design envelope
+      without the general comparison rendering contract, snapshot command,
+      reference-catalog hint, or artifact-authoring instructions. Read-only
+      continuations also remain in the read-only Codex sandbox. Plugin
+      `0.1.0+codex.20260731120010` passed the five-fixture semantic campaign, which
+      now measures the clarification continuation explicitly: initial clarification
+      was 11.2 seconds and its continuation was 62.6 seconds. Focused Abstract
+      Factory help was 29.1 seconds and proportional no-pattern advice was 13.4
+      seconds. The campaign took 293.6 seconds including the newly measured phase;
+      its phases shared with the preceding campaign totaled 231.0 seconds versus
+      256.3 seconds previously. These single-run observations remain descriptive
+      until their comparable groups reach the documented sample-size thresholds.
+- [x] Introduce warning-only latency objectives after the telemetry and sample-size
       gates are met: comparison continuation P50/P90 at 120/180 seconds, read-only
       initial at 75/120 seconds, clarification continuation at 50/75 seconds,
       comparison initial at 40/75 seconds, focused examples at 20/35 seconds, and
       initial clarification at 10/15 seconds. Revisit these objectives from measured
-      baselines before making any release gate blocking.
+      baselines before making any release gate blocking. Report schema `1.4.0`
+      evaluates only exact plugin-version, fixture-revision, workload, model,
+      reasoning, speed, and execution-mode cohorts with at least five observations;
+      unknown plugin versions are excluded, P90 is labeled provisional below ten,
+      and warnings never alter the process exit code. For
+      `0.1.0+codex.20260731120010`, clarification initial (8.8/12.7), clarification
+      continuation (49.2/59.7), comparison continuation (95.2/113.2), and read-only
+      review (42.8/46.5) pass their P50/P90 targets. Comparison initial (58.1/60.0)
+      warns on P50, while focused examples (30.3/37.8) warn on both provisional
+      objectives. Values are seconds and P90 remains provisional at `n = 5`.
 
 ## Exploratory semantic stability
 

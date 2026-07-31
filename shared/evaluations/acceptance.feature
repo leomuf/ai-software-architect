@@ -192,6 +192,10 @@ Feature: Architecture workflow routing
     Then the model gives one no-pattern recommendation rather than padded alternatives
     When a typed decision continuation resumes an approved project-bound recommendation
     Then the hook adds the exact installed artifact-authoring bundle path
+    When a typed clarification continuation supplies the requested constraint
+    Then the hook supplies only a compact resume-design context
+    And it omits comparison rendering, reference catalog, repository snapshot, and artifact-authoring instructions
+    And a read-only clarification continuation receives no workspace-write sandbox
     When a visible Alternatives section omits the stable comparison rendering
     Then the stop hook requests one complete replacement
     And a second stop does not create an infinite retry

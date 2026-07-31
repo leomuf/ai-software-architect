@@ -253,6 +253,9 @@ telemetry CSV, privacy-preserving tool-timeline CSV, and JSON files:
 The command prints the generated output directory. Missing continuations appear as
 an em dash and are excluded from continuation statistics. The report provides both
 a broad cross-version fixture overview and strict like-for-like comparable groups.
+After five exact release-compatible observations, it also renders informational
+P50/P90 objective results. These warnings are separated by plugin version and never
+fail the script or CI; P90 remains provisional until ten observations exist.
 GitHub CI uses the same renderer for its Job Summary and uploads the Markdown,
 primary CSV, telemetry CSV, tool-timeline CSV, and JSON report files as an
 artifact; it never

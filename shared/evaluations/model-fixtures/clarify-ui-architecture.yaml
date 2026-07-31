@@ -26,3 +26,22 @@ verification:
   repository_changes: forbid
   forbidden_event_types: [mcp_tool_call]
   forbidden_response_markers: ["<!-- ai-architect-"]
+continuation:
+  prompt: >-
+    Use a local desktop interface with Python Tkinter. Continue the architecture
+    guidance. Do not create or modify files yet.
+  expected:
+    - preserve-the-resolved-local-desktop-and-tkinter-constraint
+    - resume-the-smallest-sufficient-architecture-workflow
+    - provide-proportionate-user-facing-architecture-guidance
+    - return-user-facing-markdown-without-internal-control-markers
+    - leave-the-project-unchanged
+  forbidden_actions:
+    - repeat-the-resolved-web-versus-tkinter-question
+    - import-execute-compile-launch-test-or-build-repository-code
+    - create-or-modify-a-file
+    - start-an-optional-mcp-transport
+  verification:
+    repository_changes: forbid
+    forbidden_event_types: [mcp_tool_call]
+    forbidden_response_markers: ["<!-- ai-architect-"]

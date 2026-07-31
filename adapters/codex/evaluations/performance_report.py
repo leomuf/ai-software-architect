@@ -24,7 +24,17 @@ from adapters.codex.evaluations.performance_models import (
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_LEDGER = ROOT / "evaluation-data" / "exploratory-runs.jsonl"
-REPORT_SCHEMA_VERSION = "1.3.0"
+REPORT_SCHEMA_VERSION = "1.4.0"
+MINIMUM_OBJECTIVE_SAMPLES = 5
+PROVISIONAL_P90_SAMPLES = 10
+LATENCY_OBJECTIVES_SECONDS: dict[tuple[str, str], tuple[float, float]] = {
+    ("architecture-option-comparison", "continuation"): (120.0, 180.0),
+    ("read-only-architecture-review", "initial"): (75.0, 120.0),
+    ("clarify-ui-architecture", "continuation"): (50.0, 75.0),
+    ("architecture-option-comparison", "initial"): (40.0, 75.0),
+    ("abstract-factory-example", "initial"): (20.0, 35.0),
+    ("clarify-ui-architecture", "initial"): (10.0, 15.0),
+}
 
 
 @dataclass(frozen=True)
@@ -128,6 +138,26 @@ class FixtureOverviewStatisticRow:
     percentile_90_median_gap_seconds: float
     minimum_seconds: float
     maximum_seconds: float
+
+
+@dataclass(frozen=True)
+class LatencyObjectiveRow:
+    plugin_version: str
+    fixture: str
+    phase: str
+    model: str
+    reasoning_effort: str
+    speed: str
+    execution_mode: str
+    fixture_revision: str
+    workload_fingerprint: str
+    count: int
+    median_seconds: float
+    percentile_90_seconds: float
+    median_target_seconds: float
+    percentile_90_target_seconds: float
+    percentile_90_provisional: bool
+    status: str
 
 
 class _Distribution(TypedDict):
@@ -396,6 +426,84 @@ def grouped_statistics(records: Sequence[PerformanceObservation]) -> list[Statis
     return rows
 
 
+def latency_objective_rows(
+    records: Sequence[PerformanceObservation],
+) -> list[LatencyObjectiveRow]:
+    """Evaluate non-blocking objectives for exact release-compatible cohorts."""
+
+    values: dict[tuple[str, ...], list[float]] = defaultdict(list)
+    for record in records:
+        if record.runtime.plugin_version == "unknown":
+            continue
+        common = (
+            record.runtime.plugin_version,
+            record.test.fixture_id,
+            record.runtime.model,
+            record.runtime.reasoning_effort,
+            record.runtime.speed.value,
+            record.campaign.execution_mode.value,
+            record.test.fixture_revision,
+            record.test.workload_fingerprint,
+        )
+        if (record.test.fixture_id, "initial") in LATENCY_OBJECTIVES_SECONDS:
+            values[(*common, "initial")].append(
+                record.phases.initial.duration_seconds or 0.0
+            )
+        if (
+            record.phases.continuation.status == PhaseStatus.COMPLETED
+            and (record.test.fixture_id, "continuation")
+            in LATENCY_OBJECTIVES_SECONDS
+        ):
+            values[(*common, "continuation")].append(
+                record.phases.continuation.duration_seconds or 0.0
+            )
+
+    rows: list[LatencyObjectiveRow] = []
+    for key, samples in sorted(values.items()):
+        if len(samples) < MINIMUM_OBJECTIVE_SAMPLES:
+            continue
+        (
+            plugin_version,
+            fixture,
+            model,
+            effort,
+            speed,
+            mode,
+            revision,
+            workload,
+            phase,
+        ) = key
+        median_target, p90_target = LATENCY_OBJECTIVES_SECONDS[(fixture, phase)]
+        distribution = _distribution(samples)
+        status = (
+            "pass"
+            if distribution["median_seconds"] <= median_target
+            and distribution["percentile_90_seconds"] <= p90_target
+            else "warn"
+        )
+        rows.append(
+            LatencyObjectiveRow(
+                plugin_version=plugin_version,
+                fixture=fixture,
+                phase=phase,
+                model=model,
+                reasoning_effort=effort,
+                speed=speed,
+                execution_mode=mode,
+                fixture_revision=revision,
+                workload_fingerprint=workload,
+                count=len(samples),
+                median_seconds=distribution["median_seconds"],
+                percentile_90_seconds=distribution["percentile_90_seconds"],
+                median_target_seconds=median_target,
+                percentile_90_target_seconds=p90_target,
+                percentile_90_provisional=len(samples) < PROVISIONAL_P90_SAMPLES,
+                status=status,
+            )
+        )
+    return rows
+
+
 def _seconds(value: float | None) -> str:
     return "—" if value is None else f"{value:.3f}"
 
@@ -406,6 +514,7 @@ def render_markdown(
     tool_timeline: Sequence[ToolTimelineRow],
     overview_rows: Sequence[FixtureOverviewStatisticRow],
     statistics_rows: Sequence[StatisticRow],
+    objective_rows: Sequence[LatencyObjectiveRow],
 ) -> str:
     lines = [
         "# Exploratory Evaluation Performance",
@@ -536,6 +645,35 @@ def render_markdown(
     lines.extend(
         [
             "",
+            "## Warning-only latency objectives",
+            "",
+            "These release-specific checks are informational and never fail CI. "
+            "They appear only after five exact compatible observations. P90 remains "
+            "provisional until ten observations are available.",
+            "",
+            "| Plugin | Fixture | Phase | Samples | P50/target (s) | "
+            "P90/target (s) | P90 maturity | Status |",
+            "|---|---|---|---:|---:|---:|---|---|",
+        ]
+    )
+    if not objective_rows:
+        lines.append("| â€” | â€” | â€” | â€” | â€” | â€” | â€” | not evaluated |")
+    for objective_row in objective_rows:
+        maturity = (
+            "provisional" if objective_row.percentile_90_provisional else "established"
+        )
+        lines.append(
+            f"| {objective_row.plugin_version} | {objective_row.fixture} | "
+            f"{objective_row.phase} | {objective_row.count} | "
+            f"{_seconds(objective_row.median_seconds)}/"
+            f"{_seconds(objective_row.median_target_seconds)} | "
+            f"{_seconds(objective_row.percentile_90_seconds)}/"
+            f"{_seconds(objective_row.percentile_90_target_seconds)} | "
+            f"{maturity} | {objective_row.status} |"
+        )
+    lines.extend(
+        [
+            "",
             "## Comparable-group statistics",
             "",
             "| Fixture | Revision | Workload | Phase | Model | Effort | Speed | Mode | "
@@ -583,6 +721,7 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
     tool_timeline = tool_timeline_rows(records)
     overview_rows = fixture_overview_statistics(records)
     statistic_rows = grouped_statistics(records)
+    objective_rows = latency_objective_rows(records)
     output_directory.mkdir(parents=True, exist_ok=True)
 
     markdown = render_markdown(
@@ -591,6 +730,7 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
         tool_timeline,
         overview_rows,
         statistic_rows,
+        objective_rows,
     )
     (output_directory / "performance.md").write_text(
         markdown,
@@ -631,6 +771,7 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
         "tool_timeline": [asdict(row) for row in tool_timeline],
         "fixture_overview_statistics": [asdict(row) for row in overview_rows],
         "statistics": [asdict(row) for row in statistic_rows],
+        "latency_objectives": [asdict(row) for row in objective_rows],
     }
     (output_directory / "performance.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",

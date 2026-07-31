@@ -23,6 +23,7 @@ from adapters.codex.evaluations.runner import (
     InstalledPluginIdentity,
     _capture_process,
     _codex_command,
+    _continuation_sandbox,
     _installed_plugin_identity,
     _parse_events,
     _phase_telemetry,
@@ -65,6 +66,13 @@ def test_all_campaign_fixtures_satisfy_the_shared_typed_contract() -> None:
         ".ai-architect/implementation-plan.md",
         ".ai-architect/decisions/ADR-*.md",
     ]
+    clarification = next(
+        fixture for fixture in fixtures if fixture.id == "clarify-ui-architecture"
+    )
+    assert clarification.continuation is not None
+    assert clarification.continuation.verification.repository_changes == "forbid"
+    assert _continuation_sandbox(clarification.continuation.verification) == "read-only"
+    assert _continuation_sandbox(comparison.continuation.verification) == "workspace-write"
 
 
 def test_fixture_contract_rejects_repository_path_escape(tmp_path: Path) -> None:

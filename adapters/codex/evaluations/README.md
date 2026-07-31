@@ -68,6 +68,13 @@ standard deviation, minimum, and maximum remain available in comparable-group
 details and JSON for diagnosis. P90 is provisional below ten samples, and groups
 below five samples are descriptive rather than decision-grade.
 
+Report schema `1.4.0` also evaluates fixed warning-only latency objectives for
+exact release-compatible cohorts: plugin version, fixture revision, workload,
+model, reasoning effort, speed, and execution mode must all match. An objective
+appears only at five observations, labels P90 provisional below ten, and never
+changes the report or CI exit code. Records whose plugin version is unknown are
+excluded from this release-specific section.
+
 `observed-total` is the sum of phases actually measured for an observation.
 `completed-workflow-total` is reported only when both the initial and continuation
 phases completed. This prevents an initial-only interaction from appearing to be a

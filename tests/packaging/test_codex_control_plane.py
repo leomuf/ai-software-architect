@@ -989,6 +989,13 @@ def test_clarification_continuation_resumes_design_without_recording(
     assert "requested clarification" in additional
     assert "resume the smallest sufficient architecture workflow" in additional
     assert "transition to `record_and_handoff`" not in additional
+    assert "Route: typed clarification continuation" in additional
+    assert "load unrelated workflow modules" in additional
+    assert "Option, Fit, Rationale" not in additional
+    assert "reference-catalog.md" not in additional
+    assert "repository-snapshot" not in additional
+    assert "artifact-authoring-bundle.md" not in additional
+    assert len(additional) <= 1_800
 
 
 def test_another_explicit_skill_cancels_pending_architect_continuation(

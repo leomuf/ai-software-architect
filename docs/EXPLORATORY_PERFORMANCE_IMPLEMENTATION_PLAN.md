@@ -487,10 +487,13 @@ GitHub Actions run without downloading or manually calculating data.
 
 ### Phase 7 — Evidence-based performance gate
 
-- [ ] Collect at least five compatible baseline observations per gated group.
+- [x] Collect at least five compatible baseline observations for the six initial
+      warning-only objective groups under the standard Codex configuration.
 - [ ] Analyze normal variance by model, speed, fixture, and execution mode.
 - [ ] Approve thresholds and the policy for infrastructure retries.
-- [ ] Introduce a warning-only regression evaluation.
+- [x] Introduce release-specific warning-only P50/P90 objective evaluation after
+      five exact compatible observations; keep P90 provisional below ten and never
+      change the CI exit code.
 - [ ] Promote it to a release blocker only after false-positive behavior is
       acceptable and documented.
 

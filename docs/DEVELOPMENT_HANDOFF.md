@@ -84,7 +84,9 @@ The Codex package uses these short-lived hooks:
   envelope. Exact reference hints are added only for explicitly named canonical
   references; exact installed comparison-workflow and generated-catalog paths
   support open comparisons, while the authoring-bundle path is added only for a
-  typed decision continuation.
+  typed decision continuation. A typed clarification continuation instead receives
+  only a compact resume-design envelope and relies on the already-active Composite
+  to load its selected workflow module.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.

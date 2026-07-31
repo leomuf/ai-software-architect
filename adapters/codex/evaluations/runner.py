@@ -394,6 +394,12 @@ def _run_phase(
     )
 
 
+def _continuation_sandbox(policy: VerificationPolicy) -> str:
+    """Grant write access only when the fixture expects repository changes."""
+
+    return "read-only" if policy.repository_changes == "forbid" else "workspace-write"
+
+
 def _fixture_status(phases: list[PhaseResult]) -> EvaluationStatus:
     if any(phase.exit_code != 0 or "invalid-jsonl" in phase.event_types for phase in phases):
         return EvaluationStatus.INFRASTRUCTURE_ERROR
@@ -689,7 +695,8 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
             phases = [initial]
             if fixture.continuation is not None and initial.thread_id and initial.exit_code == 0:
                 continuation = fixture.continuation
-                print(f"{progress}: running approval continuation...", flush=True)
+                continuation_sandbox = _continuation_sandbox(continuation.verification)
+                print(f"{progress}: running continuation...", flush=True)
                 continuation_result = _run_phase(
                     name="continuation",
                     command=_codex_command(
@@ -697,7 +704,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                         model=args.model,
                         reasoning_effort=args.reasoning_effort,
                         prompt=continuation.prompt,
-                        sandbox="workspace-write",
+                        sandbox=continuation_sandbox,
                         ephemeral=False,
                         speed=args.speed,
                         resume_thread=initial.thread_id,
