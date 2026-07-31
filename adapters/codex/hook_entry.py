@@ -38,6 +38,7 @@ try:
         classify_prompt,
         developer_context,
         final_response_violations,
+        repository_snapshot_command,
         tool_denial_reason,
         with_reference_hints,
     )
@@ -67,6 +68,7 @@ except ModuleNotFoundError as exc:
         classify_prompt,
         developer_context,
         final_response_violations,
+        repository_snapshot_command,
         tool_denial_reason,
         with_reference_hints,
     )
@@ -271,6 +273,11 @@ def handle_user_prompt_submit(
         continuation_interaction=(
             continuation.interaction.value if continuation is not None else None
         ),
+        snapshot_command=(
+            repository_snapshot_command(plugin_root)
+            if plugin_root is not None
+            else ""
+        ),
     )
     if plugin_root is not None:
         skill_root = plugin_root.resolve(strict=False) / "skills" / "ai-software-architect"
@@ -293,6 +300,7 @@ def handle_user_prompt_submit(
 def handle_pre_tool_use(
     payload: dict[str, Any],
     plugin_data: Path,
+    plugin_root: Path | None = None,
 ) -> dict[str, Any]:
     context = _read_context(payload, plugin_data)
     workspace = (
@@ -305,6 +313,7 @@ def handle_pre_tool_use(
         payload.get("tool_name"),
         payload.get("tool_input"),
         workspace=workspace,
+        plugin_root=plugin_root,
     )
     if reason is None and context.active:
         local_name = str(payload.get("tool_name", "")).rsplit(".", 1)[-1].casefold()
@@ -514,6 +523,8 @@ def handle_hook(
     handler = handlers.get(event)
     HookPayload.model_validate(payload)
     if handler is handle_user_prompt_submit:
+        return handler(payload, plugin_data, plugin_root)
+    if handler is handle_pre_tool_use:
         return handler(payload, plugin_data, plugin_root)
     return handler(payload, plugin_data) if handler else {}
 

@@ -10,6 +10,19 @@ import sys
 
 def main() -> None:
     arguments = sys.argv[1:]
+    if arguments == ["--repository-snapshot", "--root", "."]:
+        try:
+            from adapters.codex.repository_snapshot import main as snapshot_main
+        except ModuleNotFoundError as exc:
+            if exc.name != "adapters":
+                raise
+            from repository_snapshot import (  # type: ignore[import-not-found, no-redef]
+                main as snapshot_main,
+            )
+
+        snapshot_main()
+        return
+
     if (
         len(arguments) == 3
         and arguments[:2] == ["--codex-hook", "--event"]
@@ -27,7 +40,8 @@ def main() -> None:
         return
 
     raise SystemExit(
-        "use --codex-hook --event <event>; this runtime does not start a persistent server"
+        "use --codex-hook --event <event> or --repository-snapshot --root .; "
+        "this runtime does not start a persistent server"
     )
 
 if __name__ == "__main__":

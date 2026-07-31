@@ -40,7 +40,9 @@ Complete proposed `.ai-architect/` writes are reconstructed and checked by the
 short-lived `PreToolUse` hook: contracts are validated with the same Pydantic/domain
 functions and generated artifacts are secret-scanned before the write. Repository
 dependency and boundary observations use host-native static inspection with disclosed
-limitations until a safe one-shot validator is added.
+limitations. Small Codex reviews may invoke the packaged runtime once as a bounded
+repository snapshot helper; it supplies static text evidence to the host model and
+does not expose an MCP transport or claim parser-verified architecture analysis.
 
 This is an adapter decision, not deletion of MCP support. The STDIO server continues
 to wrap the shared Python domain functions and may be used by GitHub Copilot, Claude

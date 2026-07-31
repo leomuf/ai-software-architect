@@ -59,6 +59,20 @@ def smoke_test_hook(executable: Path) -> None:
         raise RuntimeError("PowerShell is required to test the Windows hook command")
     commands = _windows_hook_commands(executable)
     with tempfile.TemporaryDirectory() as plugin_data, tempfile.TemporaryDirectory() as workspace:
+        sample = Path(workspace) / "sample.py"
+        sample.write_text("import pathlib\n", encoding="utf-8")
+        snapshot_result = subprocess.run(  # noqa: S603
+            [str(executable), "--repository-snapshot", "--root", "."],
+            cwd=workspace,
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=True,
+        )
+        snapshot = json.loads(snapshot_result.stdout)
+        if snapshot["files"][0]["path"] != "sample.py":
+            raise RuntimeError(f"bounded repository snapshot failed: {snapshot}")
+
         environment = os.environ.copy()
         environment["PLUGIN_DATA"] = plugin_data
         environment["PLUGIN_ROOT"] = str(executable.resolve().parents[3])

@@ -75,21 +75,26 @@ observations exist.
       listed as unavailable rather than inferred. Schema `1.2.0` additionally
       records privacy-preserving per-tool order, duration, and inter-tool gaps
       without commands, paths, prompts, source, or output.
-- [ ] Optimize `architecture-option-comparison` approval continuations first. Use
+- [x] Optimize `architecture-option-comparison` approval continuations first. Use
       the existing typed `PendingInteraction.DECISION` state to inject a minimal
       record-and-handoff context without natural-language regex routing, and measure
       whether one compact template bundle or deterministic artifact rendering
       reduces sequential reads, output generation, validation retries, and P90.
-      The typed minimal-context fast path is implemented and covered by control-plane
-      tests; keep this item open until a rebuilt plugin and comparable instrumented
-      campaign demonstrate the latency effect and the four-artifact workflow still
-      passes semantic review. The build now consolidates the four separately
-      maintained authoring sources into one provenance-tracked installed bundle so
-      Codex can replace four sequential reads with one.
-- [ ] Optimize the initial `read-only-architecture-review` next. Prototype one
+      The typed minimal-context fast path and provenance-tracked consolidated
+      authoring bundle are implemented. Five comparable campaigns with plugin
+      `0.1.0+codex.20260730232211` passed semantic review and reduced completed
+      workflow P50 from 167.7 to 140.5 seconds and provisional P90 from 241.2 to
+      155.0 seconds; all four artifacts were persisted and application source
+      remained unchanged.
+- [x] Optimize the initial `read-only-architecture-review` next. Prototype one
       bounded, short-lived repository snapshot helper rather than a persistent MCP
       process; add a small-repository path, an evidence budget, early stopping, and
-      no subagent delegation by default for small scopes.
+      no subagent delegation by default for small scopes. Plugin
+      `0.1.0+codex.20260731001006` passed five comparable semantic reviews using
+      exactly one snapshot command per run, with no subagent delegation, extra file
+      reads, or repository changes. Against the five-run pre-change baseline, initial
+      P50 fell from 70.7 to 35.9 seconds and provisional P90 from 83.1 to 42.2
+      seconds; mean latency fell from 73.9 to 37.1 seconds.
 - [ ] Reduce the universal Codex control-plane context through progressive
       disclosure: retain a compact activation and safety envelope, inject exact
       pattern references only when needed, artifact instructions only for approved

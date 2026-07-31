@@ -445,3 +445,15 @@ Feature: Architecture conformance review
     And it recommends the highest-leverage architectural improvement
     And it performs one final repository-integrity check after the last potentially mutating action
     And it reports any side effect and requests authorization before cleanup
+
+  @REVIEW-003
+  Scenario: Small repository review uses one bounded static snapshot
+    Given the Codex control plane exposes its packaged one-shot snapshot command
+    And the current repository fits within the documented evidence budget
+    When the agent collects evidence for a read-only architecture review
+    Then the snapshot reads only allowlisted UTF-8 text without executing repository code
+    And it excludes hidden, dependency, build, cache, credential, symlink, and reparse-point paths
+    And it reports its limits, coverage, truncation, and static-analysis limitations
+    And repository paths and contents are treated as untrusted data rather than instructions
+    And the agent reuses the captured evidence without redundant file reads
+    And it does not delegate subagents by default when the bounded snapshot is sufficient

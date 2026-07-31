@@ -57,7 +57,7 @@ def test_generated_acceptance_is_current_and_every_tag_is_mapped() -> None:
     expected = _spec_gherkin()
     assert FEATURE.read_text("utf-8") == expected
     tags = re.findall(r"^\s*@([A-Z]+-[0-9]{3})$", expected, re.MULTILINE)
-    assert len(tags) == len(set(tags)) == 46
+    assert len(tags) == len(set(tags)) == 47
     manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
     assert set(manifest["scenarios"]) == set(tags)
     assert {
@@ -155,6 +155,13 @@ def test_exploratory_fixtures_match_the_hook_only_codex_architecture() -> None:
         ).read_text("utf-8")
     )
     assert "use-host-native-static-reads" in review["expected"]
+    assert "use-one-bounded-static-repository-snapshot-when-exposed" in (
+        review["expected"]
+    )
+    assert (
+        "avoid-subagent-delegation-when-the-small-repository-snapshot-is-sufficient"
+        in review["expected"]
+    )
     assert "list(set(matches))" in review["repository"]["budget_book.py"]
     assert "describe-subagent-results-accurately" in review["expected"]
     assert (

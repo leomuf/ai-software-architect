@@ -40,9 +40,10 @@ repository:
         plt.show()
 expected:
   - use-host-native-static-reads
+  - use-one-bounded-static-repository-snapshot-when-exposed
   - describe-dependency-and-boundary-observations-as-host-native-static-analysis
   - disclose-dynamic-reflection-generated-and-omitted-code-limitations
-  - delegate-up-to-three-bounded-read-only-reviews-when-supported
+  - avoid-subagent-delegation-when-the-small-repository-snapshot-is-sufficient
   - distinguish-static-evidence-from-assumptions
   - recommend-one-proportionate-high-leverage-improvement
   - return-user-facing-markdown-without-internal-control-markers

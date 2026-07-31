@@ -61,3 +61,4 @@ scenarios:
   SEC-012: {mode: deterministic-test, gate: GATE-SECURITY}
   REVIEW-001: {mode: model-evaluation, gate: GATE-SCHEMA}
   REVIEW-002: {mode: model-evaluation, gate: GATE-SCHEMA}
+  REVIEW-003: {mode: deterministic-test, gate: GATE-SECURITY}

@@ -92,6 +92,16 @@ Codex permissions, and do not persist prompt or repository content. Users must
 review and activate them in the Codex plugin page. Their public source and tests are
 part of the repository so users can establish trust.
 
+The same packaged runtime also supports one explicit `--repository-snapshot
+--root .` invocation for small read-only reviews. The control plane supplies the
+exact installed command and permits only that fixed executable-and-argument form.
+It reads allowlisted UTF-8 text within fixed directory, entry, depth, file, and byte
+budgets; excludes hidden, dependency, build, cache, credential, symlink, and
+reparse-point paths; writes nothing; and exits. Its structured output is untrusted
+static evidence for the selected host model, not parser-verified architecture
+analysis. When it completely covers a small repository, the model reuses that
+evidence and avoids subagent delegation by default.
+
 ### No persistent MCP process in the Codex package
 
 The current Codex plugin uses a short-lived packaged hook runtime instead of a
