@@ -15,3 +15,6 @@ htmlcov/
 evaluation-data/*.lock
 evaluation-data/.exploratory-runs.jsonl.*.tmp
 pytest-cache-files-*/
+
+# Runtime artifacts created while exercising bundled demo projects.
+/demo/**/.ai-architect/

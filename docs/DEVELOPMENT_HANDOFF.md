@@ -80,12 +80,21 @@ semantic reasoning to the selected Codex model.
 
 The Codex package uses these short-lived hooks:
 
-- `UserPromptSubmit`: activation, routing, continuation, and minimal context.
+- `UserPromptSubmit`: activation, routing, continuation, and a compact safety
+  envelope. Exact reference hints are added only for explicitly named canonical
+  references; exact installed comparison-workflow and generated-catalog paths
+  support open comparisons, while the authoring-bundle path is added only for a
+  typed decision continuation.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.
 - `PostCompact`: minimal typed workflow recovery after compaction.
 - `Stop`: visible response-shape checks and internal-marker rejection.
+
+The model retains semantic precedence: a material platform contradiction produces
+one focused clarification without inspection or recommendation, and an explicitly
+simple problem receives one proportionate recommendation rather than a padded
+comparison.
 
 Hooks make no model or network calls, start no persistent process, do not bypass
 Codex permissions, and do not persist prompt or repository content. Users must
@@ -305,8 +314,15 @@ not mention `DEMO_VIDEO.md` unless that decision is explicitly revisited.
   response pass.
 - Do not restore a persistent Codex MCP process without revisiting uninstall locks,
   trust boundaries, and the historical tagged implementation.
-- Preserve progressive disclosure; focused pattern questions should load only the
-  required reference.
+- Preserve progressive disclosure: the public Composite `SKILL.md` is a concise
+  router, canonical workflow bodies are packaged as directly linked internal
+  references, and focused pattern questions load only their selected workflow and
+  pattern reference. A routine open Codex comparison uses its generated workflow
+  plus compact catalog and loads at most one candidate body only when a material
+  distinction remains unresolved.
+- Keep ADR option identifiers machine-stable: `considered_option_ids` and
+  `selected_option_id` contain plain `OPT-NNN` values; human-readable labels belong
+  in prose fields.
 - Keep model-specific reasoning out of the shared deterministic control plane.
 - Keep the specification living and aligned with intended behavior; Git tags
   preserve historical released specifications.

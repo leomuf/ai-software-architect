@@ -23,6 +23,12 @@ BUILD = ROOT / "build"
 RUNTIME_NAME = "ai-architect-runtime.exe"
 RUNTIME_DIR_NAME = "ai-architect-runtime"
 AUTHORING_BUNDLE_OUTPUT = "assets/artifact-authoring-bundle.md"
+REFERENCE_CATALOG_OUTPUT = "assets/reference-catalog.md"
+REFERENCE_CATALOG_SOURCE = ROOT / "adapters" / "codex" / "reference_catalog.json"
+CANONICAL_REFERENCE_BASE = (
+    "https://github.com/leomuf/ai-software-architect/blob/main/"
+    "shared/skills/evaluate-architecture-options/references/"
+)
 AUTHORING_BUNDLE_SOURCES = (
     (
         "ADR authoring rules",
@@ -56,6 +62,9 @@ SKILL_ORDER = (
     "prepare-coding-handoff",
     "review-architecture-conformance",
 )
+WORKFLOW_REFERENCE_OUTPUTS = {
+    name: f"references/workflow-{name}.md" for name in SKILL_ORDER
+}
 
 GENERATED_FRONTMATTER = """---
 name: ai-software-architect
@@ -130,6 +139,7 @@ revise, or request more information. For a single recommendation, put the full
 recommendation first and keep that final section limited to the user-decision
 prompt. Completed recording, handoff, review, or informational work states its
 result plainly.
+Do not emit internal control markers.
 The ordinal Fit disclosure belongs inside `## Decision scope and criteria`, not
 under Evidence or Alternatives.
 For generic architecture guidance, pattern explanations, or implementation examples,
@@ -225,6 +235,48 @@ def _copy_resources(destination: Path) -> dict[str, str]:
     return provenance
 
 
+def _write_workflow_references(destination: Path) -> dict[str, str]:
+    """Package canonical workflow bodies as one-level progressive references."""
+
+    provenance: dict[str, str] = {}
+    for skill_name in SKILL_ORDER:
+        source = SKILLS_ROOT / skill_name / "SKILL.md"
+        relative_output = WORKFLOW_REFERENCE_OUTPUTS[skill_name]
+        target = destination / relative_output
+        target.parent.mkdir(parents=True, exist_ok=True)
+        body = _skill_body(source)
+        body = body.replace("(references/", "(").replace("(assets/", "(../assets/")
+        codex_preamble = ""
+        if skill_name == "evaluate-architecture-options":
+            body = body.partition("## Direct reference routing")[0].rstrip() + "\n"
+            codex_preamble = (
+                "## Codex progressive-disclosure boundary\n\n"
+                "For a routine open comparison, this workflow plus the generated "
+                "compact reference catalog are sufficient to shortlist, score, link, "
+                "and recommend alternatives. Do not load every candidate or supporting "
+                "reference body. Load at most one focused reference only when a "
+                "specific unresolved distinction could materially change the decision. "
+                "A named-pattern explanation or implementation example still requires "
+                "its exact focused reference.\n\n"
+            )
+        target.write_text(
+            "<!--\n"
+            "SPDX-FileCopyrightText: 2026 Leonardo Muffato "
+            "(AUTOSOFT Engineering - www.autosoft-engineering.de)\n"
+            "SPDX-License-Identifier: MIT\n"
+            f"Canonical source: {_relative(source)}\n"
+            "-->\n\n"
+            + codex_preamble
+            + body,
+            encoding="utf-8",
+            newline="\n",
+        )
+        provenance[_relative(source)] = (
+            f"skills/ai-software-architect/{relative_output}"
+        )
+    return provenance
+
+
 def _write_authoring_bundle(destination: Path) -> dict[str, str]:
     target = destination / AUTHORING_BUNDLE_OUTPUT
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -245,7 +297,16 @@ def _write_authoring_bundle(destination: Path) -> dict[str, str]:
         "- `.ai-architect/implementation-plan.md`\n",
         "- `.ai-architect/decisions/ADR-NNN[-slug].md`\n\n",
         "Do not rename `implementation-plan.md` to coding-handoff, handoff, plan, "
-        "or any other variant. The host adapter rejects alternate paths.\n",
+        "or any other variant. The host adapter rejects alternate paths.\n\n",
+        "Keep the bundle proportionate to the evidence. For a repository completely "
+        "covered by one small snapshot, use concise scalar values, one to three "
+        "evidence-backed list items per optional field, and avoid repeating the full "
+        "option comparison across artifacts. Target no more than 12,000 combined "
+        "UTF-8 characters unless the required schema or material project complexity "
+        "needs more; never omit required fields merely to meet that target.\n",
+        "ADR `considered_option_ids` entries and `selected_option_id` contain only "
+        "plain `OPT-NNN` identifiers. Put option names and descriptions in their "
+        "dedicated prose fields; never append labels to an option ID.\n",
     ]
     provenance: dict[str, str] = {}
     for heading, source in AUTHORING_BUNDLE_SOURCES:
@@ -262,6 +323,38 @@ def _write_authoring_bundle(destination: Path) -> dict[str, str]:
         )
     target.write_text("".join(sections), encoding="utf-8", newline="\n")
     return provenance
+
+
+def _write_reference_catalog(destination: Path) -> dict[str, str]:
+    payload = json.loads(REFERENCE_CATALOG_SOURCE.read_text(encoding="utf-8"))
+    target = destination / REFERENCE_CATALOG_OUTPUT
+    target.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "<!--\n",
+        "SPDX-FileCopyrightText: 2026 Leonardo Muffato "
+        "(AUTOSOFT Engineering - www.autosoft-engineering.de)\n",
+        "SPDX-License-Identifier: MIT\n",
+        "Generated by adapters/codex/build_plugin.py; do not edit this packaged file.\n",
+        "-->\n\n",
+        "# Canonical Architecture Reference Catalog\n\n",
+        "Load this metadata only for an open architecture or pattern comparison. "
+        "Reference bodies remain progressively disclosed.\n\n",
+        f"Canonical URL base: `{CANONICAL_REFERENCE_BASE}`\n\n",
+        "Bundled path rule: `references/<File>`.\n\n",
+        "| Category | Name | File |\n",
+        "|---|---|---|\n",
+    ]
+    for item in payload["references"]:
+        filename = item["filename"]
+        lines.append(
+            f"| {item['category']} | {item['name']} | `{filename}` |\n"
+        )
+    target.write_text("".join(lines), encoding="utf-8", newline="\n")
+    return {
+        _relative(REFERENCE_CATALOG_SOURCE): (
+            f"skills/ai-software-architect/{REFERENCE_CATALOG_OUTPUT}"
+        )
+    }
 
 
 def _build_runtime() -> Path:
@@ -307,20 +400,34 @@ def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
 
     skill_output = OUTPUT / "skills" / "ai-software-architect"
     skill_output.mkdir(parents=True)
-    sections = [GENERATED_FRONTMATTER]
+    sections = [
+        GENERATED_FRONTMATTER,
+        "\n## Progressive workflow modules\n\n",
+        "Load only the smallest module needed for the selected mode. Do not load all "
+        "workflow modules by default.\n\n",
+        "- Focused pattern help or an open option comparison: "
+        f"[`evaluate-architecture-options`]({WORKFLOW_REFERENCE_OUTPUTS['evaluate-architecture-options']})\n",
+        "- A complete project workflow: "
+        f"[`orchestrate-architecture-workflow`]({WORKFLOW_REFERENCE_OUTPUTS['orchestrate-architecture-workflow']})\n",
+        "- Material questions whose answers change the decision: "
+        f"[`conduct-architecture-interview`]({WORKFLOW_REFERENCE_OUTPUTS['conduct-architecture-interview']})\n",
+        "- Approved ADR and contract recording: "
+        f"[`create-architecture-decisions`]({WORKFLOW_REFERENCE_OUTPUTS['create-architecture-decisions']})\n",
+        "- Coding-assistant handoff after approval: "
+        f"[`prepare-coding-handoff`]({WORKFLOW_REFERENCE_OUTPUTS['prepare-coding-handoff']})\n",
+        "- Read-only conformance review against recorded architecture: "
+        f"[`review-architecture-conformance`]({WORKFLOW_REFERENCE_OUTPUTS['review-architecture-conformance']})\n",
+    ]
     source_to_output: dict[str, str] = {}
-    for name in SKILL_ORDER:
-        source = SKILLS_ROOT / name / "SKILL.md"
-        sections.append(f"\n---\n\n## Canonical module: `{name}`\n\n")
-        sections.append(_skill_body(source))
-        source_to_output[_relative(source)] = "skills/ai-software-architect/SKILL.md"
     generated_skill = skill_output / "SKILL.md"
     generated_skill.write_text("".join(sections), encoding="utf-8", newline="\n")
     if len(generated_skill.read_text(encoding="utf-8").splitlines()) > 500:
         raise ValueError("generated Composite SKILL.md exceeds 500 lines")
 
     source_to_output.update(_copy_resources(skill_output))
+    source_to_output.update(_write_workflow_references(skill_output))
     additional_source_to_output = _write_authoring_bundle(skill_output)
+    additional_source_to_output.update(_write_reference_catalog(skill_output))
     agents = skill_output / "agents"
     agents.mkdir()
     shutil.copyfile(TEMPLATES / "openai.yaml", agents / "openai.yaml")

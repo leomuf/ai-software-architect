@@ -278,8 +278,34 @@ def handle_user_prompt_submit(
             if plugin_root is not None
             else ""
         ),
+        reference_catalog_path=(
+            str(
+                plugin_root.resolve(strict=False)
+                / "skills"
+                / "ai-software-architect"
+                / "assets"
+                / "reference-catalog.md"
+            )
+            if plugin_root is not None
+            else ""
+        ),
+        comparison_workflow_path=(
+            str(
+                plugin_root.resolve(strict=False)
+                / "skills"
+                / "ai-software-architect"
+                / "references"
+                / "workflow-evaluate-architecture-options.md"
+            )
+            if plugin_root is not None
+            else ""
+        ),
     )
-    if plugin_root is not None:
+    if (
+        plugin_root is not None
+        and continuation is not None
+        and continuation.interaction == PendingInteraction.DECISION
+    ):
         skill_root = plugin_root.resolve(strict=False) / "skills" / "ai-software-architect"
         resource = skill_root / "assets" / "artifact-authoring-bundle.md"
         additional_context += (

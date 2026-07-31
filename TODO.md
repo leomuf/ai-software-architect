@@ -95,12 +95,46 @@ observations exist.
       reads, or repository changes. Against the five-run pre-change baseline, initial
       P50 fell from 70.7 to 35.9 seconds and provisional P90 from 83.1 to 42.2
       seconds; mean latency fell from 73.9 to 37.1 seconds.
-- [ ] Reduce the universal Codex control-plane context through progressive
+- [x] Reduce the universal Codex control-plane context through progressive
       disclosure: retain a compact activation and safety envelope, inject exact
       pattern references only when needed, artifact instructions only for approved
       handoff, and review instructions only for repository analysis. Remove
       duplicated Composite-skill and hook wording only behind behavioral
-      evaluation coverage.
+      evaluation coverage. The compact candidate now reduces deterministic hook
+      context by 85.8–89.0% for initial, snapshot, named-reference, and
+      clarification routes and by 6.7% for the already optimized decision route.
+      The temporary expanded-context comparison implementation has been removed.
+      Plugin `0.1.0+codex.20260731013841` passed both targeted regressions and all
+      five canonical semantic evaluations. The full sequential campaign fell from
+      427.6 to 342.1 seconds, while the clarification and proportionate-simplicity
+      routes fell from 87.7 to 11.5 seconds and from 66.0 to 15.3 seconds
+      respectively. These single-campaign comparisons are descriptive; fixture-level
+      latency conclusions remain provisional until comparable groups reach the
+      documented sample-size thresholds.
+- [x] Apply progressive disclosure to the generated Composite itself. Keep one
+      small public router and package the six canonical workflow bodies as directly
+      linked internal references loaded only for the selected mode. The current
+      candidate reduces the always-loaded generated `SKILL.md` from 39,090 to 9,067
+      bytes, compresses the open-comparison catalog from 10,710 to 3,160 bytes, and
+      scopes supporting-pattern link validation to actual list entries. Keep this
+      item open until a rebuilt plugin passes the comparison continuation and all
+      five semantic fixtures without extra module discovery or correction rounds.
+      The first exact-module run loaded six candidate bodies and raised initial
+      latency to 123.6 seconds, so the Codex-generated comparison module now removes
+      its catalog-duplicating routing list and permits at most one detail reference
+      when an unresolved distinction could materially change the choice. Plugin
+      `0.1.0+codex.20260731024336` then completed the initial comparison in 55.0
+      seconds with no detail-reference or Stop-correction round. Its continuation
+      regenerated one rejected artifact candidate because it labeled `OPT-NNN`
+      identifiers; the authoring bundle now makes the plain-ID constraint explicit.
+      Plugin `0.1.0+codex.20260731111149` passed the targeted comparison in 150.7
+      seconds with one accepted candidate, then passed all five semantic fixtures in
+      256.3 seconds versus 342.1 seconds for the preceding full campaign. Initial
+      comparison was 48.9 seconds, continuation 118.7 seconds, read-only review 31.7
+      seconds, focused example 33.2 seconds, clarification 12.6 seconds, and
+      proportionate simplicity 10.9 seconds. These release-level observations are
+      descriptive until each comparable group reaches the documented sample-size
+      threshold.
 - [ ] Optimize clarification continuations after the first two bottlenecks, then
       re-evaluate focused examples and proportional no-pattern advice. Do not spend
       optimization effort on initial clarification while its comparable P50 remains

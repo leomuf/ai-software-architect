@@ -65,6 +65,8 @@ Feature: Agent Skills standard and progressive disclosure
     When the Codex adapter builds the "ai-software-architect" plugin
     Then the package contains exactly one explicit user-facing Composite skill
     And canonical modular skills remain internal source modules
+    And its public skill body directly links every generated internal workflow module
+    And the selected model loads only the workflow modules required by the active mode
     And its workflow does not depend on activating a sibling skill
     And its Codex metadata disables implicit invocation
     And users need no separately installed custom-agent or subagent profile
@@ -179,6 +181,17 @@ Feature: Architecture workflow routing
     Then the selected host model and Composite choose that semantic mode
     And the hook does not classify the mode from natural-language keywords
     But it may resolve an explicit canonical reference name to an exact bundled path
+    And the initial hook context omits the complete reference index, comparison contract, subagent policy, and artifact-authoring instructions
+    When an open comparison requires candidate discovery
+    Then the hook supplies exact installed comparison-workflow and generated categorized reference-catalog paths
+    And the model loads that workflow and catalog once before choosing alternatives
+    And it loads at most one candidate body only when a material distinction remains unresolved
+    When the prompt contains a material platform contradiction
+    Then the model asks exactly one focused clarification without inspection, comparison, or recommendation
+    When explicit constraints justify proportionate simplicity
+    Then the model gives one no-pattern recommendation rather than padded alternatives
+    When a typed decision continuation resumes an approved project-bound recommendation
+    Then the hook adds the exact installed artifact-authoring bundle path
     When a visible Alternatives section omits the stable comparison rendering
     Then the stop hook requests one complete replacement
     And a second stop does not create an infinite retry
