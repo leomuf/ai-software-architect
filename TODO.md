@@ -243,14 +243,21 @@ response. Stabilize the contract before interpreting another single pass as proo
       application-source changes. All five runs selected `No pattern` and treated
       heavier patterns as conditional future choices, so the cohort reports
       `stable-selection` despite five differently worded assumption fingerprints.
-- [ ] Add five more exact observations for the current-evidence cohort before making
-      a tail-latency conclusion. At `n = 5`, initial P50/P90 are 63.888/69.671
-      seconds versus 56.780/67.654 in the preceding cohort; continuation P50/P90 are
-      113.293/135.065 versus 119.565/127.937. Tool counts are unchanged and output
-      tokens are nearly flat; initial average input increased from 40,696 to 44,140
-      tokens while continuation average duration improved from 121.922 to 115.188
-      seconds. Keep P90 provisional until `n = 10` and do not trade away the verified
-      semantic stability based on this small mixed-latency sample.
+- [x] Add five more exact observations for the current-evidence cohort. At `n = 10`,
+      all runs select `No pattern`, ten differently worded assumption fingerprints
+      map to that one selection, and the cohort remains `stable-selection`. Initial
+      P50/P90 are 57.004/65.422 seconds; continuation P50/P90 are
+      105.751/125.098 seconds. P90 is now established rather than provisional.
+      Continuation passes its 120/180-second objective; initial P90 passes its
+      75-second objective but P50 remains above the 40-second target.
+- [ ] Optimize initial comparison synthesis rather than tool execution. Across the
+      exact `n = 10` cohort, two required command calls average only 0.556 seconds
+      each, the second starts around 14.543 seconds, and the final message completes
+      around 55.416 seconds. The dominant remaining interval is therefore model-side
+      post-tool synthesis, with about 1,670 output tokens on average, not snapshot or
+      bundle I/O. First test a tighter user-facing comparison budget that preserves
+      all six sections and evidence quality; only then consider further compacting
+      catalog metadata. Keep each change isolated and require another exact cohort.
 
 - [x] Make project-specific improvement and pattern-selection requests require the
       smallest relevant host-native static inspection unless the user forbids

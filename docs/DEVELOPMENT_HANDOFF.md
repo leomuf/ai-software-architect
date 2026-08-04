@@ -109,6 +109,13 @@ The Codex package uses these short-lived hooks:
   P50/P90 were 63.888/69.671 seconds and continuation P50/P90 were
   113.293/135.065 seconds. The stable semantic result is accepted; another five exact
   samples are required before interpreting the provisional P90 or mixed latency shift.
+  The cohort now has ten exact observations: all select `No pattern`, with established
+  initial P50/P90 of 57.004/65.422 seconds and continuation P50/P90 of
+  105.751/125.098 seconds. Continuation passes its warning-only objective; initial
+  remains a warning only on the 40-second P50 target. Initial tool execution totals
+  about 1.1 seconds on average, while the final response completes roughly 40 seconds
+  after the second tool, so the next isolated optimization targets concise model-side
+  synthesis rather than repository snapshot or comparison-bundle I/O.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.
