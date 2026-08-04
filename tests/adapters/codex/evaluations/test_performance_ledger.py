@@ -14,7 +14,7 @@ from adapters.codex.evaluations.historical_review import (
     HistoricalReviewBatch,
     ReviewDecision,
 )
-from adapters.codex.evaluations.models import PhaseTelemetry
+from adapters.codex.evaluations.models import DecisionObservation, PhaseTelemetry
 from adapters.codex.evaluations.performance_ledger import (
     append_performance_observations,
     load_performance_ledger,
@@ -42,7 +42,12 @@ HASH = "a" * 64
 ROOT = Path(__file__).resolve().parents[4]
 
 
-def observation(*, continuation: float | None = None, telemetry: bool = False):
+def observation(
+    *,
+    continuation: float | None = None,
+    telemetry: bool = False,
+    decision: bool = False,
+):
     started = datetime(2026, 7, 21, 19, 50, tzinfo=UTC)
     phases = PhaseMeasurements(
         initial=PhaseMeasurement(
@@ -59,6 +64,16 @@ def observation(*, continuation: float | None = None, telemetry: bool = False):
                     output_tokens=20,
                 )
                 if telemetry
+                else None
+            ),
+            decision_observation=(
+                DecisionObservation(
+                    selected_category="Architecture",
+                    selected_name="Layered Architecture",
+                    material_assumption_sha256="b" * 64,
+                    material_assumption_word_count=3,
+                )
+                if decision
                 else None
             ),
         ),
@@ -148,6 +163,16 @@ def test_telemetry_uses_new_schema_without_changing_legacy_serialization() -> No
     assert instrumented.schema_version == "1.1.0"
     assert instrumented.phases.initial.telemetry is not None
     assert instrumented.record_id != legacy.record_id
+
+
+def test_decision_observation_uses_schema_1_3_without_free_form_assumption() -> None:
+    record = observation(telemetry=True, decision=True)
+    serialized = record.model_dump_json()
+
+    assert record.schema_version == "1.3.0"
+    assert '"selected_name":"Layered Architecture"' in serialized
+    assert '"material_assumption_sha256"' in serialized
+    assert "repository evidence" not in serialized
 
 
 def test_ledger_append_is_atomic_and_idempotent(tmp_path: Path) -> None:

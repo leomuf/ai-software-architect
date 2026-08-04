@@ -13,10 +13,10 @@ from typing import Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from adapters.codex.evaluations.models import PhaseTelemetry, StrictModel
+from adapters.codex.evaluations.models import DecisionObservation, PhaseTelemetry, StrictModel
 
-PerformanceSchemaVersion = Literal["1.0.0", "1.1.0", "1.2.0"]
-PERFORMANCE_SCHEMA_VERSION: PerformanceSchemaVersion = "1.2.0"
+PerformanceSchemaVersion = Literal["1.0.0", "1.1.0", "1.2.0", "1.3.0"]
+PERFORMANCE_SCHEMA_VERSION: PerformanceSchemaVersion = "1.3.0"
 
 
 class ExecutionMode(StrEnum):
@@ -104,6 +104,10 @@ class PhaseMeasurement(StrictModel):
         default=None,
         exclude_if=lambda value: value is None,
     )
+    decision_observation: DecisionObservation | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
     @model_validator(mode="after")
     def duration_matches_status(self) -> PhaseMeasurement:
@@ -111,6 +115,8 @@ class PhaseMeasurement(StrictModel):
             raise ValueError("a completed phase requires duration_seconds")
         if self.status == PhaseStatus.NOT_RUN and self.duration_seconds is not None:
             raise ValueError("a not-run phase must use a null duration_seconds")
+        if self.status == PhaseStatus.NOT_RUN and self.decision_observation is not None:
+            raise ValueError("a not-run phase cannot contain a decision observation")
         return self
 
 
@@ -163,6 +169,13 @@ class PerformanceObservation(StrictModel):
             for phase in (self.phases.initial, self.phases.continuation)
         ):
             raise ValueError("schema version 1.1.0 cannot contain tool timeline events")
+        if self.schema_version in {"1.0.0", "1.1.0", "1.2.0"} and any(
+            phase.decision_observation is not None
+            for phase in (self.phases.initial, self.phases.continuation)
+        ):
+            raise ValueError(
+                f"schema version {self.schema_version} cannot contain decision observations"
+            )
         expected = performance_record_id(_identity_payload(self))
         if self.record_id != expected:
             raise ValueError("record_id does not match the canonical observation identity")
@@ -191,6 +204,9 @@ def _identity_payload(observation: PerformanceObservation) -> dict[str, Any]:
             telemetry = phase.get("telemetry")
             if telemetry is not None:
                 telemetry.pop("tool_events", None)
+    if observation.schema_version in {"1.0.0", "1.1.0", "1.2.0"}:
+        for phase in payload["phases"].values():
+            phase.pop("decision_observation", None)
     return payload
 
 
@@ -205,9 +221,15 @@ def build_performance_observation(**fields: Any) -> PerformanceObservation:
         phase.telemetry is not None and phase.telemetry.tool_events
         for phase in (phases.initial, phases.continuation)
     )
+    has_decision_observation = isinstance(phases, PhaseMeasurements) and any(
+        phase.decision_observation is not None
+        for phase in (phases.initial, phases.continuation)
+    )
     schema_version: PerformanceSchemaVersion
-    if has_tool_events:
+    if has_decision_observation:
         schema_version = PERFORMANCE_SCHEMA_VERSION
+    elif has_tool_events:
+        schema_version = "1.2.0"
     elif has_telemetry:
         schema_version = "1.1.0"
     else:

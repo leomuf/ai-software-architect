@@ -244,7 +244,8 @@ imported once:
 ```
 
 Render the complete history as a console table plus Markdown, primary CSV,
-telemetry CSV, privacy-preserving tool-timeline CSV, and JSON files:
+telemetry CSV, privacy-preserving tool-timeline CSV, recommendation-consistency
+CSV, and JSON files:
 
 ```powershell
 .\scripts\show-exploratory-performance.ps1
@@ -256,7 +257,11 @@ a broad cross-version fixture overview and strict like-for-like comparable group
 After five exact release-compatible observations, it also renders informational
 P50/P90 objective results. These warnings are separated by plugin version and never
 fail the script or CI; P90 remains provisional until ten observations exist.
+For comparison fixtures recorded with performance schema `1.3.0`, the report also
+shows exact like-for-like selection distributions and assumption-fingerprint
+consistency without retaining free-form assumption or repository text.
 GitHub CI uses the same renderer for its Job Summary and uploads the Markdown,
-primary CSV, telemetry CSV, tool-timeline CSV, and JSON report files as an
+primary CSV, telemetry CSV, tool-timeline CSV, recommendation-consistency CSV, and
+JSON report files as an
 artifact; it never
 modifies the canonical ledger.

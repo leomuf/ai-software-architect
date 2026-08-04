@@ -193,12 +193,14 @@ def _report_observations(
                 status=PhaseStatus.COMPLETED,
                 duration_seconds=initial.duration_seconds,
                 telemetry=initial.telemetry,
+                decision_observation=initial.decision_observation,
             ),
             continuation=(
                 PhaseMeasurement(
                     status=PhaseStatus.COMPLETED,
                     duration_seconds=continuation.duration_seconds,
                     telemetry=continuation.telemetry,
+                    decision_observation=continuation.decision_observation,
                 )
                 if continuation is not None
                 else PhaseMeasurement(status=PhaseStatus.NOT_RUN)

@@ -53,6 +53,11 @@ times are not time-to-first-token. Codex currently does not expose separate hook
 template-loading, patch-construction, or subagent-duration timings; the runner
 records those fields as unavailable and never estimates them. Legacy schema
 `1.0.0` observations remain valid and retain their content-addressed identities.
+Schema `1.2.0` adds the privacy-preserving tool timeline described below. Schema
+`1.3.0` can additionally retain a validated comparison's public selected category
+and canonical name plus a normalized SHA-256 fingerprint and word count for its
+material assumption. It never copies the free-form assumption or a project-specific
+no-pattern label into the versioned ledger.
 
 Four focused modules keep responsibilities separate:
 
@@ -68,7 +73,7 @@ standard deviation, minimum, and maximum remain available in comparable-group
 details and JSON for diagnosis. P90 is provisional below ten samples, and groups
 below five samples are descriptive rather than decision-grade.
 
-Report schema `1.4.0` also evaluates fixed warning-only latency objectives for
+Report schema `1.5.0` also evaluates fixed warning-only latency objectives for
 exact release-compatible cohorts: plugin version, fixture revision, workload,
 model, reasoning effort, speed, and execution mode must all match. An objective
 appears only at five observations, labels P90 provisional below ten, and never
@@ -89,6 +94,14 @@ privacy-preserving tool timeline. `performance-tool-timeline.csv`, the Markdown
 timeline, and `performance.json` record only tool category, order, relative
 start/end/duration, gap, and status. They never copy commands, paths, prompts,
 source text, or tool output.
+
+The Markdown and JSON reports, plus `recommendation-consistency.csv`, group captured
+decisions only when fixture revision, workload, installed plugin version and
+provenance, model, reasoning effort, speed, and execution mode match exactly. They
+distinguish a stable selection, changed
+selections with different or rephrased assumptions, and a contradiction candidate
+where one identical assumption fingerprint maps to different selections. These are
+review signals, not automated semantic verdicts.
 
 `historical_review.py` is deliberately separate. It uses the documented local
 Codex App Server to export Desktop task evidence, but never automatically treats a

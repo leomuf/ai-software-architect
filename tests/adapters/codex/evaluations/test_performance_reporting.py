@@ -11,6 +11,7 @@ from typing import Literal
 from adapters.codex.evaluations.models import (
     AssertionStatus,
     CampaignReport,
+    DecisionObservation,
     DeterministicAssertion,
     EvaluationStatus,
     FixtureResult,
@@ -26,6 +27,7 @@ from adapters.codex.evaluations.performance_report import (
     grouped_statistics,
     latency_objective_rows,
     observation_rows,
+    recommendation_consistency_rows,
     write_reports,
 )
 
@@ -34,6 +36,7 @@ def _phase(
     name: Literal["initial", "continuation"],
     duration: float,
     thread_id: str = "thread-1",
+    decision_observation: DecisionObservation | None = None,
 ) -> PhaseResult:
     return PhaseResult(
         name=name,
@@ -75,6 +78,7 @@ def _phase(
             ],
             unavailable_metrics=["pre_tool_use_hook_seconds"],
         ),
+        decision_observation=decision_observation,
     )
 
 
@@ -107,7 +111,16 @@ def _write_report(
                 status=EvaluationStatus.MANUAL_REVIEW,
                 workspace="bounded-workspace",
                 phases=[
-                    _phase("initial", comparison_initial),
+                    _phase(
+                        "initial",
+                        comparison_initial,
+                        decision_observation=DecisionObservation(
+                            selected_category="Architecture",
+                            selected_name="Layered Architecture",
+                            material_assumption_sha256="b" * 64,
+                            material_assumption_word_count=4,
+                        ),
+                    ),
                     _phase("continuation", comparison_continuation),
                 ],
             ),
@@ -216,7 +229,7 @@ def test_reporting_excludes_missing_continuation_from_statistics(tmp_path: Path)
     performance_json = json.loads(
         (output / "performance.json").read_text(encoding="utf-8")
     )
-    assert performance_json["schema_version"] == "1.4.0"
+    assert performance_json["schema_version"] == "1.5.0"
     assert len(performance_json["fixture_overview_statistics"]) == 6
     phases = {
         row["phase"] for row in performance_json["fixture_overview_statistics"]
@@ -228,6 +241,15 @@ def test_reporting_excludes_missing_continuation_from_statistics(tmp_path: Path)
     assert len(performance_json["tool_timeline"]) == 3
     assert performance_json["tool_timeline"][0]["tool_type"] == "command_execution"
     assert performance_json["latency_objectives"] == []
+    assert len(performance_json["recommendation_consistency"]) == 1
+    consistency = performance_json["recommendation_consistency"][0]
+    assert consistency["selection_distribution"] == (
+        "Architecture/Layered Architecture=1"
+    )
+    assert consistency["plugin_version"] == "0.1.0"
+    assert consistency["plugin_provenance"] == "a" * 64
+    assert consistency["assessment"] == "stable-selection"
+    assert (output / "recommendation-consistency.csv").is_file()
 
 
 def test_latency_objectives_are_release_specific_warning_only(tmp_path: Path) -> None:
@@ -343,3 +365,80 @@ def test_fixture_overview_aggregates_revisions_but_reports_heterogeneity(
     assert completed_total.observation_count == 2
     assert completed_total.fixture_observation_count == 2
     assert completed_total.median_seconds == 45
+
+
+def test_consistency_flags_different_selections_under_identical_assumption(
+    tmp_path: Path,
+) -> None:
+    report_path = tmp_path / "Run20" / "report.json"
+    ledger = tmp_path / "history.jsonl"
+    _write_report(report_path)
+    import_reports(
+        reports=[report_path],
+        ledger=ledger,
+        overrides_path=tmp_path / "missing.yaml",
+        default_speed=SpeedMode.STANDARD,
+        default_git_commit="commit-1",
+        default_host="windows-x86_64",
+        apply=True,
+    )
+    original = next(
+        record
+        for record in load_performance_ledger(ledger)
+        if record.test.fixture_id == "architecture-option-comparison"
+    )
+    changed_initial = original.phases.initial.model_copy(
+        update={
+            "decision_observation": DecisionObservation(
+                selected_category="GoF",
+                selected_name="Strategy",
+                material_assumption_sha256="b" * 64,
+                material_assumption_word_count=4,
+            )
+        }
+    )
+    changed = original.model_copy(
+        update={
+            "phases": original.phases.model_copy(update={"initial": changed_initial})
+        }
+    )
+
+    rows = recommendation_consistency_rows([original, changed])
+
+    assert len(rows) == 1
+    assert rows[0].distinct_selections == 2
+    assert rows[0].distinct_assumptions == 1
+    assert rows[0].assessment == "contradiction-candidate-under-identical-assumption"
+
+
+def test_consistency_separates_plugin_versions_and_provenance(tmp_path: Path) -> None:
+    report_path = tmp_path / "Run20" / "report.json"
+    ledger = tmp_path / "history.jsonl"
+    _write_report(report_path)
+    import_reports(
+        reports=[report_path],
+        ledger=ledger,
+        overrides_path=tmp_path / "missing.yaml",
+        default_speed=SpeedMode.STANDARD,
+        default_git_commit="commit-1",
+        default_host="windows-x86_64",
+        apply=True,
+    )
+    original = next(
+        record
+        for record in load_performance_ledger(ledger)
+        if record.test.fixture_id == "architecture-option-comparison"
+    )
+    another_version = original.model_copy(
+        update={
+            "runtime": original.runtime.model_copy(
+                update={"plugin_version": "0.2.0", "plugin_provenance": "c" * 64}
+            )
+        }
+    )
+
+    rows = recommendation_consistency_rows([original, another_version])
+
+    assert len(rows) == 2
+    assert {row.plugin_version for row in rows} == {"0.1.0", "0.2.0"}
+    assert {row.plugin_provenance for row in rows} == {"a" * 64, "c" * 64}

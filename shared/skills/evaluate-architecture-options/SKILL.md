@@ -20,7 +20,9 @@ Treat a request to improve or choose patterns for "this" or the current applicat
 
 ## Mandatory final-answer gate for an open selection
 
-Treat questions such as "which design patterns should I use?" as an open selection, not as permission to output a prioritized stack of complementary patterns. If a missing fact can materially change the option set, ask a focused clarification question and end the current turn without an option comparison, recommendation, or repository inspection.
+Treat questions such as "which design patterns should I use?" as an open selection, not as permission to output a prioritized stack of complementary patterns. If a missing fact can materially change the option set and no responsible default follows from current evidence, ask a focused clarification question and end the current turn without an option comparison, recommendation, or repository inspection.
+
+Rank alternatives from observed repository evidence and user-supplied current forces. Unverified future growth MUST NOT by itself make a heavier pattern outrank the proportionate option supported now. Show such growth as an explicit sensitivity condition: explain which future force would change the recommendation and which alternative would then become preferable. Ask one focused clarification instead only when the unknown prevents any responsible current-evidence default. Never invent likely growth to justify a pattern.
 
 Before sending a final selection answer, verify that it uses these sections in this order:
 
@@ -70,7 +72,7 @@ Before sending the answer, perform the same deterministic rendering self-check u
 3. Load only references implicated by the current forces. Do not preload the catalog.
 4. Compare benefits, liabilities, risks, assumptions, reversibility, and measurable fit. Scores support explanation; they do not replace it.
 5. Include [no pattern](references/no-pattern.md) whenever added structure lacks a demonstrated force.
-6. Recommend one option only when the evidence supports it. State uncertainty and identify decisions requiring approval.
+6. Recommend one option only when current evidence supports it. Keep unverified future growth conditional rather than using it to outrank the currently proportionate choice. State uncertainty and identify decisions requiring approval.
 7. Keep alternative options separate from complementary supporting patterns. Do not compare an application architecture, a presentation pattern, and an object-design pattern as if they solve the same decision.
 8. Do not equate similarly named patterns across process or deployment boundaries.
 

@@ -46,6 +46,7 @@ class EvaluationFixture(StrictModel):
     expected: list[str] = Field(min_length=1)
     forbidden_actions: list[str] = Field(default_factory=list)
     verification: VerificationPolicy
+    observe_decision: bool = False
     continuation: Continuation | None = None
 
     @field_validator("repository")
@@ -100,6 +101,15 @@ class PhaseTelemetry(StrictModel):
     unavailable_metrics: list[str] = Field(default_factory=list)
 
 
+class DecisionObservation(StrictModel):
+    """Privacy-preserving outcome extracted from a validated option comparison."""
+
+    selected_category: str = Field(min_length=1, max_length=40)
+    selected_name: str = Field(min_length=1, max_length=120)
+    material_assumption_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    material_assumption_word_count: int = Field(ge=1)
+
+
 class PhaseResult(StrictModel):
     name: Literal["initial", "continuation"]
     exit_code: int
@@ -113,6 +123,10 @@ class PhaseResult(StrictModel):
     assertions: list[DeterministicAssertion]
     manual_review: list[str]
     telemetry: PhaseTelemetry | None = None
+    decision_observation: DecisionObservation | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
 
 class EvaluationStatus(StrEnum):
@@ -132,7 +146,7 @@ class FixtureResult(StrictModel):
 
 
 class CampaignReport(StrictModel):
-    schema_version: str = "1.2.0"
+    schema_version: str = "1.3.0"
     started_at: datetime
     completed_at: datetime
     codex_command: str

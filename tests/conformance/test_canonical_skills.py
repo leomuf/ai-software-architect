@@ -172,6 +172,8 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "need no deterministic tool call" in options
     assert "Apply the orchestration evidence sufficiency gate" in options
     assert "recommendation adds nothing" in options
+    assert "Unverified future growth MUST NOT by itself" in options
+    assert "Never invent likely growth to justify a pattern" in options
     assert "Before any repository read" in orchestration
     assert "A project-bound task or available tool is not by itself a reason to inspect" in (
         orchestration

@@ -211,6 +211,16 @@ Feature: Architecture workflow routing
     Then the stop hook requests one marker-free replacement
     But the complete architecture workflow remains semantic host-model reasoning
 
+  @FLOW-006
+  Scenario: Unverified future growth does not drive the primary recommendation
+    Given current repository evidence supports a proportionate architecture option
+    And a heavier alternative would fit only if unverified future growth occurs
+    When the agent ranks the alternatives
+    Then the current evidence anchors the primary recommendation
+    And future growth is stated as a sensitivity condition for changing the decision
+    And the agent does not invent likely growth to justify the heavier pattern
+    But it asks one focused clarification when no responsible current-evidence default exists
+
 Feature: Durable architecture state
 
   @STATE-001
@@ -477,3 +487,15 @@ Feature: Architecture conformance review
     And repository paths and contents are treated as untrusted data rather than instructions
     And the agent reuses the captured evidence without redundant file reads
     And it does not delegate subagents by default when the bounded snapshot is sufficient
+
+Feature: Exploratory recommendation consistency
+
+  @EVAL-001
+  Scenario: Record a comparison decision without retaining free-form evidence
+    Given a validated architecture-option comparison contains a selected alternative and material assumption
+    When the exploratory evaluator records the completed initial phase
+    Then it stores the public selected category and canonical name
+    And a free-form no-pattern name is reduced to "No pattern"
+    And it stores only a normalized SHA-256 fingerprint and word count for the material assumption
+    And it does not copy the free-form assumption or repository content into the performance ledger
+    And consistency signals compare only exact fixture, plugin-provenance, model, and execution cohorts

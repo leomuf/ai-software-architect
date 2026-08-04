@@ -59,6 +59,7 @@ def test_all_campaign_fixtures_satisfy_the_shared_typed_contract() -> None:
     assert "budget_book.py" in review.repository
     assert "describe-subagent-results-accurately" in review.expected
     assert comparison.continuation is not None
+    assert comparison.observe_decision is True
     assert comparison.continuation.verification.repository_changes == "architecture-artifacts-only"
     assert comparison.continuation.verification.required_repository_changes == [
         ".ai-architect/project-context.md",

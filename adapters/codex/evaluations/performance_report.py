@@ -24,7 +24,7 @@ from adapters.codex.evaluations.performance_models import (
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_LEDGER = ROOT / "evaluation-data" / "exploratory-runs.jsonl"
-REPORT_SCHEMA_VERSION = "1.4.0"
+REPORT_SCHEMA_VERSION = "1.5.0"
 MINIMUM_OBJECTIVE_SAMPLES = 5
 PROVISIONAL_P90_SAMPLES = 10
 LATENCY_OBJECTIVES_SECONDS: dict[tuple[str, str], tuple[float, float]] = {
@@ -158,6 +158,24 @@ class LatencyObjectiveRow:
     percentile_90_target_seconds: float
     percentile_90_provisional: bool
     status: str
+
+
+@dataclass(frozen=True)
+class RecommendationConsistencyRow:
+    fixture: str
+    fixture_revision: str
+    workload_fingerprint: str
+    plugin_version: str
+    plugin_provenance: str
+    model: str
+    reasoning_effort: str
+    speed: str
+    execution_mode: str
+    observations: int
+    distinct_selections: int
+    distinct_assumptions: int
+    selection_distribution: str
+    assessment: str
 
 
 class _Distribution(TypedDict):
@@ -378,6 +396,77 @@ def fixture_overview_statistics(
     return rows
 
 
+def recommendation_consistency_rows(
+    records: Sequence[PerformanceObservation],
+) -> list[RecommendationConsistencyRow]:
+    """Compare normalized decisions only within exact like-for-like cohorts."""
+
+    grouped: dict[tuple[str, ...], list[tuple[str, str, str]]] = defaultdict(list)
+    for record in records:
+        observation = record.phases.initial.decision_observation
+        if observation is None:
+            continue
+        key = (
+            record.test.fixture_id,
+            record.test.fixture_revision,
+            record.test.workload_fingerprint,
+            record.runtime.plugin_version,
+            record.runtime.plugin_provenance or "unknown",
+            record.runtime.model,
+            record.runtime.reasoning_effort,
+            record.runtime.speed.value,
+            record.campaign.execution_mode.value,
+        )
+        grouped[key].append(
+            (
+                observation.selected_category,
+                observation.selected_name,
+                observation.material_assumption_sha256,
+            )
+        )
+
+    rows: list[RecommendationConsistencyRow] = []
+    for cohort_key, observations in sorted(grouped.items()):
+        selections = [(category, name) for category, name, _ in observations]
+        distinct_selections = set(selections)
+        distinct_assumptions = {assumption for _, _, assumption in observations}
+        assumption_selections: dict[str, set[tuple[str, str]]] = defaultdict(set)
+        for category, name, assumption in observations:
+            assumption_selections[assumption].add((category, name))
+        if len(distinct_selections) == 1:
+            assessment = "stable-selection"
+        elif any(len(values) > 1 for values in assumption_selections.values()):
+            assessment = "contradiction-candidate-under-identical-assumption"
+        else:
+            assessment = "assumption-sensitive-or-rephrased"
+        counts: dict[tuple[str, str], int] = defaultdict(int)
+        for selection in selections:
+            counts[selection] += 1
+        distribution = "; ".join(
+            f"{category}/{name}={count}"
+            for (category, name), count in sorted(counts.items())
+        )
+        rows.append(
+            RecommendationConsistencyRow(
+                fixture=cohort_key[0],
+                fixture_revision=cohort_key[1],
+                workload_fingerprint=cohort_key[2],
+                plugin_version=cohort_key[3],
+                plugin_provenance=cohort_key[4],
+                model=cohort_key[5],
+                reasoning_effort=cohort_key[6],
+                speed=cohort_key[7],
+                execution_mode=cohort_key[8],
+                observations=len(observations),
+                distinct_selections=len(distinct_selections),
+                distinct_assumptions=len(distinct_assumptions),
+                selection_distribution=distribution,
+                assessment=assessment,
+            )
+        )
+    return rows
+
+
 def grouped_statistics(records: Sequence[PerformanceObservation]) -> list[StatisticRow]:
     values: dict[tuple[str, ...], list[float]] = defaultdict(list)
     group_counts: dict[tuple[str, ...], int] = defaultdict(int)
@@ -515,6 +604,7 @@ def render_markdown(
     overview_rows: Sequence[FixtureOverviewStatisticRow],
     statistics_rows: Sequence[StatisticRow],
     objective_rows: Sequence[LatencyObjectiveRow],
+    consistency_rows: Sequence[RecommendationConsistencyRow],
 ) -> str:
     lines = [
         "# Exploratory Evaluation Performance",
@@ -674,6 +764,43 @@ def render_markdown(
     lines.extend(
         [
             "",
+            "## Recommendation consistency",
+            "",
+            "This view compares only exact fixture, workload, installed plugin "
+            "version and provenance, model, effort, speed, and execution-mode "
+            "cohorts. Pattern names are public catalog metadata; "
+            "material assumptions remain private and are compared only by normalized "
+            "SHA-256 fingerprint. Different fingerprints can represent either a real "
+            "assumption change or a rephrasing, so `assumption-sensitive-or-rephrased` "
+            "is a review signal rather than a failure.",
+            "",
+            "| Fixture | Revision | Workload | Plugin | Provenance | Model | Effort | "
+            "Speed | Mode | Runs | Selections | Assumptions | Distribution | Assessment |",
+            "|---|---|---|---|---|---|---|---|---|---:|---:|---:|---|---|",
+        ]
+    )
+    if not consistency_rows:
+        lines.append(
+            "| — | — | — | — | — | — | — | — | — | 0 | 0 | 0 | — | no-data |"
+        )
+    for consistency_row in consistency_rows:
+        lines.append(
+            f"| {consistency_row.fixture} | "
+            f"`{consistency_row.fixture_revision[:8]}` | "
+            f"`{consistency_row.workload_fingerprint[:8]}` | "
+            f"{consistency_row.plugin_version} | "
+            f"`{consistency_row.plugin_provenance[-12:]}` | "
+            f"{consistency_row.model} | {consistency_row.reasoning_effort} | "
+            f"{consistency_row.speed} | {consistency_row.execution_mode} | "
+            f"{consistency_row.observations} | "
+            f"{consistency_row.distinct_selections} | "
+            f"{consistency_row.distinct_assumptions} | "
+            f"{consistency_row.selection_distribution} | "
+            f"{consistency_row.assessment} |"
+        )
+    lines.extend(
+        [
+            "",
             "## Comparable-group statistics",
             "",
             "| Fixture | Revision | Workload | Phase | Model | Effort | Speed | Mode | "
@@ -722,6 +849,7 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
     overview_rows = fixture_overview_statistics(records)
     statistic_rows = grouped_statistics(records)
     objective_rows = latency_objective_rows(records)
+    consistency_rows = recommendation_consistency_rows(records)
     output_directory.mkdir(parents=True, exist_ok=True)
 
     markdown = render_markdown(
@@ -731,6 +859,7 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
         overview_rows,
         statistic_rows,
         objective_rows,
+        consistency_rows,
     )
     (output_directory / "performance.md").write_text(
         markdown,
@@ -764,6 +893,17 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
         )
         writer.writeheader()
         writer.writerows(asdict(row) for row in tool_timeline)
+    with (output_directory / "recommendation-consistency.csv").open(
+        "w",
+        encoding="utf-8-sig",
+        newline="",
+    ) as csv_file:
+        writer = csv.DictWriter(
+            csv_file,
+            fieldnames=list(RecommendationConsistencyRow.__annotations__),
+        )
+        writer.writeheader()
+        writer.writerows(asdict(row) for row in consistency_rows)
     payload: dict[str, Any] = {
         "schema_version": REPORT_SCHEMA_VERSION,
         "observations": [asdict(row) for row in rows],
@@ -772,6 +912,7 @@ def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
         "fixture_overview_statistics": [asdict(row) for row in overview_rows],
         "statistics": [asdict(row) for row in statistic_rows],
         "latency_objectives": [asdict(row) for row in objective_rows],
+        "recommendation_consistency": [asdict(row) for row in consistency_rows],
     }
     (output_directory / "performance.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",

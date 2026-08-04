@@ -93,6 +93,22 @@ The Codex package uses these short-lived hooks:
   comparison calls instead of three and reduced P50 from 58.098 to 52.075 seconds.
   Its 62.680-second P90 remains provisional at `n = 5`, so no tail-latency improvement
   is claimed yet.
+- The repository-side evaluator now records a validated comparison's public selected
+  category/name and only a normalized fingerprint plus word count for its material
+  assumption. Five exact runs on 2026-08-04 selected `No pattern` four times and
+  Strategy once, with five different fingerprints. Manual review found the variation
+  aligned with different explicit growth assumptions rather than contradictory
+  choices under one identical assumption. The next decision is whether unknown future
+  growth should default to current-evidence recommendations or trigger one focused
+  clarification. The shared skill now resolves that policy by anchoring the primary
+  recommendation in current evidence, keeping growth-dependent options conditional,
+  and clarifying only when no responsible current-evidence default exists. This change
+  was rebuilt as plugin `0.1.0+codex.20260804141427`. Its exact five-run cohort selected
+  `No pattern` in every run and passed semantic review, artifact persistence, and
+  application-source immutability checks without retries or exclusions. Initial
+  P50/P90 were 63.888/69.671 seconds and continuation P50/P90 were
+  113.293/135.065 seconds. The stable semantic result is accepted; another five exact
+  samples are required before interpreting the provisional P90 or mixed latency shift.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.
@@ -256,7 +272,13 @@ The existing GitHub workflows run deterministic tests, generation-diff checks,
 Ruff, mypy, pytest, plugin build/validation, runtime smoke testing, CodeQL, and
 release packaging. CI also validates and renders the versioned exploratory
 performance history into the Job Summary and uploads its Markdown, primary and
-telemetry CSV, and JSON views without modifying the ledger.
+telemetry CSV, privacy-preserving tool timeline, recommendation-consistency CSV,
+and JSON views without modifying the ledger. Comparison runs recorded with
+performance schema `1.3.0` retain only the selected public catalog category/name
+and a normalized material-assumption fingerprint. Report schema `1.5.0` uses these
+fields for exact like-for-like consistency signals, including installed plugin
+version and provenance in cohort identity, without versioning free-form response or
+repository content.
 
 Dependabot is configured separately for Python and GitHub Actions. It may create
 multiple temporary branches because ungrouped updates receive one branch and pull

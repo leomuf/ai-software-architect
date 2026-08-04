@@ -207,15 +207,50 @@ available repository or treat it as generic guidance, while the fixture required
 inspection. Historical semantic review also accepted at least one no-inspection
 response. Stabilize the contract before interpreting another single pass as proof.
 
-- [ ] Investigate recommendation consistency under identical evidence. The five
-      comparison-bundle validation runs all produced credible alternatives and passed
-      the contract, but selected Strategy, No pattern, or lightweight Layered
-      Architecture depending on model-generated growth assumptions. First extend the
-      evaluator with a privacy-preserving normalized selected category/name and the
-      material assumption that drove it; do not store free-form repository content.
-      Then distinguish acceptable uncertainty from contradictory decisions across a
-      like-for-like cohort. Prefer clearer evidence/assumption handling or fixture
-      constraints over a deterministic hook rule that chooses the recommendation.
+- [x] Extend the evaluator with a privacy-preserving normalized selected
+      category/name and material-assumption fingerprint. Comparison outcomes are
+      parsed from the already validated rendering contract; catalog-backed names are
+      public metadata, free-form no-pattern labels are reduced to `No pattern`, and
+      assumption text is normalized and hashed rather than copied into reports or the
+      versioned ledger. Performance schema `1.3.0` and report schema `1.5.0` expose
+      exact like-for-like recommendation-consistency cohorts.
+- [x] Include installed plugin version and provenance in recommendation-consistency
+      cohort identity so later packages using the same fixture cannot be silently
+      combined into one behavioral result.
+- [x] Collect and semantically review five new `architecture-option-comparison`
+      observations with the corrected evaluator. Campaigns `20260804T135122Z`,
+      `20260804T135413Z`, `20260804T135725Z`, `20260804T140032Z`, and
+      `20260804T140330Z` all completed without deterministic failures or exclusions,
+      persisted exactly four architecture artifacts, and left application source
+      unchanged. The cohort selected `No pattern` four times and Strategy once with
+      five distinct assumption fingerprints, producing
+      `assumption-sensitive-or-rephrased`, not an identical-assumption contradiction.
+      Manual review confirmed that the Strategy run assumed continued category or
+      policy growth, while the no-pattern runs assumed a small utility or simple rule
+      set.
+- [x] Define the intended recommendation policy when repository evidence does not
+      establish future growth. The shared host-neutral option-evaluation skill now
+      anchors the primary recommendation in current evidence, keeps unverified growth
+      as a sensitivity condition, and asks one focused clarification only when no
+      responsible current-evidence default exists. This remains model reasoning; no
+      deterministic hook chooses a pattern.
+- [x] Rebuild and install the plugin containing the current-evidence recommendation
+      policy, then collect and semantically review another exact five-run
+      `architecture-option-comparison` cohort. Plugin
+      `0.1.0+codex.20260804141427` passed campaigns `20260804T141559Z`,
+      `20260804T141857Z`, `20260804T142130Z`, `20260804T142447Z`, and
+      `20260804T142815Z` without retries, exclusions, deterministic failures, or
+      application-source changes. All five runs selected `No pattern` and treated
+      heavier patterns as conditional future choices, so the cohort reports
+      `stable-selection` despite five differently worded assumption fingerprints.
+- [ ] Add five more exact observations for the current-evidence cohort before making
+      a tail-latency conclusion. At `n = 5`, initial P50/P90 are 63.888/69.671
+      seconds versus 56.780/67.654 in the preceding cohort; continuation P50/P90 are
+      113.293/135.065 versus 119.565/127.937. Tool counts are unchanged and output
+      tokens are nearly flat; initial average input increased from 40,696 to 44,140
+      tokens while continuation average duration improved from 121.922 to 115.188
+      seconds. Keep P90 provisional until `n = 10` and do not trade away the verified
+      semantic stability based on this small mixed-latency sample.
 
 - [x] Make project-specific improvement and pattern-selection requests require the
       smallest relevant host-native static inspection unless the user forbids

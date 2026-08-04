@@ -22,10 +22,13 @@ from typing import Any, Literal
 
 import yaml
 
+from adapters.codex.evaluations.decision_observation import extract_decision_observation
 from adapters.codex.evaluations.grading import grade_phase
 from adapters.codex.evaluations.models import (
     AssertionStatus,
     CampaignReport,
+    DecisionObservation,
+    DeterministicAssertion,
     EvaluationFixture,
     EvaluationStatus,
     FixtureResult,
@@ -348,6 +351,7 @@ def _run_phase(
     expected: list[str],
     forbidden_actions: list[str],
     timeout_seconds: int,
+    observe_decision: bool = False,
 ) -> PhaseResult:
     before = _snapshot(workspace)
     completed = _capture_process(
@@ -375,6 +379,29 @@ def _run_phase(
         repository_changes=changed,
         policy=policy,
     )
+    decision_observation: DecisionObservation | None = None
+    if observe_decision:
+        try:
+            decision_observation = extract_decision_observation(final_response or "")
+        except ValueError as exc:
+            assertions.append(
+                DeterministicAssertion(
+                    name="decision-observation-captured",
+                    status=AssertionStatus.FAIL,
+                    evidence=f"Validated comparison outcome was unavailable: {exc}",
+                )
+            )
+        else:
+            assertions.append(
+                DeterministicAssertion(
+                    name="decision-observation-captured",
+                    status=AssertionStatus.PASS,
+                    evidence=(
+                        "Captured a normalized public selection and a private "
+                        "material-assumption fingerprint."
+                    ),
+                )
+            )
     return PhaseResult(
         name=name,
         exit_code=completed.returncode,
@@ -391,6 +418,7 @@ def _run_phase(
             *(f"forbidden:{item}" for item in forbidden_actions),
         ],
         telemetry=_phase_telemetry(completed.stdout_lines),
+        decision_observation=decision_observation,
     )
 
 
@@ -571,6 +599,35 @@ def _summary(report: CampaignReport) -> str:
             f"| `{result.fixture_id}` | `{result.scenario}` | "
             f"{result.status.value} | {len(result.phases)} |"
         )
+    decision_phases = [
+        (result.fixture_id, phase)
+        for result in report.results
+        for phase in result.phases
+        if phase.decision_observation is not None
+    ]
+    if decision_phases:
+        lines.extend(
+            [
+                "",
+                "## Privacy-preserving decision observations",
+                "",
+                "Free-form assumptions are not retained; only their normalized "
+                "SHA-256 fingerprints are reported.",
+                "",
+                "| Fixture | Phase | Selected category | Selected name | "
+                "Assumption fingerprint | Words |",
+                "|---|---|---|---|---|---:|",
+            ]
+        )
+        for fixture_id, phase in decision_phases:
+            observation = phase.decision_observation
+            assert observation is not None
+            lines.append(
+                f"| `{fixture_id}` | {phase.name} | "
+                f"{observation.selected_category} | {observation.selected_name} | "
+                f"`{observation.material_assumption_sha256[:12]}` | "
+                f"{observation.material_assumption_word_count} |"
+            )
     telemetry_phases = [
         (result.fixture_id, phase)
         for result in report.results
@@ -686,6 +743,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                 expected=fixture.expected,
                 forbidden_actions=fixture.forbidden_actions,
                 timeout_seconds=args.timeout_seconds,
+                observe_decision=fixture.observe_decision,
             )
             print(
                 f"{progress}: initial phase finished in "

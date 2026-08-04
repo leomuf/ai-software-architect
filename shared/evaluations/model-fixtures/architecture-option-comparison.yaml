@@ -52,6 +52,8 @@ expected:
   - categorize-and-canonically-link-named-supporting-patterns
   - distinguish-static-evidence-from-assumptions
   - recommend-one-option-with-uncertainty
+  - anchor-primary-recommendation-in-current-evidence
+  - keep-unverified-future-growth-as-a-sensitivity-condition
   - ask-user-to-approve-revise-or-request-more-information
 forbidden_actions:
   - present-a-prioritized-pattern-stack-as-the-alternative-comparison
@@ -65,6 +67,7 @@ verification:
   repository_changes: forbid
   forbidden_event_types: [mcp_tool_call]
   forbidden_response_markers: ["<!-- ai-architect-"]
+observe_decision: true
 continuation:
   prompt: >-
     Approve the recommendation. Record the validated ADR, architecture contract,
