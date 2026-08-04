@@ -68,7 +68,7 @@ def test_codex_plugin_is_reproducible_and_complete(
     ):
         assert marker not in skill_text
     assert len(list((skill / "references").iterdir())) == 57
-    assert len(list((skill / "assets").iterdir())) == 5
+    assert len(list((skill / "assets").iterdir())) == 4
     assert {path.name for path in (second / "skills").iterdir() if path.is_dir()} == {
         "ai-software-architect"
     }
@@ -83,8 +83,12 @@ def test_codex_plugin_is_reproducible_and_complete(
         if name == "evaluate-architecture-options":
             assert "Codex progressive-disclosure boundary" in workflow_text
             assert "Load at most one focused reference" in workflow_text
+            assert "## Compact canonical reference catalog" in workflow_text
+            assert "| GoF | Strategy | `gof-strategy.md` |" in workflow_text
+            assert build_plugin.CANONICAL_REFERENCE_BASE in workflow_text
+            assert "Bundled path rule: `references/<File>`" in workflow_text
             assert "## Direct reference routing" not in workflow_text
-            assert len(workflow_text.encode("utf-8")) < 10_000
+            assert len(workflow_text.encode("utf-8")) < 14_000
     authoring_bundle = skill / "assets" / "artifact-authoring-bundle.md"
     assert authoring_bundle.is_file()
     bundle_text = authoring_bundle.read_text("utf-8")
@@ -99,12 +103,7 @@ def test_codex_plugin_is_reproducible_and_complete(
     ):
         assert required_path in bundle_text
     assert "Do not rename `implementation-plan.md`" in bundle_text
-    reference_catalog = skill / "assets" / "reference-catalog.md"
-    catalog_text = reference_catalog.read_text("utf-8")
-    assert "| GoF | Strategy | `gof-strategy.md` |" in catalog_text
-    assert build_plugin.CANONICAL_REFERENCE_BASE in catalog_text
-    assert "Bundled path rule: `references/<File>`" in catalog_text
-    assert len(catalog_text.encode("utf-8")) < 6_000
+    assert not (skill / "assets" / "reference-catalog.md").exists()
     assert "12,000 combined" in bundle_text
     assert "plain `OPT-NNN` identifiers" in bundle_text
 
@@ -141,7 +140,7 @@ def test_codex_plugin_is_reproducible_and_complete(
     assert len(provenance["additional_source_to_output"]) == 5
     assert set(provenance["additional_source_to_output"].values()) == {
         "skills/ai-software-architect/assets/artifact-authoring-bundle.md",
-        "skills/ai-software-architect/assets/reference-catalog.md",
+        "skills/ai-software-architect/references/workflow-evaluate-architecture-options.md",
     }
     for relative, expected_hash in provenance["output_sha256"].items():
         assert hashlib.sha256((second / relative).read_bytes()).hexdigest() == expected_hash

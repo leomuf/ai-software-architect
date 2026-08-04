@@ -80,6 +80,28 @@ MAX_CONTINUATION_AGE_SECONDS = 3_600
 MAX_STATE_FILES = 512
 
 
+def _single_bundled_reference_content(
+    plugin_root: Path | None,
+    context: CodexTurnContext,
+) -> str:
+    """Read one catalog-routed trusted reference without semantic route inference."""
+
+    if plugin_root is None or len(context.reference_paths) != 1:
+        return ""
+    skill_root = (
+        plugin_root.resolve(strict=False) / "skills" / "ai-software-architect"
+    )
+    try:
+        trusted_root = skill_root.resolve(strict=True)
+        reference = (trusted_root / context.reference_paths[0]).resolve(strict=True)
+        reference.relative_to(trusted_root)
+        if not reference.is_file():
+            return ""
+        return reference.read_text(encoding="utf-8")
+    except (OSError, UnicodeError, ValueError):
+        return ""
+
+
 def _turn_state_path(payload: dict[str, Any], plugin_data: Path) -> Path:
     session_id = payload.get("session_id")
     turn_id = payload.get("turn_id")
@@ -278,18 +300,7 @@ def handle_user_prompt_submit(
             if plugin_root is not None
             else ""
         ),
-        reference_catalog_path=(
-            str(
-                plugin_root.resolve(strict=False)
-                / "skills"
-                / "ai-software-architect"
-                / "assets"
-                / "reference-catalog.md"
-            )
-            if plugin_root is not None
-            else ""
-        ),
-        comparison_workflow_path=(
+        comparison_bundle_path=(
             str(
                 plugin_root.resolve(strict=False)
                 / "skills"
@@ -299,6 +310,10 @@ def handle_user_prompt_submit(
             )
             if plugin_root is not None
             else ""
+        ),
+        bundled_reference_content=_single_bundled_reference_content(
+            plugin_root,
+            context,
         ),
     )
     if (

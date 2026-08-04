@@ -169,8 +169,8 @@ def developer_context(
     continuation_instruction: str = "",
     continuation_interaction: str | None = None,
     snapshot_command: str = "",
-    reference_catalog_path: str = "",
-    comparison_workflow_path: str = "",
+    comparison_bundle_path: str = "",
+    bundled_reference_content: str = "",
 ) -> str:
     """Render only the route-independent safety envelope and known route hints."""
 
@@ -242,12 +242,24 @@ def developer_context(
             f"`{CANONICAL_REFERENCE_BASE}{Path(path).name}`"
             for path in context.reference_paths
         )
-        reference_hint = (
-            " Exact bundled references explicitly named by the user: "
-            f"{rendered_paths}. Load only those references before explaining them or "
-            "reproducing their canonical examples; do not answer from memory or browse "
-            "for bundled content."
-        )
+        if bundled_reference_content:
+            reference_hint = (
+                " Exact bundled reference explicitly named by the user: "
+                f"{rendered_paths}. Its trusted canonical content is supplied inline "
+                "below, so do not spend a tool call reading it and do not answer from "
+                "memory or browse for bundled content. Reproduce its canonical example "
+                "for a generic example request.\n\n"
+                "<bundled-architecture-reference>\n"
+                + bundled_reference_content.rstrip()
+                + "\n</bundled-architecture-reference>"
+            )
+        else:
+            reference_hint = (
+                " Exact bundled references explicitly named by the user: "
+                f"{rendered_paths}. Load only those references before explaining them or "
+                "reproducing their canonical examples; do not answer from memory or browse "
+                "for bundled content."
+            )
     snapshot_hint = (
         " If repository evidence can materially change this response, use this exact "
         "one-shot bounded static snapshot before ad hoc reads: `"
@@ -259,15 +271,14 @@ def developer_context(
         else ""
     )
     catalog_hint = (
-        " For an open architecture or pattern selection, first load this exact "
-        "installed comparison workflow once: `"
-        + comparison_workflow_path
-        + "`, then load this exact installed reference catalog once: `"
-        + reference_catalog_path
-        + "`. Use only the catalog's categorized names and canonical-link rule. Do "
-        "not load either resource for focused help on an explicitly named reference "
+        " For an open architecture or pattern selection, load this exact installed "
+        "comparison bundle once: `"
+        + comparison_bundle_path
+        + "`. It contains the workflow and compact reference catalog; use only its "
+        "categorized names and canonical-link rule. Do not load this resource for "
+        "focused help on an explicitly named reference "
         "or for non-comparison work."
-        if reference_catalog_path and comparison_workflow_path
+        if comparison_bundle_path
         else ""
     )
     return (
@@ -554,6 +565,10 @@ def parse_option_comparison_markdown(message: str) -> ParsedOptionComparison:
         category = matched.group("category")
         name = matched.group("linked_name") or matched.group("plain_name")
         option_id = f"OPT-{len(rows) + 1:03d}"
+        if category == "No pattern" and matched.group("link") is not None:
+            raise ValueError(
+                "a No pattern alternative must use plain option text without a link"
+            )
         link = None if category == "No pattern" else matched.group("link")
         _validate_canonical_reference(
             category=category,

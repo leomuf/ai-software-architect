@@ -82,11 +82,17 @@ The Codex package uses these short-lived hooks:
 
 - `UserPromptSubmit`: activation, routing, continuation, and a compact safety
   envelope. Exact reference hints are added only for explicitly named canonical
-  references; exact installed comparison-workflow and generated-catalog paths
-  support open comparisons, while the authoring-bundle path is added only for a
+  references; when exactly one is resolved, its trusted packaged content is supplied
+  inline to avoid a separate tool roundtrip. One exact installed comparison-bundle
+  path supplies both the workflow and compact catalog for open comparisons, while
+  the authoring-bundle path is added only for a
   typed decision continuation. A typed clarification continuation instead receives
   only a compact resume-design envelope and relies on the already-active Composite
   to load its selected workflow module.
+  Five comparable runs of plugin `0.1.0+codex.20260804120052` confirmed two initial
+  comparison calls instead of three and reduced P50 from 58.098 to 52.075 seconds.
+  Its 62.680-second P90 remains provisional at `n = 5`, so no tail-latency improvement
+  is claimed yet.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.

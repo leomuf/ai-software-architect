@@ -164,6 +164,40 @@ observations exist.
       review (42.8/46.5) pass their P50/P90 targets. Comparison initial (58.1/60.0)
       warns on P50, while focused examples (30.3/37.8) warn on both provisional
       objectives. Values are seconds and P90 remains provisional at `n = 5`.
+- [x] Validate the focused-reference inline fast path. The hook now resolves exactly
+      one explicitly named catalog reference, verifies that its packaged file remains
+      inside the trusted skill root, and supplies the body inline so the model does
+      not need a separate file-read roundtrip. Multiple, missing, unreadable, or
+      non-contained references retain the path-only behavior. Plugin
+      `0.1.0+codex.20260731150201` passed five semantic reviews with zero tool calls.
+      Against the directly comparable `0.1.0+codex.20260731120010` cohort, P50 fell
+      from 30.255 to 21.589 seconds and provisional P90 from 37.775 to 23.498 seconds.
+      The P90 objective now passes; P50 remains a warning at 1.589 seconds above its
+      intentionally ambitious 20-second objective.
+- [x] Investigate the remaining initial `architecture-option-comparison` warning as
+      the next isolated optimization. Preserve host-native semantic routing and avoid
+      universally injecting the comparison workflow or catalog. Existing raw telemetry
+      confirms exactly three calls in every baseline run: one bounded snapshot plus
+      separate workflow-module and catalog reads. The generated Codex candidate now
+      appends the compact catalog to the installed comparison workflow and exposes one
+      bundle path, eliminating one resource roundtrip without selecting a semantic mode
+      or enlarging focused-help, clarification, or proportionate-simplicity contexts.
+      The first installed candidate used the intended two initial tool calls and
+      persisted all four approved artifacts safely, but semantic review rejected its
+      linked `No pattern` option. The visible parser and generated bundle now require
+      plain unlinked text for that category. Corrected plugin
+      `0.1.0+codex.20260804120052` then passed a targeted workflow, all five semantic
+      fixtures, and five directly comparable comparison runs. Every initial comparison
+      used exactly two calls, every approval persisted four validated artifacts, and no
+      application source changed. Initial P50 fell from 58.098 to 52.075 seconds;
+      provisional P90 moved from 60.003 to 62.680 seconds. Retain the deterministic
+      roundtrip reduction, but do not claim a tail-latency improvement until the cohort
+      reaches ten observations. Continuation P50/P90 remained within objectives at
+      100.371/115.797 seconds.
+- [ ] Reassess the comparison P50 warning only after five additional observations make
+      its P90 non-provisional. Separate host/model variability from control-plane cost;
+      do not add semantic keyword routing or universally inject the comparison bundle
+      merely to pursue the 40-second objective.
 
 ## Exploratory semantic stability
 
@@ -172,6 +206,16 @@ initial-route regression: project-specific pattern advice could either inspect t
 available repository or treat it as generic guidance, while the fixture required
 inspection. Historical semantic review also accepted at least one no-inspection
 response. Stabilize the contract before interpreting another single pass as proof.
+
+- [ ] Investigate recommendation consistency under identical evidence. The five
+      comparison-bundle validation runs all produced credible alternatives and passed
+      the contract, but selected Strategy, No pattern, or lightweight Layered
+      Architecture depending on model-generated growth assumptions. First extend the
+      evaluator with a privacy-preserving normalized selected category/name and the
+      material assumption that drove it; do not store free-form repository content.
+      Then distinguish acceptable uncertainty from contradictory decisions across a
+      like-for-like cohort. Prefer clearer evidence/assumption handling or fixture
+      constraints over a deterministic hook rule that chooses the recommendation.
 
 - [x] Make project-specific improvement and pattern-selection requests require the
       smallest relevant host-native static inspection unless the user forbids

@@ -50,12 +50,14 @@ Feature: Agent Skills standard and progressive disclosure
   Scenario: Reuse a progressively disclosed GoF Python example
     Given the user asks for a Python implementation example of "Abstract Factory"
     When "evaluate-architecture-options" routes to "references/gof-abstract-factory.md"
-    Then the Codex control plane may add that exact bundled reference path without selecting a semantic mode
-    Then that reference supplies one or two fenced Python examples
+    Then the Codex control plane may resolve that exact bundled reference without selecting a semantic mode
+    And when it is the only resolved reference its trusted packaged content may be supplied inline
+    And that reference supplies one or two fenced Python examples
     And the agent reproduces the canonical example instead of generating a replacement from memory
     And every example parses as Python without non-standard-library dependencies
     And no example performs filesystem, network, subprocess, or dynamic-code operations
     And the agent loads no unrelated GoF reference
+    And an inline reference requires no separate reference-file tool call
     And it explains how the example participants map to the pattern
     And it calls no MCP tool for the generic example request
 
@@ -168,6 +170,7 @@ Feature: Architecture workflow routing
     And the fit score is described as ordinal rather than a probability
     And complementary supporting patterns are listed separately from competing alternatives
     And the first mention of each named option or supporting pattern uses its category and canonical public reference when the host supports Markdown links
+    And a No pattern alternative uses plain option text without a canonical link
     And the user is asked to approve, revise, or request more information
     And structured output validates as ArchitectureOptionComparison when requested
     And the focused Codex Markdown rendering preserves only fields it actually parsed
@@ -183,7 +186,7 @@ Feature: Architecture workflow routing
     But it may resolve an explicit canonical reference name to an exact bundled path
     And the initial hook context omits the complete reference index, comparison contract, subagent policy, and artifact-authoring instructions
     When an open comparison requires candidate discovery
-    Then the hook supplies exact installed comparison-workflow and generated categorized reference-catalog paths
+    Then the hook supplies one exact installed bundle containing the comparison workflow and categorized reference catalog
     And the model loads that workflow and catalog once before choosing alternatives
     And it loads at most one candidate body only when a material distinction remains unresolved
     When the prompt contains a material platform contradiction

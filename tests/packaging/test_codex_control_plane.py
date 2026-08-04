@@ -240,6 +240,71 @@ def test_single_skill_leaves_pattern_routing_to_the_model(
     assert len(additional_context) <= 2_800
 
 
+def test_single_named_reference_is_supplied_inline_from_the_trusted_plugin(
+    tmp_path: Path,
+) -> None:
+    plugin_root = tmp_path / "plugin"
+    reference = (
+        plugin_root
+        / "skills"
+        / "ai-software-architect"
+        / "references"
+        / "gof-abstract-factory.md"
+    )
+    reference.parent.mkdir(parents=True)
+    reference.write_text(
+        "# Abstract Factory\n\nCanonical inline example.\n",
+        encoding="utf-8",
+    )
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Give an Abstract Factory Python example."
+
+    result = handle_user_prompt_submit(
+        submit,
+        tmp_path / "data",
+        plugin_root=plugin_root,
+    )
+
+    additional_context = result["hookSpecificOutput"]["additionalContext"]  # type: ignore[index]
+    assert "Canonical inline example." in additional_context
+    assert "do not spend a tool call reading it" in additional_context
+    assert "<bundled-architecture-reference>" in additional_context
+
+
+def test_multiple_named_references_retain_path_only_progressive_disclosure(
+    tmp_path: Path,
+) -> None:
+    plugin_root = tmp_path / "plugin"
+    reference_root = (
+        plugin_root / "skills" / "ai-software-architect" / "references"
+    )
+    reference_root.mkdir(parents=True)
+    (reference_root / "gof-strategy.md").write_text(
+        "Strategy body must not be injected.",
+        encoding="utf-8",
+    )
+    (reference_root / "gof-state.md").write_text(
+        "State body must not be injected.",
+        encoding="utf-8",
+    )
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = (
+        "$ai-software-architect Compare the Strategy pattern with the State pattern."
+    )
+
+    result = handle_user_prompt_submit(
+        submit,
+        tmp_path / "data",
+        plugin_root=plugin_root,
+    )
+
+    additional_context = result["hookSpecificOutput"]["additionalContext"]  # type: ignore[index]
+    assert "references/gof-strategy.md" in additional_context
+    assert "references/gof-state.md" in additional_context
+    assert "must not be injected" not in additional_context
+    assert "<bundled-architecture-reference>" not in additional_context
+
+
 def test_reference_hints_resolve_explicit_names_without_selecting_a_mode() -> None:
     prompt = "$ai-software-architect Compare the Strategy pattern with State pattern."
     context = with_reference_hints(classify_prompt(prompt), prompt)
@@ -563,18 +628,11 @@ def test_architect_uses_bundled_references_instead_of_web_search(tmp_path: Path)
         plugin_root
         / "skills"
         / "ai-software-architect"
-        / "assets"
-        / "reference-catalog.md"
-    ) in installed_context
-    assert str(
-        plugin_root
-        / "skills"
-        / "ai-software-architect"
         / "references"
         / "workflow-evaluate-architecture-options.md"
     ) in installed_context
-    assert "first load this exact installed comparison workflow once" in installed_context
-    assert "load this exact installed reference catalog once" in installed_context
+    assert "load this exact installed comparison bundle once" in installed_context
+    assert "workflow and compact reference catalog" in installed_context
 
 
 def test_model_selected_comparison_retains_architecture_artifact_patch_surface(
@@ -693,6 +751,54 @@ Please approve, revise, or request more information.
     result = handle_stop(stop, tmp_path / "data")
     assert result["decision"] == "block"
     assert "canonical public reference" in result["reason"]
+
+
+def test_comparison_rejects_a_linked_no_pattern_alternative(tmp_path: Path) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Which design should I use?"
+    handle_user_prompt_submit(submit, tmp_path / "data")
+    reference_base = (
+        "https://github.com/leomuf/ai-software-architect/blob/main/"
+        "shared/skills/evaluate-architecture-options/references/"
+    )
+    strategy_row = (
+        f"| [GoF] [Strategy]({reference_base}gof-strategy.md) | 80/100 "
+        "| Flexible | Testable | Indirection | Rules vary |"
+    )
+    linked_no_pattern_row = (
+        f"| [No pattern] [No pattern]({reference_base}no-pattern.md) | 70/100 "
+        "| Small | Simple | Less extensible | Scope stays small |"
+    )
+    answer = f"""## Decision scope and criteria
+Choose a design using an ordinal fit score.
+
+## Evidence and assumptions
+Only stated constraints are confirmed.
+
+## Alternatives
+| Option | Fit | Rationale | Main benefit | Main liability | Material assumption |
+| --- | ---: | --- | --- | --- | --- |
+{strategy_row}
+{linked_no_pattern_row}
+
+## Recommendation
+Use [GoF] [Strategy]({reference_base}gof-strategy.md).
+
+## Supporting patterns
+No supporting pattern is needed.
+
+## Your decision
+Please approve, revise, or request more information.
+"""
+
+    with pytest.raises(ValueError, match="plain option text without a link"):
+        parse_option_comparison_markdown(answer)
+
+    stop = _payload("Stop")
+    stop["last_assistant_message"] = answer
+    result = handle_stop(stop, tmp_path / "data")
+    assert result["decision"] == "block"
+    assert "plain option text without a link" in result["reason"]
 
 
 def test_comparison_allows_rejected_patterns_in_explanatory_prose(
