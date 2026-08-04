@@ -58,6 +58,9 @@ Schema `1.2.0` adds the privacy-preserving tool timeline described below. Schema
 and canonical name plus a normalized SHA-256 fingerprint and word count for its
 material assumption. It never copies the free-form assumption or a project-specific
 no-pattern label into the versioned ledger.
+Schema `1.4.0` adds only the complete visible comparison-response word count, which
+lets maintainers evaluate concise-rendering experiments without retaining response
+text.
 
 Four focused modules keep responsibilities separate:
 
@@ -102,6 +105,8 @@ distinguish a stable selection, changed
 selections with different or rephrased assumptions, and a contradiction candidate
 where one identical assumption fingerprint maps to different selections. These are
 review signals, not automated semantic verdicts.
+When schema `1.4.0` samples are available, the same table reports their median
+visible-response word count and coverage.
 
 `historical_review.py` is deliberately separate. It uses the documented local
 Codex App Server to export Desktop task evidence, but never automatically treats a

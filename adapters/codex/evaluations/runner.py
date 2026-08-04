@@ -612,11 +612,12 @@ def _summary(report: CampaignReport) -> str:
                 "## Privacy-preserving decision observations",
                 "",
                 "Free-form assumptions are not retained; only their normalized "
-                "SHA-256 fingerprints are reported.",
+                "SHA-256 fingerprints are reported. Response content is not retained; "
+                "only its visible word count is reported.",
                 "",
                 "| Fixture | Phase | Selected category | Selected name | "
-                "Assumption fingerprint | Words |",
-                "|---|---|---|---|---|---:|",
+                "Assumption fingerprint | Assumption words | Visible response words |",
+                "|---|---|---|---|---|---:|---:|",
             ]
         )
         for fixture_id, phase in decision_phases:
@@ -626,7 +627,8 @@ def _summary(report: CampaignReport) -> str:
                 f"| `{fixture_id}` | {phase.name} | "
                 f"{observation.selected_category} | {observation.selected_name} | "
                 f"`{observation.material_assumption_sha256[:12]}` | "
-                f"{observation.material_assumption_word_count} |"
+                f"{observation.material_assumption_word_count} | "
+                f"{observation.visible_response_word_count or '—'} |"
             )
     telemetry_phases = [
         (result.fixture_id, phase)

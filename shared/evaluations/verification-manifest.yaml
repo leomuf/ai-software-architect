@@ -30,6 +30,7 @@ scenarios:
     fixture: shared/evaluations/model-fixtures/architecture-option-comparison.yaml
   FLOW-005: {mode: deterministic-test, gate: GATE-CONTROL-PLANE}
   FLOW-006: {mode: model-evaluation, gate: GATE-SCHEMA}
+  FLOW-007: {mode: model-evaluation, gate: GATE-SCHEMA}
   STATE-001: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-002: {mode: deterministic-test, gate: GATE-SCHEMA}
   STATE-003: {mode: deterministic-test, gate: GATE-SCHEMA}

@@ -248,6 +248,8 @@ def test_reporting_excludes_missing_continuation_from_statistics(tmp_path: Path)
     )
     assert consistency["plugin_version"] == "0.1.0"
     assert consistency["plugin_provenance"] == "a" * 64
+    assert consistency["response_length_samples"] == 0
+    assert consistency["median_visible_response_words"] is None
     assert consistency["assessment"] == "stable-selection"
     assert (output / "recommendation-consistency.csv").is_file()
 
@@ -442,3 +444,45 @@ def test_consistency_separates_plugin_versions_and_provenance(tmp_path: Path) ->
     assert len(rows) == 2
     assert {row.plugin_version for row in rows} == {"0.1.0", "0.2.0"}
     assert {row.plugin_provenance for row in rows} == {"a" * 64, "c" * 64}
+
+
+def test_consistency_reports_median_visible_response_words(tmp_path: Path) -> None:
+    report_path = tmp_path / "Run20" / "report.json"
+    ledger = tmp_path / "history.jsonl"
+    _write_report(report_path)
+    import_reports(
+        reports=[report_path],
+        ledger=ledger,
+        overrides_path=tmp_path / "missing.yaml",
+        default_speed=SpeedMode.STANDARD,
+        default_git_commit="commit-1",
+        default_host="windows-x86_64",
+        apply=True,
+    )
+    original = next(
+        record
+        for record in load_performance_ledger(ledger)
+        if record.test.fixture_id == "architecture-option-comparison"
+    )
+    decision = original.phases.initial.decision_observation
+    assert decision is not None
+    with_length = original.model_copy(
+        update={
+            "phases": original.phases.model_copy(
+                update={
+                    "initial": original.phases.initial.model_copy(
+                        update={
+                            "decision_observation": decision.model_copy(
+                                update={"visible_response_word_count": 410}
+                            )
+                        }
+                    )
+                }
+            )
+        }
+    )
+
+    row = recommendation_consistency_rows([with_length])[0]
+
+    assert row.response_length_samples == 1
+    assert row.median_visible_response_words == 410

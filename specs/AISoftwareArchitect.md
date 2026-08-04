@@ -2616,6 +2616,16 @@ Feature: Architecture workflow routing
     And the agent does not invent likely growth to justify the heavier pattern
     But it asks one focused clarification when no responsible current-evidence default exists
 
+  @FLOW-007
+  Scenario: Routine small comparison is concise without losing decision evidence
+    Given a bounded small repository supports three credible alternatives
+    When the agent renders the complete six-section comparison
+    Then it targets between 350 and 450 visible words
+    And it keeps evidence bullets, table cells, and supporting-pattern roles compact
+    And it does not repeat the same observation across rationale and recommendation
+    But it exceeds the soft budget when additional decision-relevant evidence is necessary
+    And it never omits required trade-offs, uncertainty, links, or decision guidance
+
 Feature: Durable architecture state
 
   @STATE-001
@@ -2979,6 +2989,8 @@ Evaluation dimensions include:
 The evaluation does not require different assistants to produce identical recommendations. It checks whether each result follows the declared method and produces evidence-supported, internally consistent decisions.
 
 Recommendations MUST be anchored in observed repository evidence and user-supplied current forces. Unverified future growth MUST NOT by itself make a heavier pattern outrank the proportionate option supported by current evidence. The agent SHOULD present that growth as a sensitivity condition identifying when another option would become preferable. It asks one focused clarification only when the unknown prevents any responsible current-evidence default; it MUST NOT invent likely growth to justify a pattern.
+
+For a routine small-repository comparison with three alternatives, the complete six-section answer SHOULD target 350–450 visible words. Evidence bullets, table cells, and supporting-pattern roles SHOULD remain compact, and the recommendation SHOULD NOT repeat observations already expressed in the evidence or rationale. This is a soft synthesis budget: the response MAY exceed it when additional decision-relevant evidence is necessary, but MUST NOT omit required evidence, trade-offs, uncertainty, canonical links, or user-decision guidance merely to meet the target.
 
 For a structured architecture-option comparison, the Codex exploratory evaluator MUST derive the selected category and pattern name from the same validated user-facing comparison contract used by the Stop hook. Catalog-backed category and name values are public product metadata. A free-form no-pattern option name MUST be reduced to the stable value `No pattern`. The material assumption MUST be normalized and stored only as a SHA-256 fingerprint and word count; free-form assumption text and repository content MUST NOT enter the versioned performance ledger. Consistency reports MUST compare only like-for-like fixture revision, workload, installed plugin version and provenance, model, reasoning effort, speed, and execution-mode cohorts. An identical assumption fingerprint leading to different selections is a contradiction candidate for human review; different fingerprints are assumption-sensitive or potentially rephrased and MUST NOT be treated automatically as a semantic failure.
 

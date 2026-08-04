@@ -54,6 +54,7 @@ expected:
   - recommend-one-option-with-uncertainty
   - anchor-primary-recommendation-in-current-evidence
   - keep-unverified-future-growth-as-a-sensitivity-condition
+  - keep-routine-small-comparison-within-soft-visible-word-budget
   - ask-user-to-approve-revise-or-request-more-information
 forbidden_actions:
   - present-a-prioritized-pattern-stack-as-the-alternative-comparison

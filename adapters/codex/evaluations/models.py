@@ -108,6 +108,7 @@ class DecisionObservation(StrictModel):
     selected_name: str = Field(min_length=1, max_length=120)
     material_assumption_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     material_assumption_word_count: int = Field(ge=1)
+    visible_response_word_count: int | None = Field(default=None, ge=1)
 
 
 class PhaseResult(StrictModel):

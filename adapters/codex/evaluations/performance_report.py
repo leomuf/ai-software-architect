@@ -174,6 +174,8 @@ class RecommendationConsistencyRow:
     observations: int
     distinct_selections: int
     distinct_assumptions: int
+    response_length_samples: int
+    median_visible_response_words: float | None
     selection_distribution: str
     assessment: str
 
@@ -401,7 +403,10 @@ def recommendation_consistency_rows(
 ) -> list[RecommendationConsistencyRow]:
     """Compare normalized decisions only within exact like-for-like cohorts."""
 
-    grouped: dict[tuple[str, ...], list[tuple[str, str, str]]] = defaultdict(list)
+    grouped: dict[
+        tuple[str, ...],
+        list[tuple[str, str, str, int | None]],
+    ] = defaultdict(list)
     for record in records:
         observation = record.phases.initial.decision_observation
         if observation is None:
@@ -422,16 +427,17 @@ def recommendation_consistency_rows(
                 observation.selected_category,
                 observation.selected_name,
                 observation.material_assumption_sha256,
+                observation.visible_response_word_count,
             )
         )
 
     rows: list[RecommendationConsistencyRow] = []
     for cohort_key, observations in sorted(grouped.items()):
-        selections = [(category, name) for category, name, _ in observations]
+        selections = [(category, name) for category, name, _, _ in observations]
         distinct_selections = set(selections)
-        distinct_assumptions = {assumption for _, _, assumption in observations}
+        distinct_assumptions = {assumption for _, _, assumption, _ in observations}
         assumption_selections: dict[str, set[tuple[str, str]]] = defaultdict(set)
-        for category, name, assumption in observations:
+        for category, name, assumption, _ in observations:
             assumption_selections[assumption].add((category, name))
         if len(distinct_selections) == 1:
             assessment = "stable-selection"
@@ -446,6 +452,9 @@ def recommendation_consistency_rows(
             f"{category}/{name}={count}"
             for (category, name), count in sorted(counts.items())
         )
+        response_lengths = [
+            words for _, _, _, words in observations if words is not None
+        ]
         rows.append(
             RecommendationConsistencyRow(
                 fixture=cohort_key[0],
@@ -460,6 +469,12 @@ def recommendation_consistency_rows(
                 observations=len(observations),
                 distinct_selections=len(distinct_selections),
                 distinct_assumptions=len(distinct_assumptions),
+                response_length_samples=len(response_lengths),
+                median_visible_response_words=(
+                    round(statistics.median(response_lengths), 1)
+                    if response_lengths
+                    else None
+                ),
                 selection_distribution=distribution,
                 assessment=assessment,
             )
@@ -775,13 +790,14 @@ def render_markdown(
             "is a review signal rather than a failure.",
             "",
             "| Fixture | Revision | Workload | Plugin | Provenance | Model | Effort | "
-            "Speed | Mode | Runs | Selections | Assumptions | Distribution | Assessment |",
-            "|---|---|---|---|---|---|---|---|---|---:|---:|---:|---|---|",
+            "Speed | Mode | Runs | Selections | Assumptions | Length samples | "
+            "Visible words P50 | Distribution | Assessment |",
+            "|---|---|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---|---|",
         ]
     )
     if not consistency_rows:
         lines.append(
-            "| — | — | — | — | — | — | — | — | — | 0 | 0 | 0 | — | no-data |"
+            "| — | — | — | — | — | — | — | — | — | 0 | 0 | 0 | 0 | — | — | no-data |"
         )
     for consistency_row in consistency_rows:
         lines.append(
@@ -795,6 +811,8 @@ def render_markdown(
             f"{consistency_row.observations} | "
             f"{consistency_row.distinct_selections} | "
             f"{consistency_row.distinct_assumptions} | "
+            f"{consistency_row.response_length_samples} | "
+            f"{consistency_row.median_visible_response_words or '—'} | "
             f"{consistency_row.selection_distribution} | "
             f"{consistency_row.assessment} |"
         )

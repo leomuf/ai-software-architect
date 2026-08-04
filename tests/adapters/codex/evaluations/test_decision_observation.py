@@ -66,6 +66,8 @@ def test_extracts_public_selection_and_hashes_normalized_assumption() -> None:
         b"integrations will grow"
     ).hexdigest()
     assert observation.material_assumption_word_count == 3
+    assert observation.visible_response_word_count is not None
+    assert observation.visible_response_word_count > 100
     assert "Integrations" not in observation.model_dump_json()
 
 

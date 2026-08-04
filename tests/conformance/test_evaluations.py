@@ -57,7 +57,7 @@ def test_generated_acceptance_is_current_and_every_tag_is_mapped() -> None:
     expected = _spec_gherkin()
     assert FEATURE.read_text("utf-8") == expected
     tags = re.findall(r"^\s*@([A-Z]+-[0-9]{3})$", expected, re.MULTILINE)
-    assert len(tags) == len(set(tags)) == 49
+    assert len(tags) == len(set(tags)) == 50
     manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
     assert set(manifest["scenarios"]) == set(tags)
     assert {

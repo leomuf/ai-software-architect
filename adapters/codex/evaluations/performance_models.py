@@ -15,8 +15,8 @@ from pydantic import Field, field_validator, model_validator
 
 from adapters.codex.evaluations.models import DecisionObservation, PhaseTelemetry, StrictModel
 
-PerformanceSchemaVersion = Literal["1.0.0", "1.1.0", "1.2.0", "1.3.0"]
-PERFORMANCE_SCHEMA_VERSION: PerformanceSchemaVersion = "1.3.0"
+PerformanceSchemaVersion = Literal["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0"]
+PERFORMANCE_SCHEMA_VERSION: PerformanceSchemaVersion = "1.4.0"
 
 
 class ExecutionMode(StrEnum):
@@ -176,6 +176,14 @@ class PerformanceObservation(StrictModel):
             raise ValueError(
                 f"schema version {self.schema_version} cannot contain decision observations"
             )
+        if self.schema_version in {"1.0.0", "1.1.0", "1.2.0", "1.3.0"} and any(
+            phase.decision_observation is not None
+            and phase.decision_observation.visible_response_word_count is not None
+            for phase in (self.phases.initial, self.phases.continuation)
+        ):
+            raise ValueError(
+                f"schema version {self.schema_version} cannot contain response-length metrics"
+            )
         expected = performance_record_id(_identity_payload(self))
         if self.record_id != expected:
             raise ValueError("record_id does not match the canonical observation identity")
@@ -207,6 +215,11 @@ def _identity_payload(observation: PerformanceObservation) -> dict[str, Any]:
     if observation.schema_version in {"1.0.0", "1.1.0", "1.2.0"}:
         for phase in payload["phases"].values():
             phase.pop("decision_observation", None)
+    elif observation.schema_version == "1.3.0":
+        for phase in payload["phases"].values():
+            decision = phase.get("decision_observation")
+            if decision is not None:
+                decision.pop("visible_response_word_count", None)
     return payload
 
 
@@ -225,9 +238,16 @@ def build_performance_observation(**fields: Any) -> PerformanceObservation:
         phase.decision_observation is not None
         for phase in (phases.initial, phases.continuation)
     )
+    has_response_length = isinstance(phases, PhaseMeasurements) and any(
+        phase.decision_observation is not None
+        and phase.decision_observation.visible_response_word_count is not None
+        for phase in (phases.initial, phases.continuation)
+    )
     schema_version: PerformanceSchemaVersion
-    if has_decision_observation:
+    if has_response_length:
         schema_version = PERFORMANCE_SCHEMA_VERSION
+    elif has_decision_observation:
+        schema_version = "1.3.0"
     elif has_tool_events:
         schema_version = "1.2.0"
     elif has_telemetry:

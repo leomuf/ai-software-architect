@@ -39,4 +39,5 @@ def extract_decision_observation(response: str) -> DecisionObservation:
         selected_name=selected_name,
         material_assumption_sha256=hashlib.sha256(assumption.encode("utf-8")).hexdigest(),
         material_assumption_word_count=len(re.findall(r"\b\w+\b", assumption)),
+        visible_response_word_count=len(re.findall(r"\b[\w-]+\b", response)),
     )

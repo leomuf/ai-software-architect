@@ -259,7 +259,9 @@ P50/P90 objective results. These warnings are separated by plugin version and ne
 fail the script or CI; P90 remains provisional until ten observations exist.
 For comparison fixtures recorded with performance schema `1.3.0`, the report also
 shows exact like-for-like selection distributions and assumption-fingerprint
-consistency without retaining free-form assumption or repository text.
+consistency without retaining free-form assumption or repository text. Schema
+`1.4.0` observations also show median visible comparison-response words and sample
+coverage, without storing response content.
 GitHub CI uses the same renderer for its Job Summary and uploads the Markdown,
 primary CSV, telemetry CSV, tool-timeline CSV, recommendation-consistency CSV, and
 JSON report files as an

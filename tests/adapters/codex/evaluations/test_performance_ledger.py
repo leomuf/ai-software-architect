@@ -47,6 +47,7 @@ def observation(
     continuation: float | None = None,
     telemetry: bool = False,
     decision: bool = False,
+    response_length: bool = False,
 ):
     started = datetime(2026, 7, 21, 19, 50, tzinfo=UTC)
     phases = PhaseMeasurements(
@@ -72,6 +73,7 @@ def observation(
                     selected_name="Layered Architecture",
                     material_assumption_sha256="b" * 64,
                     material_assumption_word_count=3,
+                    visible_response_word_count=420 if response_length else None,
                 )
                 if decision
                 else None
@@ -173,6 +175,14 @@ def test_decision_observation_uses_schema_1_3_without_free_form_assumption() -> 
     assert '"selected_name":"Layered Architecture"' in serialized
     assert '"material_assumption_sha256"' in serialized
     assert "repository evidence" not in serialized
+
+
+def test_response_length_metric_uses_schema_1_4() -> None:
+    record = observation(telemetry=True, decision=True, response_length=True)
+
+    assert record.schema_version == "1.4.0"
+    assert record.phases.initial.decision_observation is not None
+    assert record.phases.initial.decision_observation.visible_response_word_count == 420
 
 
 def test_ledger_append_is_atomic_and_idempotent(tmp_path: Path) -> None:

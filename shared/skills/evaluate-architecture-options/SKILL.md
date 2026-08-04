@@ -35,6 +35,8 @@ Before sending a final selection answer, verify that it uses these sections in t
 
 In `Alternatives`, compare three to five credible options that solve the same decision when that many exist. Inside `Decision scope and criteria`, explicitly state that Fit is an ordinal score for this decision and is not a probability or measured percentage. Use a table or equally explicit structure containing, for every option: categorized and linked name, ordinal `NN/100` fit, fit rationale, main benefit, main liability, and material assumption. When fewer than three credible alternatives exist, say why. Never count supporting patterns as alternatives merely to reach the target.
 
+For a routine small-repository comparison with three alternatives, target 350 to 450 visible words for the complete six-section answer. Keep evidence bullets and table cells compact, limit supporting patterns to those that materially help the decision, and avoid repeating the same observation in the rationale and recommendation. This is a soft synthesis budget, not permission to omit required evidence, trade-offs, uncertainty, links, or decision guidance. Exceed it only when additional decision-relevant evidence is necessary.
+
 End `Your decision` by asking the user to approve, revise, or request more information. Do not continue to ADR creation or implementation without that response.
 
 A recommendation to keep the current simple structure or use no named pattern is still a proposed architecture decision. Explain the future force that would justify more structure, then visibly ask the user to approve, revise, or request more information. Do not omit the decision handoff merely because the recommendation adds nothing.

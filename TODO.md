@@ -194,10 +194,11 @@ observations exist.
       roundtrip reduction, but do not claim a tail-latency improvement until the cohort
       reaches ten observations. Continuation P50/P90 remained within objectives at
       100.371/115.797 seconds.
-- [ ] Reassess the comparison P50 warning only after five additional observations make
-      its P90 non-provisional. Separate host/model variability from control-plane cost;
-      do not add semantic keyword routing or universally inject the comparison bundle
-      merely to pursue the 40-second objective.
+- [x] Reassess the comparison P50 warning only after five additional observations make
+      its P90 non-provisional. The later exact `n = 10` baseline and concise-synthesis
+      candidate establish P90 without semantic keyword routing or universal bundle
+      injection. Initial P50 remains above the deliberately ambitious 40-second target,
+      while initial P90 passes and the candidate improves both measures.
 
 ## Exploratory semantic stability
 
@@ -250,14 +251,42 @@ response. Stabilize the contract before interpreting another single pass as proo
       105.751/125.098 seconds. P90 is now established rather than provisional.
       Continuation passes its 120/180-second objective; initial P90 passes its
       75-second objective but P50 remains above the 40-second target.
-- [ ] Optimize initial comparison synthesis rather than tool execution. Across the
+- [x] Add a soft synthesis budget for routine small-repository comparisons. The
+      shared skill now targets 350–450 visible words for a three-alternative
+      comparison while preserving all required sections, evidence quality, and an
+      explicit escape when additional evidence is materially necessary. Performance
+      schema `1.4.0` records only the visible response word count, never response
+      content, so the candidate can be compared without weakening privacy.
+- [x] Measure the concise-synthesis candidate against the exact
+      `0.1.0+codex.20260804141427` baseline. Plugin
+      `0.1.0+codex.20260804150751` passed five unretried campaigns with no exclusions
+      or assertion failures. All five selected `No pattern`, persisted exactly four
+      architecture artifacts, and left application source unchanged. Visible response
+      word counts were 429, 434, 403, 436, and 438 (P50 434 versus the manually
+      measured baseline P50 514). Initial P50 improved from 57.004 to 52.221 seconds
+      and provisional P90 from 65.422 to 58.022 seconds. Continuation P50 improved
+      from 105.751 to 103.661 seconds and provisional P90 from 125.098 to 121.637
+      seconds. All five responses retained the complete six-section comparison,
+      evidence, three credible alternatives, trade-offs, canonical links, and user
+      decision guidance.
+- [x] Add five unretried observations for the concise-synthesis candidate before
+      treating its P90 as established. At `n = 10`, the candidate retains stable
+      `No pattern` selection, ten valid four-artifact continuations, and zero
+      application-source changes. Visible-word P50 is 429 versus the prior 514
+      (16.5% lower). Initial P50/P90 improve from 57.004/65.422 to
+      52.209/57.391 seconds; continuation P50/P90 improve from 105.751/125.098 to
+      100.681/114.726 seconds; completed-workflow P50/P90 improve from
+      162.755/197.250 to 151.990/169.045 seconds. The concise synthesis budget is
+      retained.
+- [ ] Continue optimizing initial comparison synthesis rather than tool execution.
+      Across the
       exact `n = 10` cohort, two required command calls average only 0.556 seconds
       each, the second starts around 14.543 seconds, and the final message completes
       around 55.416 seconds. The dominant remaining interval is therefore model-side
       post-tool synthesis, with about 1,670 output tokens on average, not snapshot or
-      bundle I/O. First test a tighter user-facing comparison budget that preserves
-      all six sections and evidence quality; only then consider further compacting
-      catalog metadata. Keep each change isolated and require another exact cohort.
+      bundle I/O. Evaluate the concise-synthesis experiment first; only if its quality
+      remains stable should further catalog compaction be considered. Keep each change
+      isolated and require another exact cohort.
 
 - [x] Make project-specific improvement and pattern-selection requests require the
       smallest relevant host-native static inspection unless the user forbids

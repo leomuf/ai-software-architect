@@ -116,6 +116,15 @@ The Codex package uses these short-lived hooks:
   about 1.1 seconds on average, while the final response completes roughly 40 seconds
   after the second tool, so the next isolated optimization targets concise model-side
   synthesis rather than repository snapshot or comparison-bundle I/O.
+  The next candidate adds a soft 350–450 visible-word target for routine
+  small-repository comparisons and performance schema `1.4.0` records only visible
+  response word count. Plugin `0.1.0+codex.20260804150751` passed ten unretried
+  semantic/performance runs: selection remained stable, visible-response P50 fell
+  from 514 to 429 words, initial P50/P90 fell from 57.004/65.422 to
+  52.209/57.391 seconds, and completed-workflow P50/P90 fell from
+  162.755/197.250 to 151.990/169.045 seconds. Every continuation persisted exactly
+  four architecture artifacts and left application source unchanged. The established
+  result supports retaining the soft synthesis budget.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.

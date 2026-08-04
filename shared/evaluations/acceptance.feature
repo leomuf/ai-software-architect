@@ -221,6 +221,16 @@ Feature: Architecture workflow routing
     And the agent does not invent likely growth to justify the heavier pattern
     But it asks one focused clarification when no responsible current-evidence default exists
 
+  @FLOW-007
+  Scenario: Routine small comparison is concise without losing decision evidence
+    Given a bounded small repository supports three credible alternatives
+    When the agent renders the complete six-section comparison
+    Then it targets between 350 and 450 visible words
+    And it keeps evidence bullets, table cells, and supporting-pattern roles compact
+    And it does not repeat the same observation across rationale and recommendation
+    But it exceeds the soft budget when additional decision-relevant evidence is necessary
+    And it never omits required trade-offs, uncertainty, links, or decision guidance
+
 Feature: Durable architecture state
 
   @STATE-001
