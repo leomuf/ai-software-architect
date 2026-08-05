@@ -278,7 +278,8 @@ response. Stabilize the contract before interpreting another single pass as proo
       100.681/114.726 seconds; completed-workflow P50/P90 improve from
       162.755/197.250 to 151.990/169.045 seconds. The concise synthesis budget is
       retained.
-- [ ] Continue optimizing initial comparison synthesis rather than tool execution.
+- [x] Evaluate further initial comparison-synthesis optimization rather than tool
+      execution, and stop when measured changes no longer preserve behavior.
       Across the
       exact `n = 10` cohort, two required command calls average only 0.556 seconds
       each, the second starts around 14.543 seconds, and the final message completes
@@ -286,7 +287,11 @@ response. Stabilize the contract before interpreting another single pass as proo
       post-tool synthesis, with about 1,670 output tokens on average, not snapshot or
       bundle I/O. Evaluate the concise-synthesis experiment first; only if its quality
       remains stable should further catalog compaction be considered. Keep each change
-      isolated and require another exact cohort.
+      isolated and require another exact cohort. The concise-synthesis budget was
+      retained after an exact ten-run cohort. Two later isolated compression candidates
+      reduced input size but regressed latency and recommendation stability, so further
+      prompt or catalog compression is paused; the 40-second initial P50 remains a
+      warning-only objective rather than a release blocker.
 - [x] Measure a lossless compact-catalog candidate against
       `0.1.0+codex.20260804150751`. Plugin `0.1.0+codex.20260804183145` reduced the
       generated bundle by 663 bytes and mean initial input from 46,128 to 44,778
@@ -295,6 +300,15 @@ response. Stabilize the contract before interpreting another single pass as proo
       selected Layered Architecture based on assumed future growth, breaking the
       established current-evidence selection stability. Retain the five observations
       as negative evidence and revert the compact representation.
+- [x] Measure a semantic-preserving workflow-deduplication candidate against the
+      behavior-identical stable package `0.1.0+codex.20260804185112`. Plugin
+      `0.1.0+codex.20260805121442` reduced the packaged comparison workflow by 9.1%
+      and mean initial input from 46,128 to 43,320 tokens, but five unretried runs
+      regressed initial P50 from 52.209 to 57.327 seconds and continuation P50 from
+      100.681 to 112.745 seconds. Selection fragmented across `No pattern` (3),
+      Strategy (1), and Chain of Responsibility (1); the Strategy run invented a
+      higher rule-change rate. Retain the observations as negative evidence and
+      restore the full workflow wording.
 
 - [x] Make project-specific improvement and pattern-selection requests require the
       smallest relevant host-native static inspection unless the user forbids

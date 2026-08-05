@@ -130,6 +130,11 @@ The Codex package uses these short-lived hooks:
   initial and continuation P50 and produced one future-growth-driven Layered
   Architecture recommendation. The experiment is retained in the ledger as negative
   evidence; the grouped representation was reverted.
+  A subsequent workflow-deduplication candidate reduced packaged comparison prose by
+  9.1% and mean initial input by 6.1%, but regressed both latency medians and fragmented
+  five recommendations across three selections. The removed repetition therefore had
+  behavioral value for the host model; the complete wording was restored and the
+  candidate remains only as negative evaluation evidence.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.
