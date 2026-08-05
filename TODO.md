@@ -93,8 +93,19 @@ an explicit fallback.
       four validated artifacts, repository review remained static and read-only,
       focused Abstract Factory help reused its bundled example, and the tiny-script
       fixture avoided unnecessary patterns. The campaign added five measured
-      observations without exclusions. Brazilian Portuguese (`pt-BR`) remains
-      planned as a separate locale catalog and evaluation campaign.
+      observations without exclusions.
+- [x] Validate the new Brazilian Portuguese (`pt-BR`) locale candidate. Its complete
+      declarative label catalog and separate `brazilian-portuguese` clarification and
+      comparison fixtures are implemented without language-specific semantic routing.
+      Plugin `0.1.0+codex.20260805190919` passed all 151 deterministic tests and campaign
+      `20260805T192152Z` passed all four phases. Clarification resolved the Web/Tkinter
+      contradiction, the continuation preserved local Tkinter and gave proportionate
+      guidance, and the 441-word comparison used one complete Portuguese label set and
+      selected the expected current-evidence `No pattern` option. Approval persisted
+      exactly four validated architecture artifacts without changing application source.
+      Initial/continuation durations were 11.536/46.129 seconds for clarification and
+      55.072/118.082 seconds for comparison; the ledger accepted two observations with
+      no exclusions.
 - [x] Collect at least five directly comparable observations per release baseline,
       then use the versioned performance history to define a warning-only latency
       regression policy before considering a blocking release gate. While extending

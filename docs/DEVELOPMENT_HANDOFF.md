@@ -144,8 +144,9 @@ The Codex package uses these short-lived hooks:
   Layered Architecture instead of the current-evidence `No pattern` baseline. The
   subsequent candidate moves visible comparison labels into one declarative locale
   catalog shared by parser, Stop hook, continuation detection, and deterministic
-  renderer. English and German catalogs are implemented; the BCP 47-shaped fixture
-  contract and catalog-only parser design reserve a low-cost path for `pt-BR`.
+  renderer. English, German, and Brazilian Portuguese catalogs are now implemented;
+  the BCP 47-shaped fixture contract and catalog-only parser design keep future
+  locale additions independent of semantic routing.
   Rebuilt plugin `0.1.0+codex.20260805140210` passed five exact German comparison
   observations (`20260805T140517Z`, `20260805T141543Z`, `20260805T141827Z`,
   `20260805T142143Z`, and `20260805T142456Z`). Every response used the coherent German
@@ -160,8 +161,13 @@ The Codex package uses these short-lived hooks:
   same installed plugin, added five measured observations without exclusions, and
   preserved clarification, current-evidence comparison, four-artifact persistence,
   static review, bundled pattern help, and proportionate-simplicity behavior.
-  Brazilian Portuguese (`pt-BR`) remains a planned catalog-and-fixture extension
-  rather than a currently supported response locale.
+  Brazilian Portuguese (`pt-BR`) now has a complete catalog and a separate two-fixture,
+  four-phase exploratory campaign. Plugin `0.1.0+codex.20260805190919` passed 151
+  deterministic tests and campaign `20260805T192152Z`. Semantic review accepted the
+  focused clarification and its local-Tkinter continuation, the comparison's coherent
+  Portuguese contract and current-evidence `No pattern` selection, and the approval
+  continuation's four validated architecture artifacts. No application source changed;
+  the performance ledger added two observations without exclusions.
 - A separate `python-project-variety` campaign provides reproducible cross-structure
   evidence without changing the five-fixture baseline. Campaign `20260805T150133Z`
   passed deterministic and manual semantic review for both a cohesive single-file

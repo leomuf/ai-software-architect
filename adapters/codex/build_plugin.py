@@ -134,8 +134,9 @@ Return only user-facing Markdown. Never emit internal `ai-architect` control
 markers or HTML comments because Codex may display them. Clarifications end with
 their focused visible question. Open architecture or pattern selections use the
 canonical six-section comparison contract in one complete label set matching the
-user's language. English and German labels are currently supported by the Codex
-control plane; canonical category and pattern identities remain unchanged.
+user's language. English, German, and Brazilian Portuguese labels are currently
+supported by the Codex control plane; canonical category and pattern identities
+remain unchanged.
 Every recommendation ends with the localized user-decision heading and ordinary visible
 guidance asking the user to approve, revise, or request more information. For a
 single recommendation, put the full

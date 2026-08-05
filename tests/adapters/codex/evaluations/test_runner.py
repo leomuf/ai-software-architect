@@ -116,15 +116,37 @@ def test_all_campaign_fixtures_satisfy_the_shared_typed_contract() -> None:
     assert _continuation_sandbox(comparison.continuation.verification) == "workspace-write"
 
 
-def test_german_campaign_is_separate_and_typed() -> None:
-    fixtures = _load_campaign(DEFAULT_MANIFEST, set(), "german")
+@pytest.mark.parametrize(
+    ("campaign", "language", "language_expectation", "expected_ids"),
+    [
+        (
+            "german",
+            "de",
+            "respond-in-german",
+            ["de-clarify-ui-architecture", "de-architecture-option-comparison"],
+        ),
+        (
+            "brazilian-portuguese",
+            "pt-BR",
+            "respond-in-brazilian-portuguese",
+            [
+                "pt-br-clarify-ui-architecture",
+                "pt-br-architecture-option-comparison",
+            ],
+        ),
+    ],
+)
+def test_localized_campaign_is_separate_and_typed(
+    campaign: str,
+    language: str,
+    language_expectation: str,
+    expected_ids: list[str],
+) -> None:
+    fixtures = _load_campaign(DEFAULT_MANIFEST, set(), campaign)
 
-    assert [fixture.id for _, fixture in fixtures] == [
-        "de-clarify-ui-architecture",
-        "de-architecture-option-comparison",
-    ]
-    assert all(fixture.response_language == "de" for _, fixture in fixtures)
-    assert all("respond-in-german" in fixture.expected for _, fixture in fixtures)
+    assert [fixture.id for _, fixture in fixtures] == expected_ids
+    assert all(fixture.response_language == language for _, fixture in fixtures)
+    assert all(language_expectation in fixture.expected for _, fixture in fixtures)
     assert all(fixture.continuation is not None for _, fixture in fixtures)
     assert fixtures[1][1].expected_decision is not None
     assert fixtures[1][1].expected_decision.selected_name == "No pattern"

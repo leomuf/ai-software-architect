@@ -24,16 +24,16 @@ Treat questions such as "which design patterns should I use?" as an open selecti
 
 Rank from observed evidence and current requirements. Before scoring, require a demonstrated current force. A named architecture or pattern may outrank `No pattern` only when simple functional or modular refactoring cannot adequately handle that force, such as active interchangeable implementations, independent deployment, a required framework boundary, or repeated change pain. Separable concerns, testability, or unverified growth alone are insufficient. Otherwise `No pattern` MUST rank highest and heavier options remain sensitivity choices. Ask one focused clarification only when no responsible current-evidence default exists; never invent likely growth.
 
-Before sending a final selection answer, respond in the user's language and choose
-one complete localized label set. Never mix labels from different sets. The current
-stable sets use these sections in this order:
+Use the user's language and exactly one label set, in this order:
 
 - English: `Decision scope and criteria`, `Evidence and assumptions`, `Alternatives`,
   `Recommendation`, `Supporting patterns`, `Your decision`.
 - German: `Entscheidungsumfang und Kriterien`, `Evidenz und Annahmen`, `Alternativen`,
   `Empfehlung`, `Unterstützende Patterns`, `Deine Entscheidung`.
+- Brazilian Portuguese: `Escopo da decisão e critérios`, `Evidências e premissas`,
+  `Alternativas`, `Recomendação`, `Padrões de apoio`, `Sua decisão`.
 
-In the localized Alternatives section, compare three to five credible options that solve the same decision when that many exist. Inside the localized Decision scope section, explicitly state that Fit is an ordinal score for this decision and is not a probability or measured percentage. Use the matching exact table header: English `Option | Fit | Rationale | Main benefit | Main liability | Material assumption`; German `Option | Fit | Begründung | Hauptvorteil | Hauptnachteil | Wesentliche Annahme`. When fewer than three credible alternatives exist, say why. Never count supporting patterns as alternatives merely to reach the target.
+Compare three to five credible options for the same decision when available. In the localized decision-scope section, say that Fit is an ordinal score, not a probability or measured percentage. Exact table headers: English `Option | Fit | Rationale | Main benefit | Main liability | Material assumption`; German `Option | Fit | Begründung | Hauptvorteil | Hauptnachteil | Wesentliche Annahme`; Brazilian Portuguese `Opção | Adequação | Justificativa | Principal benefício | Principal desvantagem | Premissa relevante`. Explain fewer than three credible alternatives; never pad with supporting patterns.
 
 For a routine small-repository comparison with three alternatives, target 350 to 450 visible words for the complete six-section answer. Keep evidence bullets and table cells compact, limit supporting patterns to those that materially help the decision, and avoid repeating the same observation in the rationale and recommendation. This is a soft synthesis budget, not permission to omit required evidence, trade-offs, uncertainty, links, or decision guidance. Exceed it only when additional decision-relevant evidence is necessary.
 
@@ -42,9 +42,8 @@ End the localized user-decision section by asking the user to approve, revise, o
 A recommendation to keep the current simple structure or use no named pattern is still a proposed architecture decision. Explain the future force that would justify more structure, then visibly ask the user to approve, revise, or request more information. Do not omit the decision handoff merely because the recommendation adds nothing.
 
 Use this compact English response template exactly for an English open selection.
-For German, translate only its stable headings, table header, disclosure, and ordinary
-prose according to the German label set above; retain canonical category and pattern
-names so links and structured identities remain portable:
+For German or Brazilian Portuguese, translate the stable labels, disclosure, and
+prose above; retain canonical category and pattern names for portable identities:
 
 ```markdown
 ## Decision scope and criteria

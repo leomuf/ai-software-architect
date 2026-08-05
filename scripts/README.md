@@ -159,6 +159,16 @@ baseline:
 It checks German clarification and focused comparison responses as well as the
 corresponding clarification answer and approved ADR/artifact continuation.
 
+Run the equivalent Brazilian Portuguese campaign independently:
+
+```powershell
+.\scripts\run-codex-exploratory-evaluations.ps1 -Campaign brazilian-portuguese
+```
+
+It checks Brazilian Portuguese clarification, focused comparison, clarification
+continuation, and approved ADR/artifact persistence without changing the English or
+German baselines.
+
 Review two additional small Python repository structures without changing the
 canonical five-fixture baseline:
 

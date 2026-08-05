@@ -164,7 +164,7 @@ Feature: Architecture workflow routing
     Then it performs the smallest relevant host-native static inspection unless the user forbids inspection or already supplied complete decision evidence
     And it does not claim that repository evidence is unavailable while relevant workspace files are accessible
     And it treats repository inspection as read-only
-    And it presents "Decision scope and criteria", "Evidence and assumptions", and between 3 and 5 "Alternatives" before its "Recommendation"
+    And it presents the selected English, German, or Brazilian Portuguese equivalents of "Decision scope and criteria", "Evidence and assumptions", and between 3 and 5 "Alternatives" before its localized "Recommendation"
     And every alternative has a category label, a fit score out of 100, and a fit rationale
     And every alternative states its main benefit, main liability, and material assumption
     And the fit score is described as ordinal rather than a probability

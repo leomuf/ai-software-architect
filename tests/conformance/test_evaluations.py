@@ -6,6 +6,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,6 +44,10 @@ CAMPAIGN_FIXTURES = {
 GERMAN_CAMPAIGN_FIXTURES = {
     "de-clarify-ui-architecture.yaml",
     "de-architecture-option-comparison.yaml",
+}
+BRAZILIAN_PORTUGUESE_CAMPAIGN_FIXTURES = {
+    "pt-br-clarify-ui-architecture.yaml",
+    "pt-br-architecture-option-comparison.yaml",
 }
 COMPLETE_WORKFLOW_EXPECTATIONS = {
     "clarify-ui-architecture.yaml": "end-with-one-visible-focused-question",
@@ -134,35 +139,47 @@ def test_exploratory_campaign_covers_all_five_natural_prompts() -> None:
             assert visible_shape in fixture["expected"]
 
 
-def test_german_campaign_covers_clarification_comparison_and_approval() -> None:
+@pytest.mark.parametrize(
+    ("campaign", "language", "language_expectation", "expected_fixtures"),
+    [
+        ("german", "de", "respond-in-german", GERMAN_CAMPAIGN_FIXTURES),
+        (
+            "brazilian-portuguese",
+            "pt-BR",
+            "respond-in-brazilian-portuguese",
+            BRAZILIAN_PORTUGUESE_CAMPAIGN_FIXTURES,
+        ),
+    ],
+)
+def test_localized_campaign_covers_clarification_comparison_and_approval(
+    campaign: str,
+    language: str,
+    language_expectation: str,
+    expected_fixtures: set[str],
+) -> None:
     manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
     configured = {
         Path(path).name
-        for path in manifest["additional_exploratory_campaigns"]["german"]
+        for path in manifest["additional_exploratory_campaigns"][campaign]
     }
 
-    assert configured == GERMAN_CAMPAIGN_FIXTURES
-    for filename in configured:
-        fixture = yaml.safe_load(
+    assert configured == expected_fixtures
+    fixtures = [
+        yaml.safe_load(
             (ROOT / "shared" / "evaluations" / "model-fixtures" / filename).read_text(
                 "utf-8"
             )
         )
-        assert fixture["response_language"] == "de"
+        for filename in configured
+    ]
+    for fixture in fixtures:
+        assert fixture["response_language"] == language
         assert fixture["activation"]["skill_invocation"] == "$ai-software-architect"
-        assert "respond-in-german" in fixture["expected"]
+        assert language_expectation in fixture["expected"]
         assert fixture["continuation"] is not None
-        assert "respond-in-german" in fixture["continuation"]["expected"]
+        assert language_expectation in fixture["continuation"]["expected"]
 
-    comparison = yaml.safe_load(
-        (
-            ROOT
-            / "shared"
-            / "evaluations"
-            / "model-fixtures"
-            / "de-architecture-option-comparison.yaml"
-        ).read_text("utf-8")
-    )
+    comparison = next(fixture for fixture in fixtures if fixture["scenario"] == "FLOW-004")
     assert comparison["observe_decision"] is True
     assert comparison["expected_decision"] == {
         "selected_category": "No pattern",

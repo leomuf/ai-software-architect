@@ -51,6 +51,7 @@ from adapters.codex.repository_snapshot import (
     create_repository_snapshot,
     serialize_repository_snapshot,
 )
+from adapters.codex.response_locales import comparison_locale
 
 
 def _payload(event: str) -> dict[str, object]:
@@ -59,6 +60,27 @@ def _payload(event: str) -> dict[str, object]:
         "turn_id": "turn-1",
         "hook_event_name": event,
     }
+
+
+def test_brazilian_portuguese_comparison_locale_is_complete() -> None:
+    locale = comparison_locale("pt-BR")
+
+    assert locale.headings == (
+        "## Escopo da decisão e critérios",
+        "## Evidências e premissas",
+        "## Alternativas",
+        "## Recomendação",
+        "## Padrões de apoio",
+        "## Sua decisão",
+    )
+    assert locale.table_headers == (
+        "Opção",
+        "Adequação",
+        "Justificativa",
+        "Principal benefício",
+        "Principal desvantagem",
+        "Premissa relevante",
+    )
 
 
 def test_contract_renderer_and_bundle_validator_are_deterministic() -> None:
