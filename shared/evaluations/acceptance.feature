@@ -217,6 +217,7 @@ Feature: Architecture workflow routing
     And a heavier alternative would fit only if unverified future growth occurs
     When the agent ranks the alternatives
     Then the current evidence anchors the primary recommendation
+    And a named pattern outranks No pattern only when a demonstrated current force cannot be handled adequately by simple functional or modular refactoring
     And future growth is stated as a sensitivity condition for changing the decision
     And the agent does not invent likely growth to justify the heavier pattern
     But it asks one focused clarification when no responsible current-evidence default exists

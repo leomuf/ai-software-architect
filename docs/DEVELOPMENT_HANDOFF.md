@@ -171,6 +171,33 @@ The Codex package uses these short-lived hooks:
   proposed one minimal repository port without a framework or broader layer rewrite.
   Reviews completed in 25.610 and 31.543 seconds, used one bounded static snapshot
   each, disclosed limitations, and changed no repository files.
+- A later attempt to extend the exact English baseline exposed semantic instability
+  rather than a latency regression. Campaign `20260805T150704Z` on plugin
+  `0.1.0+codex.20260805140210` passed deterministic checks but selected Layered
+  Architecture for the small one-file comparison because separable concerns and
+  testability were treated as sufficient current forces. Keep this measured run as
+  append-only negative evidence; do not accept it as a release semantic baseline.
+  The portable option workflow now requires a demonstrated current force that simple
+  functional or modular refactoring cannot adequately handle before a named pattern
+  may outrank `No pattern`. The comparison fixtures also carry a typed expected public
+  decision, and the runner emits `expected-decision-selected` as a deterministic
+  pass/fail assertion after parsing the public comparison contract.
+  `ExpectedDecision.selected_category` reuses the public canonical `PatternCategory`,
+  so unsupported or misspelled fixture categories fail during schema validation.
+  Corrected plugin `0.1.0+codex.20260805163758` passed Ruff, Mypy, 148 tests, package
+  validation, and runtime smoke testing and was copied to the personal marketplace.
+  Six exact corrected comparison observations (`20260805T174554Z`,
+  `20260805T174845Z`, `20260805T175127Z`, `20260805T175406Z`,
+  `20260805T175722Z`, and the complete `20260805T180036Z` campaign) all selected
+  `No pattern`, passed `expected-decision-selected`, persisted exactly four
+  architecture artifacts, and left application source unchanged. The cohort reports
+  `stable-selection`, median 432.5 visible words, initial P50/P90 of
+  44.151/64.484 seconds, continuation P50/P90 of 96.294/99.052 seconds, and
+  completed-workflow P50/P90 of 137.840/163.365 seconds. Continuation passes its
+  warning-only targets; initial P90 passes while the intentionally ambitious
+  40-second P50 remains a warning. P90 is provisional at `n = 6`. Manual semantic
+  review of the complete campaign also passed all five canonical fixtures without
+  exclusions.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.

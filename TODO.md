@@ -95,9 +95,34 @@ an explicit fallback.
       fixture avoided unnecessary patterns. The campaign added five measured
       observations without exclusions. Brazilian Portuguese (`pt-BR`) remains
       planned as a separate locale catalog and evaluation campaign.
-- [ ] Collect at least five directly comparable observations per release baseline,
+- [x] Collect at least five directly comparable observations per release baseline,
       then use the versioned performance history to define a warning-only latency
-      regression policy before considering a blocking release gate.
+      regression policy before considering a blocking release gate. While extending
+      plugin `0.1.0+codex.20260805140210`, campaign `20260805T150704Z` passed every
+      deterministic check but failed semantic review because the small one-file
+      comparison selected Layered Architecture from separable concerns and
+      testability alone. The measured run remains append-only negative evidence and
+      is not an accepted release baseline. The option workflow now applies a compact
+      demonstrated-force gate: a named pattern may outrank `No pattern` only when a
+      current force cannot be handled adequately by simple functional or modular
+      refactoring. Comparison fixtures declare the expected public decision through
+      typed YAML, and the runner turns a mismatch into an explicit deterministic
+      failure. `ExpectedDecision.selected_category` reuses the canonical
+      `PatternCategory`, so invalid or misspelled fixture categories fail during YAML
+      validation. Corrected plugin `0.1.0+codex.20260805163758` passed Ruff, Mypy, all
+      148 tests, package validation, and the short-lived runtime smoke test, and was
+      copied to the personal marketplace. Six exact corrected comparison observations
+      (`20260805T174554Z`, `20260805T174845Z`, `20260805T175127Z`,
+      `20260805T175406Z`, `20260805T175722Z`, and the full campaign
+      `20260805T180036Z`) all selected `No pattern`, passed the typed decision gate,
+      persisted exactly four artifacts, and left application source unchanged. The
+      cohort reports `stable-selection`, median 432.5 visible words, initial
+      P50/P90 44.151/64.484 seconds, continuation P50/P90 96.294/99.052 seconds,
+      and completed-workflow P50/P90 137.840/163.365 seconds. Continuation passes
+      both warning-only objectives; initial P90 passes while the deliberately
+      ambitious 40-second P50 remains a warning. P90 remains provisional below ten
+      observations. The complete `20260805T180036Z` campaign also passed manual
+      semantic review for all five canonical fixtures without exclusions.
 - [ ] Add operating-system packages only after their clean-machine runtime,
       lifecycle, and security gates pass.
 

@@ -164,6 +164,10 @@ def test_german_campaign_covers_clarification_comparison_and_approval() -> None:
         ).read_text("utf-8")
     )
     assert comparison["observe_decision"] is True
+    assert comparison["expected_decision"] == {
+        "selected_category": "No pattern",
+        "selected_name": "No pattern",
+    }
     assert comparison["continuation"]["verification"]["repository_changes"] == (
         "architecture-artifacts-only"
     )

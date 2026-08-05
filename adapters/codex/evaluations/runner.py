@@ -31,6 +31,7 @@ from adapters.codex.evaluations.models import (
     DeterministicAssertion,
     EvaluationFixture,
     EvaluationStatus,
+    ExpectedDecision,
     FixtureResult,
     PhaseResult,
     PhaseTelemetry,
@@ -352,6 +353,7 @@ def _run_phase(
     forbidden_actions: list[str],
     timeout_seconds: int,
     observe_decision: bool = False,
+    expected_decision: ExpectedDecision | None = None,
 ) -> PhaseResult:
     before = _snapshot(workspace)
     completed = _capture_process(
@@ -402,6 +404,10 @@ def _run_phase(
                     ),
                 )
             )
+            if expected_decision is not None:
+                assertions.append(
+                    _expected_decision_assertion(decision_observation, expected_decision)
+                )
     return PhaseResult(
         name=name,
         exit_code=completed.returncode,
@@ -419,6 +425,28 @@ def _run_phase(
         ],
         telemetry=_phase_telemetry(completed.stdout_lines),
         decision_observation=decision_observation,
+    )
+
+
+def _expected_decision_assertion(
+    observation: DecisionObservation,
+    expected: ExpectedDecision,
+) -> DeterministicAssertion:
+    selection_matches = (
+        observation.selected_category == expected.selected_category
+        and observation.selected_name == expected.selected_name
+    )
+    return DeterministicAssertion(
+        name="expected-decision-selected",
+        status=AssertionStatus.PASS if selection_matches else AssertionStatus.FAIL,
+        evidence=(
+            "Selected the fixture's expected public decision identity."
+            if selection_matches
+            else (
+                f"Expected {expected.selected_category}/{expected.selected_name}, "
+                f"observed {observation.selected_category}/{observation.selected_name}."
+            )
+        ),
     )
 
 
@@ -759,6 +787,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                 forbidden_actions=fixture.forbidden_actions,
                 timeout_seconds=args.timeout_seconds,
                 observe_decision=fixture.observe_decision,
+                expected_decision=fixture.expected_decision,
             )
             print(
                 f"{progress}: initial phase finished in "

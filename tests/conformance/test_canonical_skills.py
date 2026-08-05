@@ -172,8 +172,12 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "need no deterministic tool call" in options
     assert "Apply the orchestration evidence sufficiency gate" in options
     assert "recommendation adds nothing" in options
-    assert "Unverified future growth MUST NOT by itself" in options
-    assert "Never invent likely growth to justify a pattern" in options
+    assert "require a demonstrated current force" in options
+    assert (
+        "Separable concerns, testability, or unverified growth alone are insufficient"
+        in options
+    )
+    assert "never invent likely growth" in options
     assert "target 350 to 450 visible words" in options
     assert "soft synthesis budget" in options
     assert "Before any repository read" in orchestration

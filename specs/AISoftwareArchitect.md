@@ -2615,6 +2615,7 @@ Feature: Architecture workflow routing
     And a heavier alternative would fit only if unverified future growth occurs
     When the agent ranks the alternatives
     Then the current evidence anchors the primary recommendation
+    And a named pattern outranks No pattern only when a demonstrated current force cannot be handled adequately by simple functional or modular refactoring
     And future growth is stated as a sensitivity condition for changing the decision
     And the agent does not invent likely growth to justify the heavier pattern
     But it asks one focused clarification when no responsible current-evidence default exists
@@ -2991,7 +2992,7 @@ Evaluation dimensions include:
 
 The evaluation does not require different assistants to produce identical recommendations. It checks whether each result follows the declared method and produces evidence-supported, internally consistent decisions.
 
-Recommendations MUST be anchored in observed repository evidence and user-supplied current forces. Unverified future growth MUST NOT by itself make a heavier pattern outrank the proportionate option supported by current evidence. The agent SHOULD present that growth as a sensitivity condition identifying when another option would become preferable. It asks one focused clarification only when the unknown prevents any responsible current-evidence default; it MUST NOT invent likely growth to justify a pattern.
+Recommendations MUST be anchored in observed repository evidence and user-supplied current forces. Unverified future growth MUST NOT by itself make a heavier pattern outrank the proportionate option supported by current evidence. Before a named architecture or design pattern outranks `No pattern`, current evidence or an explicit current requirement MUST demonstrate a force that simple functional or modular refactoring cannot adequately handle. Merely identifying separable concerns, possible file boundaries, or improved testability is insufficient. Examples of qualifying forces include multiple active interchangeable implementations, independently changing or deployed components, a required framework boundary, or repeated change pain. Without such a demonstrated force, `No pattern` remains highest-ranked and named options are conditional sensitivity choices. The agent SHOULD present future growth as a sensitivity condition identifying when another option would become preferable. It asks one focused clarification only when the unknown prevents any responsible current-evidence default; it MUST NOT invent likely growth to justify a pattern.
 
 For a routine small-repository comparison with three alternatives, the complete six-section answer SHOULD target 350–450 visible words. Evidence bullets, table cells, and supporting-pattern roles SHOULD remain compact, and the recommendation SHOULD NOT repeat observations already expressed in the evidence or rationale. This is a soft synthesis budget: the response MAY exceed it when additional decision-relevant evidence is necessary, but MUST NOT omit required evidence, trade-offs, uncertainty, canonical links, or user-decision guidance merely to meet the target.
 

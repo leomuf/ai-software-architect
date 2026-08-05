@@ -72,6 +72,9 @@ verification:
   forbidden_event_types: [mcp_tool_call]
   forbidden_response_markers: ["<!-- ai-architect-"]
 observe_decision: true
+expected_decision:
+  selected_category: No pattern
+  selected_name: No pattern
 continuation:
   prompt: >-
     Ich genehmige die Empfehlung. Speichere den validierten ADR, den

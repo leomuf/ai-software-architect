@@ -14,7 +14,9 @@ from pydantic import ValidationError
 from adapters.codex.evaluations.grading import grade_phase
 from adapters.codex.evaluations.models import (
     AssertionStatus,
+    DecisionObservation,
     EvaluationStatus,
+    ExpectedDecision,
     VerificationPolicy,
     load_fixture,
 )
@@ -24,6 +26,7 @@ from adapters.codex.evaluations.runner import (
     _capture_process,
     _codex_command,
     _continuation_sandbox,
+    _expected_decision_assertion,
     _installed_plugin_identity,
     _load_campaign,
     _parse_events,
@@ -33,6 +36,42 @@ from adapters.codex.evaluations.runner import (
 
 ROOT = Path(__file__).resolve().parents[4]
 FIXTURES = ROOT / "shared" / "evaluations" / "model-fixtures"
+
+
+def _decision_observation(name: str) -> DecisionObservation:
+    return DecisionObservation(
+        selected_category="No pattern" if name == "No pattern" else "Architecture",
+        selected_name=name,
+        material_assumption_sha256="a" * 64,
+        material_assumption_word_count=3,
+        visible_response_word_count=400,
+    )
+
+
+def test_expected_decision_assertion_reports_match_and_mismatch() -> None:
+    expected = ExpectedDecision(
+        selected_category="No pattern",
+        selected_name="No pattern",
+    )
+
+    matching = _expected_decision_assertion(
+        _decision_observation("No pattern"), expected
+    )
+    mismatching = _expected_decision_assertion(
+        _decision_observation("Layered Architecture"), expected
+    )
+
+    assert matching.status == AssertionStatus.PASS
+    assert mismatching.status == AssertionStatus.FAIL
+    assert "Layered Architecture" in mismatching.evidence
+
+
+def test_expected_decision_rejects_unknown_pattern_category() -> None:
+    with pytest.raises(ValidationError):
+        ExpectedDecision(
+            selected_category="No Pattern",  # type: ignore[arg-type]
+            selected_name="No pattern",
+        )
 
 
 def test_all_campaign_fixtures_satisfy_the_shared_typed_contract() -> None:
@@ -87,6 +126,8 @@ def test_german_campaign_is_separate_and_typed() -> None:
     assert all(fixture.response_language == "de" for _, fixture in fixtures)
     assert all("respond-in-german" in fixture.expected for _, fixture in fixtures)
     assert all(fixture.continuation is not None for _, fixture in fixtures)
+    assert fixtures[1][1].expected_decision is not None
+    assert fixtures[1][1].expected_decision.selected_name == "No pattern"
 
 
 def test_python_project_variety_campaign_is_separate_and_typed() -> None:

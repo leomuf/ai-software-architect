@@ -8,10 +8,11 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from ai_architect_schemas import PatternCategory
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class StrictModel(BaseModel):
@@ -36,6 +37,11 @@ class Continuation(StrictModel):
     verification: VerificationPolicy
 
 
+class ExpectedDecision(StrictModel):
+    selected_category: PatternCategory
+    selected_name: str = Field(min_length=1, max_length=120)
+
+
 class EvaluationFixture(StrictModel):
     schema_version: str
     id: str = Field(min_length=1)
@@ -48,6 +54,7 @@ class EvaluationFixture(StrictModel):
     forbidden_actions: list[str] = Field(default_factory=list)
     verification: VerificationPolicy
     observe_decision: bool = False
+    expected_decision: ExpectedDecision | None = None
     continuation: Continuation | None = None
 
     @field_validator("repository")
@@ -58,6 +65,12 @@ class EvaluationFixture(StrictModel):
             if path.is_absolute() or ".." in path.parts:
                 raise ValueError(f"repository path must remain relative: {raw_path}")
         return value
+
+    @model_validator(mode="after")
+    def expected_decision_requires_observation(self) -> Self:
+        if self.expected_decision is not None and not self.observe_decision:
+            raise ValueError("expected_decision requires observe_decision=true")
+        return self
 
 
 class AssertionStatus(StrEnum):
