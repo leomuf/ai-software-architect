@@ -189,7 +189,9 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "Never end a design recommendation without a visible approval" in orchestration
     assert "Return only user-facing Markdown" in orchestration
     assert "Never emit internal `ai-architect` control" in orchestration
-    assert "Every recommendation ends with `## Your decision`" in orchestration
+    assert "localized user-decision heading" in orchestration
+    assert "Entscheidungsumfang und Kriterien" in options
+    assert "Wesentliche Annahme" in options
     assert "Never use a single" in orchestration
     for marker in (
         "ai-architect-outcome:",

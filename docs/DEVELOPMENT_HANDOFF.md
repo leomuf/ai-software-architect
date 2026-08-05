@@ -135,6 +135,33 @@ The Codex package uses these short-lived hooks:
   five recommendations across three selections. The removed repetition therefore had
   behavioral value for the host model; the complete wording was restored and the
   candidate remains only as negative evaluation evidence.
+- The exploratory runner now supports separately named language campaigns without
+  changing the canonical five-fixture English baseline. The first valid `german`
+  campaign (`20260805T134102Z`) exercised clarification and comparison plus both
+  continuations. Deterministic safeguards, four-artifact persistence, and source
+  immutability passed. Manual review remains open because stable comparison headings
+  were English and the German comparison used plausible future growth to recommend
+  Layered Architecture instead of the current-evidence `No pattern` baseline. The
+  subsequent candidate moves visible comparison labels into one declarative locale
+  catalog shared by parser, Stop hook, continuation detection, and deterministic
+  renderer. English and German catalogs are implemented; the BCP 47-shaped fixture
+  contract and catalog-only parser design reserve a low-cost path for `pt-BR`.
+  Rebuilt plugin `0.1.0+codex.20260805140210` passed five exact German comparison
+  observations (`20260805T140517Z`, `20260805T141543Z`, `20260805T141827Z`,
+  `20260805T142143Z`, and `20260805T142456Z`). Every response used the coherent German
+  label set without a Stop correction, selected the current-evidence `No pattern`
+  baseline, and kept future growth conditional. Each approval persisted exactly four
+  validated architecture artifacts without changing application source. Initial
+  latency was P50/P90 56.317/59.033 seconds, continuation latency was
+  117.299/124.570 seconds, and completed-workflow latency was 173.616/183.032 seconds;
+  all P90 values remain provisional at five observations. The second-language pass is
+  accepted. The subsequent complete English regression campaign
+  `20260805T143611Z` passed all five deterministic and manual semantic reviews on the
+  same installed plugin, added five measured observations without exclusions, and
+  preserved clarification, current-evidence comparison, four-artifact persistence,
+  static review, bundled pattern help, and proportionate-simplicity behavior.
+  Brazilian Portuguese (`pt-BR`) remains a planned catalog-and-fixture extension
+  rather than a currently supported response locale.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.

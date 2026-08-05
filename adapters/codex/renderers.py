@@ -8,6 +8,8 @@ from __future__ import annotations
 import yaml
 from ai_architect_schemas import ArchitectureContract, ArchitectureOptionComparison
 
+from adapters.codex.response_locales import ComparisonSection, comparison_locale
+
 
 def render_architecture_contract(contract: ArchitectureContract) -> str:
     """Render a validated contract without allowing model-invented YAML shapes."""
@@ -25,28 +27,32 @@ def _option_cell(category: str, name: str, reference: str | None) -> str:
     return f"[{category}] [{name}]({reference})"
 
 
-def render_option_comparison(comparison: ArchitectureOptionComparison) -> str:
+def render_option_comparison(
+    comparison: ArchitectureOptionComparison,
+    *,
+    response_language: str = "en",
+) -> str:
     """Render the stable comparison contract from one validated source object."""
 
+    locale = comparison_locale(response_language)
     by_id = {option.id: option for option in comparison.alternatives}
     selected = by_id[comparison.recommended_option_id]
     lines = [
-        "## Decision scope and criteria",
+        locale.heading(ComparisonSection.DECISION_SCOPE),
         "",
         comparison.decision_scope,
         "",
-        "Fit is an ordinal `NN/100` score for this decision, not a probability "
-        "or measured percentage.",
+        locale.fit_disclosure,
         "",
         *[f"- {criterion}" for criterion in comparison.scoring_criteria],
         "",
-        "## Evidence and assumptions",
+        locale.heading(ComparisonSection.EVIDENCE),
         "",
         *[f"- **{claim.kind}:** {claim.claim}" for claim in comparison.evidence_and_assumptions],
         "",
-        "## Alternatives",
+        locale.heading(ComparisonSection.ALTERNATIVES),
         "",
-        "| Option | Fit | Rationale | Main benefit | Main liability | Material assumption |",
+        "| " + " | ".join(locale.table_headers) + " |",
         "| --- | ---: | --- | --- | --- | --- |",
     ]
     for option in comparison.alternatives:
@@ -67,15 +73,16 @@ def render_option_comparison(comparison: ArchitectureOptionComparison) -> str:
     lines.extend(
         (
             "",
-            "## Recommendation",
+            locale.heading(ComparisonSection.RECOMMENDATION),
             "",
-            "Choose **"
+            locale.choose_prefix
+            + " **"
             + _option_cell(selected.category, selected.name, selected.canonical_reference)
             + "**.",
             "",
             comparison.recommendation_rationale,
             "",
-            "## Supporting patterns",
+            locale.heading(ComparisonSection.SUPPORTING_PATTERNS),
             "",
         )
     )
@@ -86,6 +93,14 @@ def render_option_comparison(comparison: ArchitectureOptionComparison) -> str:
         for pattern in comparison.supporting_patterns
     )
     if not comparison.supporting_patterns:
-        lines.append("No supporting patterns are required.")
-    lines.extend(("", "## Your decision", "", comparison.user_decision_prompt, ""))
+        lines.append(locale.no_supporting_patterns)
+    lines.extend(
+        (
+            "",
+            locale.heading(ComparisonSection.USER_DECISION),
+            "",
+            comparison.user_decision_prompt,
+            "",
+        )
+    )
     return "\n".join(lines)

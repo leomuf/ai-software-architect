@@ -36,6 +36,9 @@ switch, trust, disable, or uninstall a plugin.
 
 Use the repository-level PowerShell entry described in
 [`scripts/README.md`](../../../scripts/README.md#run-codex-exploratory-evaluations).
+The default campaign retains the five established English fixtures. Pass
+`-Campaign german` to run the separately versioned German clarification and
+comparison workflows, including their continuation turns.
 
 ## Performance history
 

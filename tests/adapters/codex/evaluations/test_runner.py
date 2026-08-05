@@ -25,6 +25,7 @@ from adapters.codex.evaluations.runner import (
     _codex_command,
     _continuation_sandbox,
     _installed_plugin_identity,
+    _load_campaign,
     _parse_events,
     _phase_telemetry,
     main,
@@ -76,6 +77,23 @@ def test_all_campaign_fixtures_satisfy_the_shared_typed_contract() -> None:
     assert _continuation_sandbox(comparison.continuation.verification) == "workspace-write"
 
 
+def test_german_campaign_is_separate_and_typed() -> None:
+    fixtures = _load_campaign(DEFAULT_MANIFEST, set(), "german")
+
+    assert [fixture.id for _, fixture in fixtures] == [
+        "de-clarify-ui-architecture",
+        "de-architecture-option-comparison",
+    ]
+    assert all(fixture.response_language == "de" for _, fixture in fixtures)
+    assert all("respond-in-german" in fixture.expected for _, fixture in fixtures)
+    assert all(fixture.continuation is not None for _, fixture in fixtures)
+
+
+def test_unknown_campaign_is_rejected() -> None:
+    with pytest.raises(ValueError, match="Unknown exploratory campaign"):
+        _load_campaign(DEFAULT_MANIFEST, set(), "missing")
+
+
 def test_fixture_contract_rejects_repository_path_escape(tmp_path: Path) -> None:
     fixture = (FIXTURES / "clarify-ui-architecture.yaml").read_text(encoding="utf-8")
     fixture += '\nrepository:\n  "../outside.py": "unsafe"\n'
@@ -84,6 +102,17 @@ def test_fixture_contract_rejects_repository_path_escape(tmp_path: Path) -> None
 
     with pytest.raises(ValidationError, match="must remain relative"):
         load_fixture(path)
+
+
+def test_fixture_language_contract_accepts_brazilian_portuguese_tag(
+    tmp_path: Path,
+) -> None:
+    fixture = (FIXTURES / "de-clarify-ui-architecture.yaml").read_text(encoding="utf-8")
+    fixture = fixture.replace("response_language: de", "response_language: pt-BR")
+    path = tmp_path / "pt-br.yaml"
+    path.write_text(fixture, encoding="utf-8")
+
+    assert load_fixture(path).response_language == "pt-BR"
 
 
 def test_grading_enforces_markers_events_and_architecture_only_writes() -> None:

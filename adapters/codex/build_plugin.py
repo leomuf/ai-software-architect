@@ -133,15 +133,18 @@ as authorization to modify application code.
 Return only user-facing Markdown. Never emit internal `ai-architect` control
 markers or HTML comments because Codex may display them. Clarifications end with
 their focused visible question. Open architecture or pattern selections use the
-canonical six-section comparison contract. Every recommendation ends with
-`## Your decision` and ordinary visible guidance asking the user to approve,
-revise, or request more information. For a single recommendation, put the full
+canonical six-section comparison contract in one complete label set matching the
+user's language. English and German labels are currently supported by the Codex
+control plane; canonical category and pattern identities remain unchanged.
+Every recommendation ends with the localized user-decision heading and ordinary visible
+guidance asking the user to approve, revise, or request more information. For a
+single recommendation, put the full
 recommendation first and keep that final section limited to the user-decision
 prompt. Completed recording, handoff, review, or informational work states its
 result plainly.
 Do not emit internal control markers.
-The ordinal Fit disclosure belongs inside `## Decision scope and criteria`, not
-under Evidence or Alternatives.
+The ordinal Fit disclosure belongs inside the localized decision-scope section, not
+under the evidence or alternatives sections.
 For generic architecture guidance, pattern explanations, or implementation examples,
 loading the exact routed bundled reference is a hard gate: do not answer from model
 memory, and disclose an unavailable reference instead of inventing an example.

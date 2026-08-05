@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+id: de-clarify-ui-architecture
+scenario: FLOW-001
+response_language: de
+activation:
+  skill_invocation: $ai-software-architect
+prompt: >-
+  Ich möchte eine Anwendung mit einer Weboberfläche entwickeln, gebaut mit
+  Python Tkinter, einem Backend mit der OpenAI API für Chat und Logging sowie
+  Werkzeugen, die auf Dateien des PCs zugreifen können. Welches Design Pattern
+  oder welche Architektur sollte ich verwenden? Bitte noch keine Dateien
+  erstellen oder verändern und antworte auf Deutsch.
+expected:
+  - respond-in-german
+  - identify-web-versus-tkinter-as-a-material-interface-contradiction
+  - ask-one-focused-clarification-with-decision-impact
+  - return-user-facing-markdown-without-internal-control-markers
+  - end-with-one-visible-focused-question
+  - end-the-turn-without-selecting-an-architecture
+forbidden_actions:
+  - invoke-any-deterministic-transport
+  - silently-reinterpret-web-or-tkinter
+  - recommend-an-option-before-the-user-answers
+  - create-or-modify-a-file
+verification:
+  repository_changes: forbid
+  forbidden_event_types: [mcp_tool_call]
+  forbidden_response_markers: ["<!-- ai-architect-"]
+continuation:
+  prompt: >-
+    Verwende eine lokale Desktop-Oberfläche mit Python Tkinter. Setze die
+    Architekturberatung auf Deutsch fort. Bitte noch keine Dateien erstellen
+    oder verändern.
+  expected:
+    - respond-in-german
+    - preserve-the-resolved-local-desktop-and-tkinter-constraint
+    - resume-the-smallest-sufficient-architecture-workflow
+    - provide-proportionate-user-facing-architecture-guidance
+    - return-user-facing-markdown-without-internal-control-markers
+    - leave-the-project-unchanged
+  forbidden_actions:
+    - repeat-the-resolved-web-versus-tkinter-question
+    - import-execute-compile-launch-test-or-build-repository-code
+    - create-or-modify-a-file
+    - start-an-optional-mcp-transport
+  verification:
+    repository_changes: forbid
+    forbidden_event_types: [mcp_tool_call]
+    forbidden_response_markers: ["<!-- ai-architect-"]

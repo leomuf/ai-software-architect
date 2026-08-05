@@ -149,6 +149,16 @@ five shared fixtures with the Codex-specific adapter:
 .\scripts\run-codex-exploratory-evaluations.ps1
 ```
 
+Run the separate German-language campaign without changing the five-fixture English
+baseline:
+
+```powershell
+.\scripts\run-codex-exploratory-evaluations.ps1 -Campaign german
+```
+
+It checks German clarification and focused comparison responses as well as the
+corresponding clarification answer and approved ADR/artifact continuation.
+
 The runner defaults to `gpt-5.6-sol` with medium reasoning to keep the initial release
 evaluation comparable. This is a maintainer test baseline, not a runtime plugin
 requirement. When investigating a failed evaluation, you can rerun a single test

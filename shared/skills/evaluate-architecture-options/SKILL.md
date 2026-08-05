@@ -24,24 +24,27 @@ Treat questions such as "which design patterns should I use?" as an open selecti
 
 Rank alternatives from observed repository evidence and user-supplied current forces. Unverified future growth MUST NOT by itself make a heavier pattern outrank the proportionate option supported now. Show such growth as an explicit sensitivity condition: explain which future force would change the recommendation and which alternative would then become preferable. Ask one focused clarification instead only when the unknown prevents any responsible current-evidence default. Never invent likely growth to justify a pattern.
 
-Before sending a final selection answer, verify that it uses these sections in this order:
+Before sending a final selection answer, respond in the user's language and choose
+one complete localized label set. Never mix labels from different sets. The current
+stable sets use these sections in this order:
 
-1. `Decision scope and criteria`
-2. `Evidence and assumptions`
-3. `Alternatives`
-4. `Recommendation`
-5. `Supporting patterns`
-6. `Your decision`
+- English: `Decision scope and criteria`, `Evidence and assumptions`, `Alternatives`,
+  `Recommendation`, `Supporting patterns`, `Your decision`.
+- German: `Entscheidungsumfang und Kriterien`, `Evidenz und Annahmen`, `Alternativen`,
+  `Empfehlung`, `Unterstützende Patterns`, `Deine Entscheidung`.
 
-In `Alternatives`, compare three to five credible options that solve the same decision when that many exist. Inside `Decision scope and criteria`, explicitly state that Fit is an ordinal score for this decision and is not a probability or measured percentage. Use a table or equally explicit structure containing, for every option: categorized and linked name, ordinal `NN/100` fit, fit rationale, main benefit, main liability, and material assumption. When fewer than three credible alternatives exist, say why. Never count supporting patterns as alternatives merely to reach the target.
+In the localized Alternatives section, compare three to five credible options that solve the same decision when that many exist. Inside the localized Decision scope section, explicitly state that Fit is an ordinal score for this decision and is not a probability or measured percentage. Use the matching exact table header: English `Option | Fit | Rationale | Main benefit | Main liability | Material assumption`; German `Option | Fit | Begründung | Hauptvorteil | Hauptnachteil | Wesentliche Annahme`. When fewer than three credible alternatives exist, say why. Never count supporting patterns as alternatives merely to reach the target.
 
 For a routine small-repository comparison with three alternatives, target 350 to 450 visible words for the complete six-section answer. Keep evidence bullets and table cells compact, limit supporting patterns to those that materially help the decision, and avoid repeating the same observation in the rationale and recommendation. This is a soft synthesis budget, not permission to omit required evidence, trade-offs, uncertainty, links, or decision guidance. Exceed it only when additional decision-relevant evidence is necessary.
 
-End `Your decision` by asking the user to approve, revise, or request more information. Do not continue to ADR creation or implementation without that response.
+End the localized user-decision section by asking the user to approve, revise, or request more information. Do not continue to ADR creation or implementation without that response.
 
 A recommendation to keep the current simple structure or use no named pattern is still a proposed architecture decision. Explain the future force that would justify more structure, then visibly ask the user to approve, revise, or request more information. Do not omit the decision handoff merely because the recommendation adds nothing.
 
-Use this compact response template exactly for an open selection:
+Use this compact English response template exactly for an English open selection.
+For German, translate only its stable headings, table header, disclosure, and ordinary
+prose according to the German label set above; retain canonical category and pattern
+names so links and structured identities remain portable:
 
 ```markdown
 ## Decision scope and criteria
@@ -67,7 +70,7 @@ Please approve, revise, or request more information before I continue.
 
 Shape the same content as `ArchitectureOptionComparison` when a structured output is requested, including the language-neutral `offered_actions` values `approve`, `revise`, and `more-information`. Validate that complete shape in host-native structured-output mode. In Markdown, express those choices as ordinary visible guidance rather than machine-readable comments.
 
-Before sending the answer, perform the same deterministic rendering self-check used by the Codex control plane: all six headings appear in order, `## Decision scope and criteria` explicitly says Fit is ordinal and not a probability or measured percentage, two to five genuine alternatives are rendered (normally three to five when that many are credible), category labels and canonical links are present, the recommendation repeats one exact table option, and the final section contains visible decision guidance. Do not emit internal control markers or HTML comments; Codex may display them to the user. When the Codex Composite routes here for a comparison, a trusted Stop hook may request one complete corrected rendering.
+Before sending the answer, perform the same deterministic rendering self-check used by the Codex control plane: exactly one complete localized six-heading set appears in order, the localized decision-scope section explicitly says Fit is ordinal and not a probability or measured percentage, the matching localized six-column header is present, two to five genuine alternatives are rendered (normally three to five when that many are credible), category labels and canonical links are present, the recommendation repeats one exact table option, and the final section contains visible decision guidance. Do not emit internal control markers or HTML comments; Codex may display them to the user. When the Codex Composite routes here for a comparison, a trusted Stop hook may request one complete corrected rendering.
 
 1. Start from recorded constraints, risks, stakeholders, and ranked quality attributes.
 2. For an open-ended architecture or pattern-selection request, form three to five credible options within each material decision scope. Never pad the comparison with an option that does not address the same decision; when fewer than three credible alternatives exist, present the smaller set and explain why.
@@ -82,7 +85,7 @@ Before sending the answer, perform the same deterministic rendering self-check u
 
 - Present alternatives before the recommendation. For every option show a `0–100` fit score, concise rationale, main benefit, main liability, and material assumption.
 - Describe the score as an ordinal fit score for this decision, not a probability or calibrated percentage. State the criteria used to score the options.
-- In `Evidence and assumptions`, distinguish static source observations from assumptions and unverified possibilities. Do not present a runtime claim unless runtime behavior was legitimately observed within the authorized mode.
+- In the localized evidence-and-assumptions section, distinguish static source observations from assumptions and unverified possibilities. Do not present a runtime claim unless runtime behavior was legitimately observed within the authorized mode.
 - Prefix the first mention of every named option and supporting pattern with its category: `[GoF]`, `[Architecture]`, `[Presentation]`, `[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, or `[No pattern]`.
 - Link the first user-facing pattern name to its canonical public reference under `https://github.com/leomuf/ai-software-architect/blob/main/shared/skills/evaluate-architecture-options/references/`, using the routed reference filename. Use plain text if the host cannot render Markdown links.
 - For supporting patterns, add a one-line role explaining where each applies. Do not assign them competing fit scores unless they are genuine alternatives within the same decision.

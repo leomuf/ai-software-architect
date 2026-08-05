@@ -20,6 +20,7 @@ backward-compatible alias.
 [CmdletBinding()]
 param(
     [string[]]$Fixture,
+    [string]$Campaign = "default",
     [string]$Model = "gpt-5.6-sol",
     [ValidateSet("standard", "fast", "unknown")]
     [string]$Speed = "standard",
@@ -162,6 +163,7 @@ if (-not $CodexCommand) {
 $arguments = @(
     "run", "python", "-m", "adapters.codex.evaluations.runner",
     "--output-directory", $OutputDirectory,
+    "--campaign", $Campaign,
     "--codex-command", $CodexCommand,
     "--model", $Model,
     "--speed", $Speed,
@@ -186,6 +188,7 @@ if ($DryRun) {
 }
 
 Write-Host "Starting Codex exploratory evaluations..."
+Write-Host "Campaign: $Campaign"
 Write-Host "Model: $Model ($ReasoningEffort reasoning)"
 if ($ExpectedPluginVersion) {
     Write-Host "Expected plugin version: $ExpectedPluginVersion"

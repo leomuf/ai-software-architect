@@ -1835,7 +1835,7 @@ The `Stop` hook validates small, stable, user-facing rendering contracts. For a 
 
 Every complete-workflow final response contains only user-facing Markdown. Internal outcome, decision-shape, and action markers are forbidden because Codex may render HTML comments visibly. The selected host model and canonical skills retain responsibility for deciding whether the response clarifies, recommends, or completes work; the hook MUST NOT infer that semantic phase from localized prose.
 
-An open request to choose architecture or design-pattern options uses the strict six-section rendering contract. A single recommendation applies only when the user explicitly requests one highest-leverage improvement or when supplied constraints make one proportionate simplicity decision sufficient; it MUST NOT present a stack of recommended patterns. Every recommendation ends with `## Your decision` and visible, localized guidance to approve, revise, or request more information. All recommendation headings and content MUST precede that final section.
+An open request to choose architecture or design-pattern options uses the strict six-section rendering contract. Visible section and table labels come from one complete declarative locale catalog selected to match the user's language; labels from different locales MUST NOT be mixed. English (`en`) and German (`de`) are implemented initially. Brazilian Portuguese (`pt-BR`) is planned and MUST be added as another complete catalog plus shared fixtures, without language-specific semantic routing or changes to parser control flow. Canonical category names, pattern identities, public links, structured `offered_actions`, and persisted artifact schemas remain language-neutral. A single recommendation applies only when the user explicitly requests one highest-leverage improvement or when supplied constraints make one proportionate simplicity decision sufficient; it MUST NOT present a stack of recommended patterns. Every recommendation ends with the selected locale's user-decision heading and visible guidance to approve, revise, or request more information. All recommendation headings and content MUST precede that final section.
 
 ```yaml
 complete_workflow_response:
@@ -1845,7 +1845,10 @@ complete_workflow_response:
     visible_focused_question: required
   recommendation:
     supported_shapes: [comparison, single]
-    final_heading: "## Your decision"
+    locale_catalogs:
+      implemented: [en, de]
+      planned: [pt-BR]
+    final_heading: locale.user_decision
     visible_localized_choices: [approve, revise, more-information]
   completion:
     visible_result: required
@@ -1854,7 +1857,7 @@ complete_workflow_response:
     semantic_outcome_classification: false
 ```
 
-Single-reference explanations are not semantically policed by `Stop`; exact reference hints plus the hard skill gate make the expected resource explicit without trying to judge natural-language content. For a complete workflow, the hook applies strict comparison validation when the visible `## Alternatives` section is present, validates a visible final decision section when present, and rejects any leaked internal `ai-architect` marker. It deliberately cannot prove that a semantically required recommendation was chosen or that localized prose offers the correct choices; those remain skill and host-model responsibilities. A rendering failure generates one complete replacement request whose reason repeats the exact ordered headings, six-column Alternatives header, category/link rule, and ordinal-fit rule; `stop_hook_active` prevents an infinite retry. Valid clarification and decision responses retain only a bounded session continuation record; all turn records are removed after completion.
+Single-reference explanations are not semantically policed by `Stop`; exact reference hints plus the hard skill gate make the expected resource explicit without trying to judge natural-language content. For a complete workflow, the hook applies strict comparison validation when any cataloged Alternatives heading is present, requires exactly one complete ordered locale set and its exact six-column header, validates the matching visible final decision section when present, and rejects mixed locale labels or leaked internal `ai-architect` markers. It deliberately cannot prove that a semantically required recommendation was chosen or that localized prose offers the correct choices; those remain skill and host-model responsibilities. A rendering failure generates one complete replacement request whose reason presents the supported locale contracts, category/link rule, and ordinal-fit rule; `stop_hook_active` prevents an infinite retry. Valid clarification and decision responses retain only a bounded session continuation record; all turn records are removed after completion.
 
 Codex requires users to review and trust non-managed plugin hooks. Therefore the skill MUST remain usable when hooks are disabled, untrusted, unsupported, or fail. Hook validation improves observed reliability but is not a security boundary or proof of semantic architectural quality. The README and installation testing MUST disclose the trust step and verify both trusted-hook and no-hook behavior.
 

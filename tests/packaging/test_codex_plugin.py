@@ -88,7 +88,7 @@ def test_codex_plugin_is_reproducible_and_complete(
             assert build_plugin.CANONICAL_REFERENCE_BASE in workflow_text
             assert "Bundled path rule: `references/<File>`" in workflow_text
             assert "## Direct reference routing" not in workflow_text
-            assert len(workflow_text.encode("utf-8")) < 14_000
+            assert len(workflow_text.encode("utf-8")) < 15_000
     authoring_bundle = skill / "assets" / "artifact-authoring-bundle.md"
     assert authoring_bundle.is_file()
     bundle_text = authoring_bundle.read_text("utf-8")

@@ -557,9 +557,22 @@ def _installed_plugin_identity(executable: str) -> InstalledPluginIdentity:
     )
 
 
-def _load_campaign(manifest: Path, selected: set[str]) -> list[tuple[Path, EvaluationFixture]]:
+def _load_campaign(
+    manifest: Path,
+    selected: set[str],
+    campaign: str = "default",
+) -> list[tuple[Path, EvaluationFixture]]:
     raw = yaml.safe_load(manifest.read_text(encoding="utf-8"))
-    configured = raw.get("exploratory_campaign", [])
+    if campaign == "default":
+        configured = raw.get("exploratory_campaign", [])
+    else:
+        configured = raw.get("additional_exploratory_campaigns", {}).get(campaign)
+        if configured is None:
+            available = sorted(raw.get("additional_exploratory_campaigns", {}))
+            raise ValueError(
+                f"Unknown exploratory campaign: {campaign}. Available: "
+                + ", ".join(["default", *available])
+            )
     fixtures: list[tuple[Path, EvaluationFixture]] = []
     for raw_path in configured:
         path = ROOT / str(raw_path)
@@ -680,7 +693,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
     started = datetime.now(UTC)
     campaign_started = time.monotonic()
     selected = set(args.fixture or [])
-    fixtures = _load_campaign(args.manifest, selected)
+    fixtures = _load_campaign(args.manifest, selected, args.campaign)
     if args.dry_run:
         codex_version = "not-checked (dry run)"
         installed_plugin = None
@@ -872,6 +885,11 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument(
+        "--campaign",
+        default="default",
+        help="Named exploratory campaign from the verification manifest.",
+    )
     parser.add_argument("--fixture", action="append", help="Run one fixture ID; repeat as needed")
     parser.add_argument("--output-directory", type=Path, required=True)
     parser.add_argument("--codex-command", default="codex")

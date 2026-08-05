@@ -189,10 +189,11 @@ def test_initial_context_is_a_compact_route_independent_safety_envelope() -> Non
     assert "exactly one focused clarification" in context
     assert "one recommendation rather than a padded comparison" in context
     assert len(context) <= 2_400
-    assert "Option, Fit, Rationale" in context
+    assert "exact six-column table" in context
+    assert "complete localized label set" in context
     assert "Fit is ordinal NN/100" in context
-    positions = [context.index(section) for section in REQUIRED_COMPARISON_SECTIONS]
-    assert positions == sorted(positions)
+    assert all(section not in context for section in REQUIRED_COMPARISON_SECTIONS)
+    assert "localized label set" in context
     assert "artifact-authoring-bundle.md" not in context
     assert "independent read-only reviews" not in context
 
@@ -753,6 +754,49 @@ Please approve, revise, or request more information.
     assert "canonical public reference" in result["reason"]
 
 
+def test_german_comparison_is_parsed_and_resumes_on_approval(tmp_path: Path) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Vergleiche passende Architekturen."
+    handle_user_prompt_submit(submit, tmp_path)
+    strategy = f"[GoF] [Strategy]({CANONICAL_REFERENCE_BASE}gof-strategy.md)"
+    answer = f"""## Entscheidungsumfang und Kriterien
+Wähle die Regelstruktur; Fit ist ein ordinaler Wert, keine Wahrscheinlichkeit.
+
+## Evidenz und Annahmen
+Die Regeln sind klein; Änderungen sind nicht belegt.
+
+## Alternativen
+| Option | Fit | Begründung | Hauptvorteil | Hauptnachteil | Wesentliche Annahme |
+| --- | ---: | --- | --- | --- | --- |
+| [No pattern] Geordnete Funktionen | 85/100 | Angemessen | Einfach | Weniger flexibel | Klein |
+| {strategy} | 65/100 | Austauschbar | Testbar | Indirektion | Verfahren variieren |
+
+## Empfehlung
+[No pattern] Geordnete Funktionen ist für die aktuelle Evidenz angemessen.
+
+## Unterstützende Patterns
+Es sind keine unterstützenden Patterns erforderlich.
+
+## Deine Entscheidung
+Bitte freigeben, überarbeiten oder weitere Informationen anfordern.
+"""
+
+    parsed = parse_option_comparison_markdown(answer)
+    assert parsed.recommended_option_id == "OPT-001"
+    assert parsed.user_decision_prompt.startswith("Bitte")
+
+    stop = _payload("Stop")
+    stop["last_assistant_message"] = answer
+    assert handle_stop(stop, tmp_path) == {}
+
+    approval = _payload("UserPromptSubmit")
+    approval["turn_id"] = "turn-2"
+    approval["prompt"] = "Freigegeben."
+    continued = handle_user_prompt_submit(approval, tmp_path)
+    additional = continued["hookSpecificOutput"]["additionalContext"]  # type: ignore[index]
+    assert "Route: typed decision continuation" in additional
+
+
 def test_comparison_rejects_a_linked_no_pattern_alternative(tmp_path: Path) -> None:
     submit = _payload("UserPromptSubmit")
     submit["prompt"] = "$ai-software-architect Which design should I use?"
@@ -863,8 +907,9 @@ def test_stop_requests_one_complete_correction_for_visible_invalid_comparison(
     retry = handle_stop(stop, tmp_path / "data")
     assert retry["decision"] == "block"
     assert "complete standalone replacement response" in retry["reason"]
-    assert "exact ordered headings" in retry["reason"]
-    assert "| Option | Fit | Rationale | Main benefit" in retry["reason"]
+    assert "localized comparison contract" in retry["reason"]
+    assert "Option | Fit | Rationale | Main benefit" in retry["reason"]
+    assert "Begründung | Hauptvorteil" in retry["reason"]
     assert "Allowed category labels" in retry["reason"]
     assert "ordinal `NN/100`" in retry["reason"]
 
@@ -965,7 +1010,7 @@ def test_complete_workflow_comparison_shape_uses_strict_rendering_contract(
     )
     invalid = handle_stop(stop, tmp_path)
     assert invalid["decision"] == "block"
-    assert "comparison sections" in invalid["reason"]
+    assert "localized heading set" in invalid["reason"]
 
 
 def test_complete_workflow_clarification_needs_no_machine_marker(

@@ -8,6 +8,10 @@ exploratory_campaign:
   - shared/evaluations/model-fixtures/read-only-architecture-review.yaml
   - shared/evaluations/model-fixtures/abstract-factory-example.yaml
   - shared/evaluations/model-fixtures/avoid-overengineering.yaml
+additional_exploratory_campaigns:
+  german:
+    - shared/evaluations/model-fixtures/de-clarify-ui-architecture.yaml
+    - shared/evaluations/model-fixtures/de-architecture-option-comparison.yaml
 scenarios:
   SKILL-001: {mode: scripted-host-test, gate: GATE-SKILL}
   SKILL-002: {mode: model-evaluation, gate: GATE-SKILL}

@@ -57,9 +57,9 @@ On Codex, the plugin is the distribution bundle and `$ai-software-architect` is 
 Return only user-facing Markdown. Never emit internal `ai-architect` control markers or HTML comments.
 
 - When material input is required, end with the focused visible clarification question.
-- For an open request to choose architecture or design-pattern options, render the six-section option-comparison contract and compare genuine alternatives for one decision.
+- For an open request to choose architecture or design-pattern options, respond in the user's language, render exactly one complete localized six-section option-comparison contract, and compare genuine alternatives for one decision. Keep canonical category and pattern identities unchanged across languages.
 - When the user requests one highest-leverage improvement, or one proportionate simplicity decision is sufficient, present one recommendation rather than a comparison. Never use a single recommendation to present a stack of patterns.
-- Every recommendation ends with `## Your decision` and visible guidance asking the user to approve, revise, or request more information.
+- Every recommendation ends with the localized user-decision heading and visible guidance asking the user to approve, revise, or request more information.
 - When recording, handoff, review, or informational work completes with no pending decision, state the result and any useful next step plainly.
 
 The trusted Stop hook validates only stable visible structures. It does not infer the semantic workflow phase from natural-language keywords, and correctness must not depend on hook availability.

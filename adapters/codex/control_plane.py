@@ -16,6 +16,14 @@ from pydantic import ValidationError
 try:
     from adapters.codex.artifact_paths import is_canonical_artifact_path
     from adapters.codex.reference_catalog import REFERENCE_CATALOG, ReferenceSpec
+    from adapters.codex.response_locales import (
+        ComparisonSection,
+        comparison_contract_guidance,
+        comparison_locale,
+        contains_comparison_section,
+        locale_containing_section,
+        matching_comparison_locale,
+    )
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
@@ -25,6 +33,14 @@ except ModuleNotFoundError as exc:
     from reference_catalog import (  # type: ignore[import-not-found, no-redef]
         REFERENCE_CATALOG,
         ReferenceSpec,
+    )
+    from response_locales import (  # type: ignore[import-not-found, no-redef]
+        ComparisonSection,
+        comparison_contract_guidance,
+        comparison_locale,
+        contains_comparison_section,
+        locale_containing_section,
+        matching_comparison_locale,
     )
 
 MAIN_SKILL_MARKER = "$ai-software-architect"
@@ -67,14 +83,7 @@ PATCH_FILE_PATTERN = re.compile(
     r"^\*\*\* (?:Add|Update|Delete) File: (.+)$|^\*\*\* Move to: (.+)$",
     flags=re.MULTILINE,
 )
-REQUIRED_COMPARISON_SECTIONS = (
-    "## Decision scope and criteria",
-    "## Evidence and assumptions",
-    "## Alternatives",
-    "## Recommendation",
-    "## Supporting patterns",
-    "## Your decision",
-)
+REQUIRED_COMPARISON_SECTIONS = comparison_locale("en").headings
 HIDDEN_HTML_COMMENT_PATTERN = re.compile(
     r"<!--.*?-->",
     flags=re.DOTALL,
@@ -292,20 +301,17 @@ def developer_context(
         "clarification and no repository inspection, comparison, or recommendation in "
         "that turn. When explicit constraints make a proportionate simplicity or "
         "no-pattern decision sufficient, give one recommendation rather than a padded "
-        "comparison. Otherwise, for an open "
-        "request to choose architecture or pattern alternatives, use these exact ordered "
-        "headings: "
-        + ", ".join(REQUIRED_COMPARISON_SECTIONS)
-        + ". Under `## Alternatives`, compare two to five genuine alternatives for one "
-        "material decision in a Markdown table with exactly: Option, Fit, Rationale, "
-        "Main benefit, Main liability, Material assumption. Categorize and canonically "
+        "comparison. Otherwise, for an open request to choose architecture or pattern "
+        "alternatives, respond in the user's language and use one complete localized "
+        "label set supplied by the comparison module. Compare two to five genuine options "
+        "for one material decision with its exact six-column table. Categorize and canonically "
         "link named patterns, state that Fit is ordinal NN/100 rather than probability, "
         "and repeat the selected Option cell exactly in Recommendation, including its "
         "category and canonical link. Keep supporting patterns separate and write each "
         "named one exactly as `[Category] [Name](canonical link)`. Every "
         "project-specific design recommendation, including a proportionate single "
-        "recommendation, must end with `## Your decision` and visible guidance offering "
-        "approval, revision, or more information."
+        "recommendation, must end with the localized user-decision heading and visible "
+        "guidance offering approval, revision, or more information."
         + continuation
         + reference_hint
         + snapshot_hint
@@ -460,8 +466,11 @@ def tool_denial_reason(
 
 
 def _sections_are_ordered(message: str) -> bool:
-    positions = [message.find(section) for section in REQUIRED_COMPARISON_SECTIONS]
-    return all(position >= 0 for position in positions) and positions == sorted(positions)
+    try:
+        matching_comparison_locale(message)
+    except ValueError:
+        return False
+    return True
 
 
 def _section_text(message: str, heading: str, next_heading: str | None) -> str:
@@ -527,14 +536,20 @@ def parse_option_comparison_markdown(message: str) -> ParsedOptionComparison:
 
     if HIDDEN_HTML_COMMENT_PATTERN.search(message):
         raise ValueError("internal control markers and HTML comments must not be rendered")
-    if not _sections_are_ordered(message):
-        raise ValueError("required comparison sections are missing or out of order")
+    locale = matching_comparison_locale(message)
 
     alternatives_text = _section_text(
         message,
-        "## Alternatives",
-        "## Recommendation",
+        locale.heading(ComparisonSection.ALTERNATIVES),
+        locale.heading(ComparisonSection.RECOMMENDATION),
     )
+    header_found = any(
+        tuple(cell.strip() for cell in line.strip().strip("|").split("|"))
+        == locale.table_headers
+        for line in alternatives_text.splitlines()
+    )
+    if not header_found:
+        raise ValueError("comparison must use the selected locale's exact table header")
     rows: list[ComparedArchitectureOption] = []
     option_names: dict[str, str] = {}
     option_cells: dict[str, str] = {}
@@ -596,8 +611,8 @@ def parse_option_comparison_markdown(message: str) -> ParsedOptionComparison:
 
     recommendation = _section_text(
         message,
-        "## Recommendation",
-        "## Supporting patterns",
+        locale.heading(ComparisonSection.RECOMMENDATION),
+        locale.heading(ComparisonSection.SUPPORTING_PATTERNS),
     )
     lowered_recommendation = recommendation.casefold()
     mentioned = sorted(
@@ -616,20 +631,24 @@ def parse_option_comparison_markdown(message: str) -> ParsedOptionComparison:
 
     decision_scope = _section_text(
         message,
-        "## Decision scope and criteria",
-        "## Evidence and assumptions",
+        locale.heading(ComparisonSection.DECISION_SCOPE),
+        locale.heading(ComparisonSection.EVIDENCE),
     )
     if "ordinal" not in decision_scope.casefold():
         raise ValueError("decision criteria must describe Fit as an ordinal score")
 
     supporting_patterns = _section_text(
         message,
-        "## Supporting patterns",
-        "## Your decision",
+        locale.heading(ComparisonSection.SUPPORTING_PATTERNS),
+        locale.heading(ComparisonSection.USER_DECISION),
     )
     _validate_supporting_patterns(supporting_patterns)
 
-    decision_prompt = _section_text(message, "## Your decision", None)
+    decision_prompt = _section_text(
+        message,
+        locale.heading(ComparisonSection.USER_DECISION),
+        None,
+    )
     visible_decision_prompt = re.sub(
         r"<!--.*?-->",
         "",
@@ -643,8 +662,8 @@ def parse_option_comparison_markdown(message: str) -> ParsedOptionComparison:
         decision_scope_and_criteria=decision_scope,
         evidence_and_assumptions=_section_text(
             message,
-            "## Evidence and assumptions",
-            "## Alternatives",
+            locale.heading(ComparisonSection.EVIDENCE),
+            locale.heading(ComparisonSection.ALTERNATIVES),
         ),
         alternatives=tuple(rows),
         recommended_option_id=recommended_option_id,
@@ -669,11 +688,10 @@ def _option_comparison_violations(message: str) -> list[str]:
         parse_option_comparison_markdown(message)
     except (ValidationError, ValueError) as exc:
         return [
-            "render one complete replacement with these exact ordered headings: "
-            + ", ".join(REQUIRED_COMPARISON_SECTIONS)
-            + ". Under `## Alternatives`, use exactly this six-column header: "
-            "`| Option | Fit | Rationale | Main benefit | Main liability | "
-            "Material assumption |`. Provide two to five genuine rows (normally "
+            "render one complete replacement in the user's language using exactly "
+            "one localized comparison contract."
+            + comparison_contract_guidance()
+            + ". Provide two to five genuine rows (normally "
             "three to five). Allowed category labels are `GoF`, `Architecture`, "
             "`Presentation`, `Dependency`, `Data`, `Integration`, `Resilience`, "
             "`Modernization`, and `No pattern`. Example Option cells: `[No pattern] "
@@ -697,13 +715,15 @@ def _architecture_workflow_violations(message: str) -> list[str]:
         return [
             "remove internal control markers or HTML comments and return only user-facing content"
         ]
-    if "## Alternatives" in message:
+    if contains_comparison_section(message, ComparisonSection.ALTERNATIVES):
         return _option_comparison_violations(message)
-    if "## Your decision" in message:
+    if contains_comparison_section(message, ComparisonSection.USER_DECISION):
+        locale = locale_containing_section(message, ComparisonSection.USER_DECISION)
+        user_decision_heading = locale.heading(ComparisonSection.USER_DECISION)
         visible_guidance = re.sub(
             r"<!--.*?-->",
             "",
-            _section_text(message, "## Your decision", None),
+            _section_text(message, user_decision_heading, None),
             flags=re.DOTALL,
         ).strip()
         if not visible_guidance:

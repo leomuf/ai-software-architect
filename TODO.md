@@ -48,8 +48,44 @@ an explicit fallback.
 
 - [ ] Test the plugin on at least two more small Python repositories with different
       structures.
-- [ ] Add a second-language exploratory pass, beginning with German clarification,
-      focused comparison, and approval responses.
+- [x] Complete a second-language exploratory pass for German clarification, focused
+      comparison, and approval responses. A separate `german` campaign now preserves
+      the five-fixture English baseline while exercising two fixtures and four phases.
+      Campaign `20260805T134102Z` passed every deterministic safeguard: both responses
+      used German prose, clarification resumed correctly, approval persisted exactly
+      four architecture artifacts, and application source remained unchanged. Manual
+      review found two unresolved behaviors: stable comparison headings remain English,
+      and the German comparison selected Layered Architecture using merely plausible
+      future rules/output formats, contrary to the current-evidence policy and stable
+      English `No pattern` baseline. The next candidate replaces hard-coded visible
+      labels with one coherent declarative `en` or `de` catalog while retaining
+      language-neutral category, pattern, action, and artifact identities. Its fixture
+      contract accepts planned `pt-BR` without parser changes. Rebuild and validate that
+      candidate, then collect an exact German cohort before changing shared
+      recommendation behavior. The exact German labels increase the packaged comparison
+      workflow from 13,971 to 14,672 bytes (+5.0%); retain the new 15-KB guard and
+      measure correction count, latency, and semantics before accepting that cost.
+      Plugin `0.1.0+codex.20260805140210` then passed five exact German comparison
+      observations (`20260805T140517Z`, `20260805T141543Z`, `20260805T141827Z`,
+      `20260805T142143Z`, and `20260805T142456Z`) without a rendering correction. All
+      five used one complete German label set, selected the current-evidence
+      `No pattern` baseline, stayed between 368 and 385 visible words, persisted
+      exactly four validated artifacts after approval, and left application source
+      unchanged. Initial latency was P50 56.317 seconds and provisional P90 59.033
+      seconds; continuation latency was P50 117.299 seconds and provisional P90
+      124.570 seconds; completed-workflow latency was P50 173.616 seconds and
+      provisional P90 183.032 seconds. Manual review confirmed that future-growth
+      alternatives remained sensitivity conditions rather than the basis of the
+      primary recommendation. The packaged comparison workflow remains protected by
+      the 15-KB guard. The complete canonical English campaign
+      `20260805T143611Z` subsequently passed all five deterministic and manual
+      semantic reviews with the same installed plugin: clarification resumed,
+      comparison selected `No pattern` in 442 visible words and persisted exactly
+      four validated artifacts, repository review remained static and read-only,
+      focused Abstract Factory help reused its bundled example, and the tiny-script
+      fixture avoided unnecessary patterns. The campaign added five measured
+      observations without exclusions. Brazilian Portuguese (`pt-BR`) remains
+      planned as a separate locale catalog and evaluation campaign.
 - [ ] Collect at least five directly comparable observations per release baseline,
       then use the versioned performance history to define a warning-only latency
       regression policy before considering a blocking release gate.

@@ -43,6 +43,10 @@ try:
         with_reference_hints,
     )
     from adapters.codex.hook_models import HookPayload
+    from adapters.codex.response_locales import (
+        ComparisonSection,
+        contains_comparison_section,
+    )
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
@@ -73,6 +77,10 @@ except ModuleNotFoundError as exc:
         with_reference_hints,
     )
     from hook_models import HookPayload  # type: ignore[import-not-found, no-redef]
+    from response_locales import (  # type: ignore[import-not-found, no-redef]
+        ComparisonSection,
+        contains_comparison_section,
+    )
 
 MAX_HOOK_INPUT_BYTES = 1_000_000
 MAX_STATE_AGE_SECONDS = 86_400
@@ -174,7 +182,7 @@ def _pending_continuation(
     context: CodexTurnContext,
 ) -> SessionContinuation | None:
     visible = message.rstrip()
-    if "## Your decision" in visible:
+    if contains_comparison_section(visible, ComparisonSection.USER_DECISION):
         return SessionContinuation(
             context=context,
             interaction=PendingInteraction.DECISION,

@@ -40,6 +40,7 @@ class EvaluationFixture(StrictModel):
     schema_version: str
     id: str = Field(min_length=1)
     scenario: str = Field(pattern=r"^[A-Z]+-[0-9]{3}$")
+    response_language: str = Field(default="en", pattern=r"^[a-z]{2}(?:-[A-Z]{2})?$")
     activation: Activation
     prompt: str = Field(min_length=1)
     repository: dict[str, str] = Field(default_factory=dict)

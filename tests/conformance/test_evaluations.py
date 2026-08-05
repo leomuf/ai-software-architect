@@ -40,6 +40,10 @@ CAMPAIGN_FIXTURES = {
     "abstract-factory-example.yaml",
     "avoid-overengineering.yaml",
 }
+GERMAN_CAMPAIGN_FIXTURES = {
+    "de-clarify-ui-architecture.yaml",
+    "de-architecture-option-comparison.yaml",
+}
 COMPLETE_WORKFLOW_EXPECTATIONS = {
     "clarify-ui-architecture.yaml": "end-with-one-visible-focused-question",
     "architecture-option-comparison.yaml": "use-visible-comparison-sections",
@@ -128,6 +132,41 @@ def test_exploratory_campaign_covers_all_five_natural_prompts() -> None:
                 in fixture["expected"]
             )
             assert visible_shape in fixture["expected"]
+
+
+def test_german_campaign_covers_clarification_comparison_and_approval() -> None:
+    manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
+    configured = {
+        Path(path).name
+        for path in manifest["additional_exploratory_campaigns"]["german"]
+    }
+
+    assert configured == GERMAN_CAMPAIGN_FIXTURES
+    for filename in configured:
+        fixture = yaml.safe_load(
+            (ROOT / "shared" / "evaluations" / "model-fixtures" / filename).read_text(
+                "utf-8"
+            )
+        )
+        assert fixture["response_language"] == "de"
+        assert fixture["activation"]["skill_invocation"] == "$ai-software-architect"
+        assert "respond-in-german" in fixture["expected"]
+        assert fixture["continuation"] is not None
+        assert "respond-in-german" in fixture["continuation"]["expected"]
+
+    comparison = yaml.safe_load(
+        (
+            ROOT
+            / "shared"
+            / "evaluations"
+            / "model-fixtures"
+            / "de-architecture-option-comparison.yaml"
+        ).read_text("utf-8")
+    )
+    assert comparison["observe_decision"] is True
+    assert comparison["continuation"]["verification"]["repository_changes"] == (
+        "architecture-artifacts-only"
+    )
 
 
 def test_avoid_overengineering_fixture_requires_evidence_minimization() -> None:
