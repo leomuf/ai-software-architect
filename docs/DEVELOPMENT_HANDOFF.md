@@ -162,6 +162,15 @@ The Codex package uses these short-lived hooks:
   static review, bundled pattern help, and proportionate-simplicity behavior.
   Brazilian Portuguese (`pt-BR`) remains a planned catalog-and-fixture extension
   rather than a currently supported response locale.
+- A separate `python-project-variety` campaign provides reproducible cross-structure
+  evidence without changing the five-fixture baseline. Campaign `20260805T150133Z`
+  passed deterministic and manual semantic review for both a cohesive single-file
+  expense CLI and a six-file `src`-layout order service. The first recommendation
+  preserved the one-file design and added only a validated CSV row-parsing boundary;
+  the second identified the application service's concrete SQLite dependency and
+  proposed one minimal repository port without a framework or broader layer rewrite.
+  Reviews completed in 25.610 and 31.543 seconds, used one bounded static snapshot
+  each, disclosed limitations, and changed no repository files.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.

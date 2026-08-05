@@ -169,6 +169,35 @@ def test_german_campaign_covers_clarification_comparison_and_approval() -> None:
     )
 
 
+def test_python_project_variety_campaign_covers_distinct_repository_shapes() -> None:
+    manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
+    configured = {
+        Path(path).name
+        for path in manifest["additional_exploratory_campaigns"][
+            "python-project-variety"
+        ]
+    }
+
+    assert configured == {
+        "project-variety-single-file-cli.yaml",
+        "project-variety-src-service.yaml",
+    }
+    fixtures = [
+        yaml.safe_load(
+            (ROOT / "shared" / "evaluations" / "model-fixtures" / filename).read_text(
+                "utf-8"
+            )
+        )
+        for filename in sorted(configured)
+    ]
+    repository_sizes = sorted(len(fixture["repository"]) for fixture in fixtures)
+    assert repository_sizes == [1, 6]
+    assert all(
+        fixture["verification"]["repository_changes"] == "forbid"
+        for fixture in fixtures
+    )
+
+
 def test_avoid_overengineering_fixture_requires_evidence_minimization() -> None:
     fixture = yaml.safe_load(AVOID_OVERENGINEERING_FIXTURE.read_text("utf-8"))
     assert fixture["scenario"] == "FLOW-002"

@@ -12,6 +12,9 @@ additional_exploratory_campaigns:
   german:
     - shared/evaluations/model-fixtures/de-clarify-ui-architecture.yaml
     - shared/evaluations/model-fixtures/de-architecture-option-comparison.yaml
+  python-project-variety:
+    - shared/evaluations/model-fixtures/project-variety-single-file-cli.yaml
+    - shared/evaluations/model-fixtures/project-variety-src-service.yaml
 scenarios:
   SKILL-001: {mode: scripted-host-test, gate: GATE-SKILL}
   SKILL-002: {mode: model-evaluation, gate: GATE-SKILL}

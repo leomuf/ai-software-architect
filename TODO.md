@@ -46,8 +46,17 @@ an explicit fallback.
 
 ## Forward compatibility
 
-- [ ] Test the plugin on at least two more small Python repositories with different
-      structures.
+- [x] Test the plugin on at least two more small Python repositories with different
+      structures. The separately selectable `python-project-variety` campaign keeps
+      the canonical five-fixture baseline unchanged and provides reproducible
+      single-file CLI and six-file `src`-layout service repositories. Campaign
+      `20260805T150133Z` passed both deterministic and manual semantic reviews with
+      plugin `0.1.0+codex.20260805140210`. The 25.610-second CLI review retained the
+      cohesive single-file shape and recommended only a validated row-parsing
+      boundary. The 31.543-second service review identified the concrete
+      `OrderService`-to-SQLite dependency and recommended one minimal repository port
+      while rejecting broader frameworks and layers. Both used one bounded static
+      snapshot, disclosed evidence limitations, and made no repository changes.
 - [x] Complete a second-language exploratory pass for German clarification, focused
       comparison, and approval responses. A separate `german` campaign now preserves
       the five-fixture English baseline while exercising two fixtures and four phases.

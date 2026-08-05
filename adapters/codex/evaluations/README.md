@@ -39,6 +39,8 @@ Use the repository-level PowerShell entry described in
 The default campaign retains the five established English fixtures. Pass
 `-Campaign german` to run the separately versioned German clarification and
 comparison workflows, including their continuation turns.
+Pass `-Campaign python-project-variety` to exercise read-only architectural reviews
+of a cohesive single-file CLI and a small `src`-layout multi-module service.
 
 ## Performance history
 

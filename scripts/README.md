@@ -159,6 +159,16 @@ baseline:
 It checks German clarification and focused comparison responses as well as the
 corresponding clarification answer and approved ADR/artifact continuation.
 
+Review two additional small Python repository structures without changing the
+canonical five-fixture baseline:
+
+```powershell
+.\scripts\run-codex-exploratory-evaluations.ps1 -Campaign python-project-variety
+```
+
+This campaign compares proportionate read-only guidance for a cohesive single-file
+CLI and a small multi-module `src`-layout service.
+
 The runner defaults to `gpt-5.6-sol` with medium reasoning to keep the initial release
 evaluation comparable. This is a maintainer test baseline, not a runtime plugin
 requirement. When investigating a failed evaluation, you can rerun a single test

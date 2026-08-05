@@ -89,6 +89,19 @@ def test_german_campaign_is_separate_and_typed() -> None:
     assert all(fixture.continuation is not None for _, fixture in fixtures)
 
 
+def test_python_project_variety_campaign_is_separate_and_typed() -> None:
+    fixtures = _load_campaign(DEFAULT_MANIFEST, set(), "python-project-variety")
+
+    assert [fixture.id for _, fixture in fixtures] == [
+        "project-variety-single-file-cli",
+        "project-variety-src-service",
+    ]
+    assert all(fixture.response_language == "en" for _, fixture in fixtures)
+    assert all(fixture.continuation is None for _, fixture in fixtures)
+    assert len(fixtures[0][1].repository) == 1
+    assert len(fixtures[1][1].repository) == 6
+
+
 def test_unknown_campaign_is_rejected() -> None:
     with pytest.raises(ValueError, match="Unknown exploratory campaign"):
         _load_campaign(DEFAULT_MANIFEST, set(), "missing")
