@@ -287,6 +287,14 @@ response. Stabilize the contract before interpreting another single pass as proo
       bundle I/O. Evaluate the concise-synthesis experiment first; only if its quality
       remains stable should further catalog compaction be considered. Keep each change
       isolated and require another exact cohort.
+- [x] Measure a lossless compact-catalog candidate against
+      `0.1.0+codex.20260804150751`. Plugin `0.1.0+codex.20260804183145` reduced the
+      generated bundle by 663 bytes and mean initial input from 46,128 to 44,778
+      tokens, but five unretried runs regressed initial P50 from 52.209 to 60.963
+      seconds and continuation P50 from 100.681 to 115.682 seconds. One run also
+      selected Layered Architecture based on assumed future growth, breaking the
+      established current-evidence selection stability. Retain the five observations
+      as negative evidence and revert the compact representation.
 
 - [x] Make project-specific improvement and pattern-selection requests require the
       smallest relevant host-native static inspection unless the user forbids

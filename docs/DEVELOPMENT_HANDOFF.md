@@ -125,6 +125,11 @@ The Codex package uses these short-lived hooks:
   162.755/197.250 to 151.990/169.045 seconds. Every continuation persisted exactly
   four architecture artifacts and left application source unchanged. The established
   result supports retaining the soft synthesis budget.
+  A later isolated candidate grouped the generated catalog into `Name=File` pairs.
+  Plugin `0.1.0+codex.20260804183145` reduced mean initial input by 2.9%, but regressed
+  initial and continuation P50 and produced one future-growth-driven Layered
+  Architecture recommendation. The experiment is retained in the ledger as negative
+  evidence; the grouped representation was reverted.
 - `PreToolUse`: static-inspection boundaries, application-code write denial, and
   complete architecture-bundle validation before persistence.
 - `PostToolUse`: persisted architecture-artifact verification.
