@@ -105,6 +105,23 @@ an explicit fallback.
       exactly four validated architecture artifacts without changing application source.
       Initial/continuation durations were 11.536/46.129 seconds for clarification and
       55.072/118.082 seconds for comparison; the ledger accepted two observations with
+      no exclusions. Four targeted comparison campaigns (`20260805T195257Z`,
+      `20260805T195548Z`, `20260805T195904Z`, and `20260805T200116Z`) subsequently
+      established an exact `n = 5` cohort. All five selected `No pattern`, used distinct
+      evidence-assumption fingerprints, persisted four artifacts, and left application
+      source unchanged. Initial P50/provisional-P90/MAD were 52.178/58.793/2.894
+      seconds; continuation values were 118.082/128.183/10.021 seconds; completed
+      workflow values were 171.070/186.652/13.333 seconds. The continuation objective
+      passes; initial P90 passes while the intentionally ambitious 40-second P50 target
+      remains warning-only. The performance reporter now applies canonical workflow
+      objectives to locale-prefixed fixture IDs without combining their cohorts.
+- [x] Run cross-language regressions after adding `pt-BR`. English campaign
+      `20260805T194142Z` passed all five semantic fixtures and retained the expected
+      `No pattern` comparison, marker-free responses, static review, canonical Abstract
+      Factory example, proportionate simplicity, and four-artifact persistence. German
+      campaign `20260805T194731Z` retained one complete German label set, selected
+      `No pattern`, and persisted the same safe artifact bundle. Both campaigns used
+      plugin `0.1.0+codex.20260805190919`; the ledger accepted seven observations with
       no exclusions.
 - [x] Collect at least five directly comparable observations per release baseline,
       then use the versioned performance history to define a warning-only latency

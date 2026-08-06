@@ -167,7 +167,19 @@ The Codex package uses these short-lived hooks:
   focused clarification and its local-Tkinter continuation, the comparison's coherent
   Portuguese contract and current-evidence `No pattern` selection, and the approval
   continuation's four validated architecture artifacts. No application source changed;
-  the performance ledger added two observations without exclusions.
+  the initial campaign and four targeted repetitions established an exact five-run
+  comparison cohort. Every run selected `No pattern` and safely persisted four
+  artifacts. Initial P50/provisional-P90 were 52.178/58.793 seconds, continuation
+  P50/provisional-P90 were 118.082/128.183 seconds, and completed-workflow values were
+  171.070/186.652 seconds. The continuation latency objective passes; the initial
+  objective retains only its deliberately ambitious P50 warning. The reporter now
+  resolves locale-prefixed fixture objectives from their canonical workflow suffix
+  while keeping every locale, revision, provenance, and runtime cohort separate.
+- Plugin `0.1.0+codex.20260805190919` also passed the complete English regression
+  campaign `20260805T194142Z` and German regression campaign `20260805T194731Z` after
+  `pt-BR` was added. Manual review found no mixed labels or semantic regression; both
+  comparisons selected the current-evidence `No pattern` option and both approval
+  continuations persisted exactly four artifacts without application-source changes.
 - A separate `python-project-variety` campaign provides reproducible cross-structure
   evidence without changing the five-fixture baseline. Campaign `20260805T150133Z`
   passed deterministic and manual semantic review for both a cohesive single-file

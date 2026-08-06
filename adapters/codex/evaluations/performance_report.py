@@ -37,6 +37,23 @@ LATENCY_OBJECTIVES_SECONDS: dict[tuple[str, str], tuple[float, float]] = {
 }
 
 
+def _latency_objective(
+    fixture: str,
+    phase: str,
+) -> tuple[float, float] | None:
+    """Resolve an exact objective or its locale-prefixed fixture equivalent."""
+
+    exact = LATENCY_OBJECTIVES_SECONDS.get((fixture, phase))
+    if exact is not None:
+        return exact
+    matches = [
+        targets
+        for (base_fixture, base_phase), targets in LATENCY_OBJECTIVES_SECONDS.items()
+        if phase == base_phase and fixture.endswith(f"-{base_fixture}")
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
 @dataclass(frozen=True)
 class PerformanceRow:
     campaign: str
@@ -549,14 +566,13 @@ def latency_objective_rows(
             record.test.fixture_revision,
             record.test.workload_fingerprint,
         )
-        if (record.test.fixture_id, "initial") in LATENCY_OBJECTIVES_SECONDS:
+        if _latency_objective(record.test.fixture_id, "initial") is not None:
             values[(*common, "initial")].append(
                 record.phases.initial.duration_seconds or 0.0
             )
         if (
             record.phases.continuation.status == PhaseStatus.COMPLETED
-            and (record.test.fixture_id, "continuation")
-            in LATENCY_OBJECTIVES_SECONDS
+            and _latency_objective(record.test.fixture_id, "continuation") is not None
         ):
             values[(*common, "continuation")].append(
                 record.phases.continuation.duration_seconds or 0.0
@@ -577,7 +593,10 @@ def latency_objective_rows(
             workload,
             phase,
         ) = key
-        median_target, p90_target = LATENCY_OBJECTIVES_SECONDS[(fixture, phase)]
+        targets = _latency_objective(fixture, phase)
+        if targets is None:  # Defensive: every collected value had an objective above.
+            continue
+        median_target, p90_target = targets
         distribution = _distribution(samples)
         status = (
             "pass"

@@ -23,6 +23,7 @@ from adapters.codex.evaluations.performance_import import import_reports
 from adapters.codex.evaluations.performance_ledger import load_performance_ledger
 from adapters.codex.evaluations.performance_models import SpeedMode
 from adapters.codex.evaluations.performance_report import (
+    LATENCY_OBJECTIVES_SECONDS,
     fixture_overview_statistics,
     grouped_statistics,
     latency_objective_rows,
@@ -30,6 +31,34 @@ from adapters.codex.evaluations.performance_report import (
     recommendation_consistency_rows,
     write_reports,
 )
+
+ROOT = Path(__file__).resolve().parents[4]
+EVALUATION_README = ROOT / "adapters" / "codex" / "evaluations" / "README.md"
+
+
+def test_latency_objectives_are_documented_with_executable_values() -> None:
+    phase_labels = {
+        ("clarify-ui-architecture", "initial"): "Initial clarification",
+        ("clarify-ui-architecture", "continuation"): (
+            "Clarification continuation"
+        ),
+        ("architecture-option-comparison", "initial"): "Initial comparison",
+        ("architecture-option-comparison", "continuation"): (
+            "Approval continuation"
+        ),
+        ("read-only-architecture-review", "initial"): "Initial review",
+        ("abstract-factory-example", "initial"): "Initial focused example",
+    }
+    documentation = EVALUATION_README.read_text(encoding="utf-8")
+
+    assert set(phase_labels) == set(LATENCY_OBJECTIVES_SECONDS)
+    for key, (p50_target, p90_target) in LATENCY_OBJECTIVES_SECONDS.items():
+        fixture, _ = key
+        expected_row = (
+            f"| `{fixture}` | {phase_labels[key]} | "
+            f"{p50_target:g} | {p90_target:g} |"
+        )
+        assert expected_row in documentation
 
 
 def _phase(
@@ -289,15 +318,47 @@ def test_latency_objectives_are_release_specific_warning_only(tmp_path: Path) ->
         )
         for record in records
     ]
-    objectives = latency_objective_rows([*records, *unknown_records])
+    localized_records = [
+        record.model_copy(
+            update={
+                "test": record.test.model_copy(
+                    update={
+                        "fixture_id": (
+                            "pt-br-architecture-option-comparison"
+                            if record.test.fixture_id
+                            == "architecture-option-comparison"
+                            else record.test.fixture_id
+                        ),
+                        "fixture_revision": "c" * 64,
+                    }
+                )
+            }
+        )
+        for record in records
+        if record.test.fixture_id == "architecture-option-comparison"
+    ]
+    objectives = latency_objective_rows(
+        [*records, *localized_records, *unknown_records]
+    )
     initial = next(row for row in objectives if row.phase == "initial")
     continuation = next(row for row in objectives if row.phase == "continuation")
+    localized_initial = next(
+        row
+        for row in objectives
+        if row.fixture == "pt-br-architecture-option-comparison"
+        and row.phase == "initial"
+    )
 
     assert initial.plugin_version == "0.2.0"
     assert initial.count == 5
     assert initial.status == "warn"
     assert initial.percentile_90_provisional is True
     assert continuation.status == "pass"
+    assert localized_initial.count == 5
+    assert localized_initial.median_target_seconds == initial.median_target_seconds
+    assert localized_initial.percentile_90_target_seconds == (
+        initial.percentile_90_target_seconds
+    )
     assert all(row.plugin_version != "unknown" for row in objectives)
 
 

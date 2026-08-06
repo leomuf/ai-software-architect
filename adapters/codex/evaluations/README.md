@@ -69,6 +69,11 @@ Schema `1.4.0` adds only the complete visible comparison-response word count, wh
 lets maintainers evaluate concise-rendering experiments without retaining response
 text.
 
+Warning-only latency objectives remain grouped by exact plugin, fixture revision,
+workload, model, reasoning, speed, and execution mode. Locale-prefixed fixtures such
+as `de-` and `pt-br-` inherit the objective of their canonical workflow suffix while
+retaining separate measurements and cohorts.
+
 Four focused modules keep responsibilities separate:
 
 - `performance_models.py` defines the strict canonical Pydantic contracts;
@@ -89,6 +94,22 @@ model, reasoning effort, speed, and execution mode must all match. An objective
 appears only at five observations, labels P90 provisional below ten, and never
 changes the report or CI exit code. Records whose plugin version is unknown are
 excluded from this release-specific section.
+
+Current objectives are measured in seconds:
+
+| Workflow fixture | Phase | P50 target | P90 target |
+|---|---|---:|---:|
+| `clarify-ui-architecture` | Initial clarification | 10 | 15 |
+| `clarify-ui-architecture` | Clarification continuation | 50 | 75 |
+| `architecture-option-comparison` | Initial comparison | 40 | 75 |
+| `architecture-option-comparison` | Approval continuation | 120 | 180 |
+| `read-only-architecture-review` | Initial review | 75 | 120 |
+| `abstract-factory-example` | Initial focused example | 20 | 35 |
+
+Locale-prefixed equivalents inherit these targets while retaining independent
+cohorts. The `LATENCY_OBJECTIVES_SECONDS` mapping in `performance_report.py` is the
+executable source of truth; this table is its human-facing documentation. Changes
+to either representation must update the other and their conformance tests together.
 
 `observed-total` is the sum of phases actually measured for an observation.
 `completed-workflow-total` is reported only when both the initial and continuation
