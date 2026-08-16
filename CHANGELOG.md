@@ -30,6 +30,8 @@ SPDX-License-Identifier: MIT
   persistence after explicit approval.
 - Stabilized repository-backed architecture comparisons around supplied evidence and
   proportionate `No pattern` recommendations.
+- Made release-candidate command resolution deterministic on systems with multiple
+  `git.exe` or `uv.exe` installations.
 
 ## [0.1.0] - 2026-07-21
 

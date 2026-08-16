@@ -76,8 +76,10 @@ if (-not (Test-Path -LiteralPath $ReleasePackageScript -PathType Leaf)) {
     throw "Release packaging wrapper not found: $ReleasePackageScript"
 }
 
-$Uv = (Get-Command uv -CommandType Application -ErrorAction Stop).Source
-$Git = (Get-Command git -CommandType Application -ErrorAction Stop).Source
+$UvCommands = @(Get-Command uv -CommandType Application -ErrorAction Stop)
+$GitCommands = @(Get-Command git -CommandType Application -ErrorAction Stop)
+$Uv = [string]$UvCommands[0].Source
+$Git = [string]$GitCommands[0].Source
 $PreviousUvCache = $env:UV_CACHE_DIR
 $UsingRepositoryUvCache = [string]::IsNullOrWhiteSpace($PreviousUvCache)
 if ($UsingRepositoryUvCache) {
