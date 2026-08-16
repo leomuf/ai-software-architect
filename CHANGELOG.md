@@ -5,12 +5,31 @@ SPDX-License-Identifier: MIT
 
 # Changelog
 
-## [Unreleased]
+## [0.2.0] - Unreleased
 
 ### Added
 
-- Neutral Spanish (`es`) architecture guidance, localized comparison labels, and
-  separately selectable clarification and comparison evaluation fixtures.
+- German (`de`), Brazilian Portuguese (`pt-BR`), and neutral Spanish (`es`)
+  architecture guidance with complete localized comparison contracts and separate
+  evaluation campaigns.
+- Versioned exploratory-performance history with privacy-preserving timing,
+  provenance, recommendation-consistency, and cross-version reports.
+- Reproducible small-project variety fixtures and typed expected architecture
+  decisions for semantic evaluation.
+
+### Changed
+
+- Reduced routine workflow latency through progressive disclosure, compact reference
+  catalogs, bounded repository snapshots, and shorter approval continuations.
+- Kept localized workflow cohorts separate while inheriting canonical latency
+  objectives for like-for-like release comparisons.
+
+### Fixed
+
+- Enforced canonical architecture-artifact paths and stable validated four-file
+  persistence after explicit approval.
+- Stabilized repository-backed architecture comparisons around supplied evidence and
+  proportionate `No pattern` recommendations.
 
 ## [0.1.0] - 2026-07-21
 

@@ -17,15 +17,16 @@ an explicit fallback.
 ## Release blockers
 
 - [ ] Commit the reviewed release sources and run
-      `scripts/run-release-candidate-gates.ps1 -PluginVersion 0.1.0` from that
+      `scripts/run-release-candidate-gates.ps1 -PluginVersion 0.2.0` from that
       clean commit.
 - [ ] Inspect the generated release marketplace ZIP, verify its checksum, and record
-      the exact package and provenance hashes in the `v0.1.0` release evidence.
-- [ ] Install the exact `v0.1.0` candidate through its extracted repository
-      marketplace, review and activate the hooks, and rerun the five exploratory
-      fixtures with `scripts/run-codex-exploratory-evaluations.ps1
-      -ExpectedPluginVersion 0.1.0`, `gpt-5.6-sol`, and medium reasoning. Preserve
-      the generated report and complete its manual semantic review.
+      the exact package and provenance hashes in the `v0.2.0` release evidence.
+- [ ] Install the exact `v0.2.0` candidate through its extracted repository
+      marketplace, review and activate the hooks, and rerun the five canonical
+      exploratory fixtures plus the German, Brazilian Portuguese, and Spanish
+      campaigns with the maintained PowerShell runner and
+      `-ExpectedPluginVersion 0.2.0`. Preserve every generated report, record the
+      selected model and reasoning effort, and complete the manual semantic review.
 - [ ] Confirm the exact candidate's clarification continuation, approved artifact
       persistence, static repository review, focused-reference loading,
       proportional no-pattern result, visible decision guidance, and absence of
@@ -36,13 +37,10 @@ an explicit fallback.
 - [ ] Run the clean-machine Windows x86-64 acceptance gate without Python, `uv`, or
       a first-run dependency download, then verify the complete workflow and
       first-attempt uninstall.
-- [ ] Publish the reviewed `v0.1.0` GitHub Release and verify that its repository,
-      release ZIP, checksum, and installation instructions work while signed out.
-- [ ] Record and upload the public under-three-minute demonstration video, retrieve
-      the primary Codex `/feedback` Session ID, and complete the Devpost fields.
-- [ ] Confirm the Devpost project is **Submitted**, not **Draft**, before the
-      deadline and preserve the submitted repository, release, and video through
-      judging.
+- [ ] After the Build Week judging freeze ends, publish the reviewed `v0.2.0` GitHub
+      Release and verify that its repository, release ZIP, checksum, and installation
+      instructions work while signed out. Do not modify the submission repository or
+      submitted project materials before that point.
 
 ## Forward compatibility
 
