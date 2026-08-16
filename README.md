@@ -79,7 +79,7 @@ This is intentionally not an unsupervised background agent. The architect runs o
 - **Focused clarification:** asks a bounded number of questions only when the answers can materially change a decision.
 - **Credible option comparison:** evaluates three to five approaches for one decision when that many are credible, presents an ordinal `NN/100` fit with benefits, liabilities, assumptions, and links, and asks the user to make the final choice.
 - **Clear, trustworthy findings:** clearly distinguishes verified facts from assumptions and possibilities, and shows the evidence behind important conclusions.
-- **Localized architecture guidance:** responds with a coherent user-facing comparison contract in English, German, or Brazilian Portuguese (`pt-BR`) while keeping canonical pattern identities and artifact schemas portable. Locale handling is catalog-driven, so additional languages do not require workflow or parser rewrites.
+- **Localized architecture guidance:** responds with a coherent user-facing comparison contract in English, German, Brazilian Portuguese (`pt-BR`), or Spanish (`es`) while keeping canonical pattern identities and artifact schemas portable. Locale handling is catalog-driven, so additional languages do not require workflow or parser rewrites.
 - **Explicit human approval:** recommendations remain proposals until the user approves or revises them.
 - **Efficient bounded repository evidence:** small Codex reviews can collect one
   read-only, budget-limited static snapshot instead of issuing many separate file

@@ -83,6 +83,27 @@ def test_brazilian_portuguese_comparison_locale_is_complete() -> None:
     )
 
 
+def test_spanish_comparison_locale_is_complete() -> None:
+    locale = comparison_locale("es")
+
+    assert locale.headings == (
+        "## Alcance y criterios de la decisión",
+        "## Evidencia y supuestos",
+        "## Alternativas",
+        "## Recomendación",
+        "## Patrones complementarios",
+        "## Tu decisión",
+    )
+    assert locale.table_headers == (
+        "Opción",
+        "Adecuación",
+        "Justificación",
+        "Beneficio principal",
+        "Desventaja principal",
+        "Supuesto relevante",
+    )
+
+
 def test_contract_renderer_and_bundle_validator_are_deterministic() -> None:
     contract = ArchitectureContract.model_validate(
         {

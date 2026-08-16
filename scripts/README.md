@@ -169,6 +169,16 @@ It checks Brazilian Portuguese clarification, focused comparison, clarification
 continuation, and approved ADR/artifact persistence without changing the English or
 German baselines.
 
+Run the separately selectable Spanish localization campaign with:
+
+```powershell
+.\scripts\run-codex-exploratory-evaluations.ps1 -Campaign spanish
+```
+
+It checks neutral Spanish clarification, focused comparison, clarification
+continuation, and approved ADR/artifact persistence without changing the established
+language baselines.
+
 Review two additional small Python repository structures without changing the
 canonical five-fixture baseline:
 

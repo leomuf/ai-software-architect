@@ -134,6 +134,12 @@ def test_all_campaign_fixtures_satisfy_the_shared_typed_contract() -> None:
                 "pt-br-architecture-option-comparison",
             ],
         ),
+        (
+            "spanish",
+            "es",
+            "respond-in-spanish",
+            ["es-clarify-ui-architecture", "es-architecture-option-comparison"],
+        ),
     ],
 )
 def test_localized_campaign_is_separate_and_typed(
@@ -189,6 +195,15 @@ def test_fixture_language_contract_accepts_brazilian_portuguese_tag(
     path.write_text(fixture, encoding="utf-8")
 
     assert load_fixture(path).response_language == "pt-BR"
+
+
+def test_fixture_language_contract_accepts_spanish_tag(tmp_path: Path) -> None:
+    fixture = (FIXTURES / "de-clarify-ui-architecture.yaml").read_text(encoding="utf-8")
+    fixture = fixture.replace("response_language: de", "response_language: es")
+    path = tmp_path / "es.yaml"
+    path.write_text(fixture, encoding="utf-8")
+
+    assert load_fixture(path).response_language == "es"
 
 
 def test_grading_enforces_markers_events_and_architecture_only_writes() -> None:

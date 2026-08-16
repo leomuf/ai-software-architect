@@ -41,6 +41,8 @@ The default campaign retains the five established English fixtures. Pass
 comparison workflows, including their continuation turns.
 Pass `-Campaign brazilian-portuguese` to run the equivalent Brazilian Portuguese
 clarification and comparison workflows, including their continuation turns.
+Pass `-Campaign spanish` to run the equivalent neutral Spanish clarification and
+comparison workflows, including their continuation turns.
 Pass `-Campaign python-project-variety` to exercise read-only architectural reviews
 of a cohesive single-file CLI and a small `src`-layout multi-module service.
 

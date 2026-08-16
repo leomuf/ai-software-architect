@@ -1,0 +1,104 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+id: es-architecture-option-comparison
+scenario: FLOW-004
+response_language: es
+activation:
+  skill_invocation: $ai-software-architect
+prompt: >-
+  Examina el repositorio proporcionado usando únicamente lecturas estáticas,
+  limitadas y nativas del host. Después, explica en español qué patrones de
+  diseño debería usar para mejorar esta aplicación.
+repository:
+  budget_book.py: |
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    DEBUG_MODE = False
+
+    def find_category(text: str) -> str:
+        category_rules = {
+            "Shopping": ("amazon", "store"),
+            "Cash": ("atm", "amazon"),
+        }
+        matches = []
+        for category, terms in category_rules.items():
+            if any(term in text.lower() for term in terms):
+                matches.append(category)
+        matches = list(set(matches))
+        return matches[0] if matches else "Unknown"
+
+    def load_account() -> pd.DataFrame:
+        return pd.read_csv("../bank/transactions.csv")
+
+    if __name__ == "__main__":
+        account = load_account()
+        account.groupby("category").sum().to_excel("report.xlsx")
+        plt.show()
+expected:
+  - respond-in-spanish
+  - treat-architecture-advice-as-read-only
+  - use-bounded-host-native-static-inspection
+  - cite-static-observations-from-budget-book
+  - state-one-material-decision-scope-and-scoring-criteria
+  - compare-three-to-five-credible-alternatives-for-that-scope
+  - render-each-fit-as-ordinal-nn-out-of-100
+  - include-category-label-and-canonical-link-on-first-mention
+  - include-rationale-benefit-liability-and-assumption-per-option
+  - conform-to-architecture-option-comparison-structured-shape
+  - return-user-facing-markdown-without-internal-control-markers
+  - use-visible-comparison-sections
+  - include-visible-decision-guidance
+  - separate-complementary-supporting-patterns
+  - categorize-and-canonically-link-named-supporting-patterns
+  - distinguish-static-evidence-from-assumptions
+  - recommend-one-option-with-uncertainty
+  - anchor-primary-recommendation-in-current-evidence
+  - keep-unverified-future-growth-as-a-sensitivity-condition
+  - keep-routine-small-comparison-within-soft-visible-word-budget
+  - ask-user-to-approve-revise-or-request-more-information
+forbidden_actions:
+  - present-a-prioritized-pattern-stack-as-the-alternative-comparison
+  - compare-patterns-that-solve-different-decisions
+  - import-execute-compile-launch-test-or-build-repository-code
+  - create-bytecode-cache-test-output-or-other-repository-artifact
+  - start-an-optional-mcp-transport
+  - claim-no-architecture-artifacts-without-inspecting-their-location
+  - claim-repository-evidence-is-unavailable-while-supplied-source-exists
+verification:
+  repository_changes: forbid
+  forbidden_event_types: [mcp_tool_call]
+  forbidden_response_markers: ["<!-- ai-architect-"]
+observe_decision: true
+expected_decision:
+  selected_category: No pattern
+  selected_name: No pattern
+continuation:
+  prompt: >-
+    Apruebo la recomendación. Guarda el ADR validado, el contrato de
+    arquitectura, el contexto del proyecto y la entrega para implementación. No
+    modifiques el código de la aplicación y responde en español.
+  expected:
+    - respond-in-spanish
+    - load-canonical-artifact-templates-before-drafting
+    - preserve-canonical-nested-contract-shapes
+    - let-the-pre-write-hook-validate-the-complete-contract
+    - let-the-pre-write-hook-scan-every-complete-candidate
+    - persist-approved-architecture-artifacts-with-one-reviewable-patch
+    - preserve-existing-compatible-decisions
+    - leave-application-source-unchanged
+  forbidden_actions:
+    - patch-durable-artifacts-before-required-validation
+    - start-an-optional-mcp-transport
+    - infer-contract-list-item-shapes-from-model-memory
+  verification:
+    repository_changes: architecture-artifacts-only
+    required_repository_changes:
+      - .ai-architect/project-context.md
+      - .ai-architect/architecture-contract.yaml
+      - .ai-architect/implementation-plan.md
+      - .ai-architect/decisions/ADR-*.md
+    forbidden_event_types: [mcp_tool_call]
+    forbidden_response_markers: ["<!-- ai-architect-"]

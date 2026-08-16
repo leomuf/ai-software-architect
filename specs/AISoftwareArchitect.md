@@ -1835,7 +1835,7 @@ The `Stop` hook validates small, stable, user-facing rendering contracts. For a 
 
 Every complete-workflow final response contains only user-facing Markdown. Internal outcome, decision-shape, and action markers are forbidden because Codex may render HTML comments visibly. The selected host model and canonical skills retain responsibility for deciding whether the response clarifies, recommends, or completes work; the hook MUST NOT infer that semantic phase from localized prose.
 
-An open request to choose architecture or design-pattern options uses the strict six-section rendering contract. Visible section and table labels come from one complete declarative locale catalog selected to match the user's language; labels from different locales MUST NOT be mixed. English (`en`), German (`de`), and Brazilian Portuguese (`pt-BR`) are implemented. Each locale is a complete catalog plus shared fixtures; adding another language MUST NOT introduce language-specific semantic routing or parser control-flow changes. Canonical category names, pattern identities, public links, structured `offered_actions`, and persisted artifact schemas remain language-neutral. A single recommendation applies only when the user explicitly requests one highest-leverage improvement or when supplied constraints make one proportionate simplicity decision sufficient; it MUST NOT present a stack of recommended patterns. Every recommendation ends with the selected locale's user-decision heading and visible guidance to approve, revise, or request more information. All recommendation headings and content MUST precede that final section.
+An open request to choose architecture or design-pattern options uses the strict six-section rendering contract. Visible section and table labels come from one complete declarative locale catalog selected to match the user's language; labels from different locales MUST NOT be mixed. English (`en`), German (`de`), Brazilian Portuguese (`pt-BR`), and Spanish (`es`) are implemented. Each locale is a complete catalog plus shared fixtures; adding another language MUST NOT introduce language-specific semantic routing or parser control-flow changes. Canonical category names, pattern identities, public links, structured `offered_actions`, and persisted artifact schemas remain language-neutral. A single recommendation applies only when the user explicitly requests one highest-leverage improvement or when supplied constraints make one proportionate simplicity decision sufficient; it MUST NOT present a stack of recommended patterns. Every recommendation ends with the selected locale's user-decision heading and visible guidance to approve, revise, or request more information. All recommendation headings and content MUST precede that final section.
 
 ```yaml
 complete_workflow_response:
@@ -1846,7 +1846,7 @@ complete_workflow_response:
   recommendation:
     supported_shapes: [comparison, single]
     locale_catalogs:
-      implemented: [en, de, pt-BR]
+      implemented: [en, de, pt-BR, es]
       extension_policy: complete-catalog-and-shared-fixtures
     final_heading: locale.user_decision
     visible_localized_choices: [approve, revise, more-information]
@@ -2562,7 +2562,7 @@ Feature: Architecture workflow routing
     Then it performs the smallest relevant host-native static inspection unless the user forbids inspection or already supplied complete decision evidence
     And it does not claim that repository evidence is unavailable while relevant workspace files are accessible
     And it treats repository inspection as read-only
-    And it presents the selected English, German, or Brazilian Portuguese equivalents of "Decision scope and criteria", "Evidence and assumptions", and between 3 and 5 "Alternatives" before its localized "Recommendation"
+    And it presents the selected English, German, Brazilian Portuguese, or Spanish equivalents of "Decision scope and criteria", "Evidence and assumptions", and between 3 and 5 "Alternatives" before its localized "Recommendation"
     And every alternative has a category label, a fit score out of 100, and a fit rationale
     And every alternative states its main benefit, main liability, and material assumption
     And the fit score is described as ordinal rather than a probability

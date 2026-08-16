@@ -46,6 +46,14 @@ an explicit fallback.
 
 ## Forward compatibility
 
+- [ ] Validate the new neutral Spanish (`es`) locale candidate with its separately
+      selectable clarification and comparison campaign. Confirm one coherent Spanish
+      label set, approval continuation, four-artifact persistence, and no application
+      source changes.
+- [ ] After Spanish validation, rerun the established English, German, and Brazilian
+      Portuguese campaigns against the same packaged candidate and record the
+      cross-language regression evidence before releasing `v0.2.0`.
+
 - [x] Test the plugin on at least two more small Python repositories with different
       structures. The separately selectable `python-project-variety` campaign keeps
       the canonical five-fixture baseline unchanged and provides reproducible

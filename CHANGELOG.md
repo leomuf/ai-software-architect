@@ -5,6 +5,13 @@ SPDX-License-Identifier: MIT
 
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Neutral Spanish (`es`) architecture guidance, localized comparison labels, and
+  separately selectable clarification and comparison evaluation fixtures.
+
 ## [0.1.0] - 2026-07-21
 
 Initial OpenAI Build Week release.

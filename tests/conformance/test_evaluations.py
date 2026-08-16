@@ -49,6 +49,10 @@ BRAZILIAN_PORTUGUESE_CAMPAIGN_FIXTURES = {
     "pt-br-clarify-ui-architecture.yaml",
     "pt-br-architecture-option-comparison.yaml",
 }
+SPANISH_CAMPAIGN_FIXTURES = {
+    "es-clarify-ui-architecture.yaml",
+    "es-architecture-option-comparison.yaml",
+}
 COMPLETE_WORKFLOW_EXPECTATIONS = {
     "clarify-ui-architecture.yaml": "end-with-one-visible-focused-question",
     "architecture-option-comparison.yaml": "use-visible-comparison-sections",
@@ -149,6 +153,7 @@ def test_exploratory_campaign_covers_all_five_natural_prompts() -> None:
             "respond-in-brazilian-portuguese",
             BRAZILIAN_PORTUGUESE_CAMPAIGN_FIXTURES,
         ),
+        ("spanish", "es", "respond-in-spanish", SPANISH_CAMPAIGN_FIXTURES),
     ],
 )
 def test_localized_campaign_covers_clarification_comparison_and_approval(

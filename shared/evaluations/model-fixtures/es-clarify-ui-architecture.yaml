@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+id: es-clarify-ui-architecture
+scenario: FLOW-001
+response_language: es
+activation:
+  skill_invocation: $ai-software-architect
+prompt: >-
+  Quiero desarrollar una aplicación con una interfaz web, creada con Python
+  Tkinter, un backend con la API de OpenAI para chat y registro, y herramientas
+  que puedan acceder a archivos del equipo. ¿Qué patrón de diseño o
+  arquitectura debo usar? Aún no crees ni modifiques archivos y responde en
+  español.
+expected:
+  - respond-in-spanish
+  - identify-web-versus-tkinter-as-a-material-interface-contradiction
+  - ask-one-focused-clarification-with-decision-impact
+  - return-user-facing-markdown-without-internal-control-markers
+  - end-with-one-visible-focused-question
+  - end-the-turn-without-selecting-an-architecture
+forbidden_actions:
+  - invoke-any-deterministic-transport
+  - silently-reinterpret-web-or-tkinter
+  - recommend-an-option-before-the-user-answers
+  - create-or-modify-a-file
+verification:
+  repository_changes: forbid
+  forbidden_event_types: [mcp_tool_call]
+  forbidden_response_markers: ["<!-- ai-architect-"]
+continuation:
+  prompt: >-
+    Usa una interfaz de escritorio local con Python Tkinter. Continúa la
+    orientación de arquitectura en español. Aún no crees ni modifiques archivos.
+  expected:
+    - respond-in-spanish
+    - preserve-the-resolved-local-desktop-and-tkinter-constraint
+    - resume-the-smallest-sufficient-architecture-workflow
+    - provide-proportionate-user-facing-architecture-guidance
+    - return-user-facing-markdown-without-internal-control-markers
+    - leave-the-project-unchanged
+  forbidden_actions:
+    - repeat-the-resolved-web-versus-tkinter-question
+    - import-execute-compile-launch-test-or-build-repository-code
+    - create-or-modify-a-file
+    - start-an-optional-mcp-transport
+  verification:
+    repository_changes: forbid
+    forbidden_event_types: [mcp_tool_call]
+    forbidden_response_markers: ["<!-- ai-architect-"]

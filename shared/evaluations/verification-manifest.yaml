@@ -15,6 +15,9 @@ additional_exploratory_campaigns:
   brazilian-portuguese:
     - shared/evaluations/model-fixtures/pt-br-clarify-ui-architecture.yaml
     - shared/evaluations/model-fixtures/pt-br-architecture-option-comparison.yaml
+  spanish:
+    - shared/evaluations/model-fixtures/es-clarify-ui-architecture.yaml
+    - shared/evaluations/model-fixtures/es-architecture-option-comparison.yaml
   python-project-variety:
     - shared/evaluations/model-fixtures/project-variety-single-file-cli.yaml
     - shared/evaluations/model-fixtures/project-variety-src-service.yaml

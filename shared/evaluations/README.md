@@ -29,6 +29,9 @@ without changing that baseline.
 The additional `brazilian-portuguese` campaign applies the same contract to
 Brazilian Portuguese (`pt-BR`) clarification, comparison, approval continuation,
 and artifact persistence without changing either established baseline.
+The additional `spanish` campaign applies the same contract to neutral Spanish
+(`es`) clarification, comparison, approval continuation, and artifact persistence
+without changing the established baselines.
 The additional `python-project-variety` campaign reviews two reproducible small
 Python repositories with deliberately different shapes: a cohesive single-file CLI
 and a five-file `src`-layout service. It checks whether recommendations remain

@@ -112,6 +112,31 @@ COMPARISON_LOCALES = (
         choose_prefix="Escolha",
         no_supporting_patterns="Nenhum padrão de apoio é necessário.",
     ),
+    ComparisonLocale(
+        code="es",
+        headings=(
+            "## Alcance y criterios de la decisión",
+            "## Evidencia y supuestos",
+            "## Alternativas",
+            "## Recomendación",
+            "## Patrones complementarios",
+            "## Tu decisión",
+        ),
+        table_headers=(
+            "Opción",
+            "Adecuación",
+            "Justificación",
+            "Beneficio principal",
+            "Desventaja principal",
+            "Supuesto relevante",
+        ),
+        fit_disclosure=(
+            "La adecuación es una puntuación ordinal `NN/100` para esta "
+            "decisión, no una probabilidad ni un porcentaje medido."
+        ),
+        choose_prefix="Elige",
+        no_supporting_patterns="No se requieren patrones complementarios.",
+    ),
 )
 
 

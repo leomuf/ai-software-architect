@@ -144,9 +144,9 @@ The Codex package uses these short-lived hooks:
   Layered Architecture instead of the current-evidence `No pattern` baseline. The
   subsequent candidate moves visible comparison labels into one declarative locale
   catalog shared by parser, Stop hook, continuation detection, and deterministic
-  renderer. English, German, and Brazilian Portuguese catalogs are now implemented;
-  the BCP 47-shaped fixture contract and catalog-only parser design keep future
-  locale additions independent of semantic routing.
+  renderer. English, German, and Brazilian Portuguese catalogs are implemented; the
+  BCP 47-shaped fixture contract and catalog-only parser design keep future locale
+  additions independent of semantic routing.
   Rebuilt plugin `0.1.0+codex.20260805140210` passed five exact German comparison
   observations (`20260805T140517Z`, `20260805T141543Z`, `20260805T141827Z`,
   `20260805T142143Z`, and `20260805T142456Z`). Every response used the coherent German
@@ -180,6 +180,11 @@ The Codex package uses these short-lived hooks:
   `pt-BR` was added. Manual review found no mixed labels or semantic regression; both
   comparisons selected the current-evidence `No pattern` option and both approval
   continuations persisted exactly four artifacts without application-source changes.
+- Neutral Spanish (`es`) now has a complete catalog and a separate two-fixture,
+  four-phase exploratory campaign following the same language-neutral workflow and
+  parser contracts. Deterministic validation is required before packaging, followed
+  by the Spanish campaign and English, German, and Brazilian Portuguese regressions
+  on the same release candidate.
 - A separate `python-project-variety` campaign provides reproducible cross-structure
   evidence without changing the five-fixture baseline. Campaign `20260805T150133Z`
   passed deterministic and manual semantic review for both a cohesive single-file
