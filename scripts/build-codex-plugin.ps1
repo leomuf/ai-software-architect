@@ -71,7 +71,7 @@ if ($UsingRepositoryUvCache) {
 
 if ([string]::IsNullOrWhiteSpace($PluginVersion)) {
     $Timestamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddHHmmss")
-    $PluginVersion = "0.1.0+codex.$Timestamp"
+    $PluginVersion = "0.2.1+codex.$Timestamp"
 }
 if ($PluginVersion -notmatch $SemVerPattern) {
     throw "PluginVersion is not valid Semantic Versioning: $PluginVersion"

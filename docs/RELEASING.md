@@ -46,6 +46,7 @@ process-scoped alternative is documented in
 | Tag-triggered package build | [`.github/workflows/release.yml`](../.github/workflows/release.yml) |
 | Concise GitHub and Devpost release procedure | [`ReleaseGuide.md`](ReleaseGuide.md) |
 | Dependency-free installation | [`INSTALL_CODEX_PLUGIN.md`](INSTALL_CODEX_PLUGIN.md) |
+| OpenAI plugin-directory submission | [`openai-plugin-submission/`](openai-plugin-submission/README.md) |
 | Scenario-to-gate mapping | [`shared/evaluations/verification-manifest.yaml`](../shared/evaluations/verification-manifest.yaml) |
 | Five exploratory fixtures | [`shared/evaluations/model-fixtures/`](../shared/evaluations/model-fixtures/) |
 | Codex exploratory runner | [`adapters/codex/evaluations/`](../adapters/codex/evaluations/README.md) |
@@ -233,6 +234,29 @@ Use the intended public version without development build metadata:
 
 Use this exact package for every remaining release gate. Do not rebuild between
 testing and publication.
+
+## Build the OpenAI Submission Archive
+
+After the exact plugin is built and validated, create the separate OpenAI
+plugin-directory archive:
+
+```powershell
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.1
+```
+
+Unlike the GitHub marketplace bundle, this archive places
+`.codex-plugin/plugin.json`, `skills/`, `hooks/`, and the self-contained runtime at
+the ZIP root. It does not contain `.agents/plugins/marketplace.json`. The script
+validates the package and provenance before archiving and writes a separate
+checksum under `dist/openai-submission/`.
+
+The public brand is **AUTOSOFT Engineering** and the legal publisher is **XAVIER
+MUFFATO LTDA**. Select the exact verified `XAVIER MUFFATO LTDA` identity in the
+portal's Developer Identity field. Copy the reviewed listing values and five
+positive plus three negative cases from
+[`openai-plugin-submission/`](openai-plugin-submission/README.md) into the OpenAI
+developer portal. Portal submission and publication remain manual, authenticated
+actions. Confirm the exact live category and regional choices before submission.
 
 ## Exact Release-Candidate Gates
 

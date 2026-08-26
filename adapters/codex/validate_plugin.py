@@ -32,12 +32,25 @@ def validate(root: Path) -> None:
         raise ValueError("plugin name or version is invalid")
     if "mcpServers" in manifest or (root / ".mcp.json").exists():
         raise ValueError("the Codex package must not register a persistent MCP server")
+    expected_author = "AUTOSOFT Engineering (a brand of XAVIER MUFFATO LTDA)"
+    if manifest["author"].get("name") != expected_author:
+        raise ValueError("the manifest author must identify the brand and legal publisher")
+    interface = manifest["interface"]
+    if interface.get("developerName") != "AUTOSOFT Engineering":
+        raise ValueError("the interface publisher must be AUTOSOFT Engineering")
+    for field in ("websiteURL", "privacyPolicyURL", "termsOfServiceURL"):
+        value = interface.get(field)
+        if not isinstance(value, str) or not value.startswith("https://"):
+            raise ValueError(f"manifest {field} must be an absolute HTTPS URL")
     if set(path.name for path in (root / ".codex-plugin").iterdir()) != {"plugin.json"}:
         raise ValueError("only plugin.json may exist inside .codex-plugin")
     for field in ("composerIcon", "logo"):
         asset = manifest["interface"].get(field)
         if asset and not (root / asset.removeprefix("./")).is_file():
             raise ValueError(f"manifest asset is missing: {asset}")
+    for legal_file in ("PRIVACY.md", "TERMS.md", "SUPPORT.md"):
+        if not (root / legal_file).is_file():
+            raise ValueError(f"packaged public document is missing: {legal_file}")
     default_prompts = manifest["interface"].get("defaultPrompt", [])
     if not default_prompts or not all(
         isinstance(prompt, str)

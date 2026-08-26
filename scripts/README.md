@@ -121,6 +121,22 @@ The versioned source inputs are:
 - `docs/INSTALL_CODEX_PLUGIN.md`; and
 - `scripts/package-codex-release.ps1`.
 
+## Package an OpenAI Plugin-Directory Submission
+
+The OpenAI directory uses a dedicated archive whose ZIP root is the plugin itself,
+not the local repository-marketplace wrapper. After building the exact version,
+run:
+
+```powershell
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.1
+```
+
+The script validates the assembled plugin and its provenance, preserves the
+required `.codex-plugin` directory, verifies the upload layout, and writes the ZIP
+and SHA-256 checksum under `dist/openai-submission/`. It does not upload, submit,
+or publish anything. Maintainer-entered portal values and review cases are in
+[`docs/openai-plugin-submission/`](../docs/openai-plugin-submission/README.md).
+
 ## Run Deterministic Release-Candidate Gates
 
 From a clean candidate commit:

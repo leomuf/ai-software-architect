@@ -581,10 +581,14 @@ MIT License. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOT
 
 ## Contributing and Support
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development and pull-request guidance,
+AI Software Architect is published and supported under the **AUTOSOFT
+Engineering** brand by **XAVIER MUFFATO LTDA**. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for development and pull-request guidance,
 [`SUPPORT.md`](SUPPORT.md) for support channels and diagnostic information, and
-[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for community expectations. Report
-suspected vulnerabilities privately as described in [`SECURITY.md`](SECURITY.md).
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for community expectations. Usage is
+governed by the [`Terms of Use`](TERMS.md), and local data handling is explained in
+the [`Privacy Policy`](PRIVACY.md). Report suspected vulnerabilities privately as
+described in [`SECURITY.md`](SECURITY.md).
 
 ## 💖 Acknowledgments & Recognition
 

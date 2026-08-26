@@ -455,6 +455,9 @@ def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
     shutil.copyfile(ROOT / "LICENSE", OUTPUT / "LICENSE")
     shutil.copyfile(ROOT / "NOTICE", OUTPUT / "NOTICE")
     shutil.copyfile(ROOT / "THIRD_PARTY_NOTICES.md", OUTPUT / "THIRD_PARTY_NOTICES.md")
+    shutil.copyfile(ROOT / "PRIVACY.md", OUTPUT / "PRIVACY.md")
+    shutil.copyfile(ROOT / "TERMS.md", OUTPUT / "TERMS.md")
+    shutil.copyfile(ROOT / "SUPPORT.md", OUTPUT / "SUPPORT.md")
     assets = OUTPUT / "assets"
     assets.mkdir()
     shutil.copyfile(ROOT / "assets" / "codex-plugin-icon.png", assets / "logo.png")

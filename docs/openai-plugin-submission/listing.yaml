@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+publisher:
+  display_name: AUTOSOFT Engineering
+  developer_identity_to_verify_and_select: XAVIER MUFFATO LTDA
+  legal_entity: XAVIER MUFFATO LTDA
+  public_relationship: AUTOSOFT Engineering is a brand of XAVIER MUFFATO LTDA.
+  website: https://www.autosoft-engineering.de
+  support_url: https://github.com/leomuf/ai-software-architect/blob/main/SUPPORT.md
+  privacy_policy_url: https://github.com/leomuf/ai-software-architect/blob/main/PRIVACY.md
+  terms_of_service_url: https://github.com/leomuf/ai-software-architect/blob/main/TERMS.md
+  repository_url: https://github.com/leomuf/ai-software-architect
+plugin:
+  name: AI Software Architect
+  slug: ai-software-architect
+  version_source: .codex-plugin/plugin.json
+  portal_submission_type: Skills only
+  package_features:
+    - composite-skill
+    - codex-lifecycle-hooks
+  category_preference: Developer Tools
+  short_description: >-
+    Project-aware architecture and design-pattern guidance before implementation.
+  description: >-
+    AI Software Architect helps users choose suitable software architecture and
+    design patterns before an AI coding assistant produces large amounts of code.
+    It compares credible alternatives with explicit fit criteria, explains stored
+    pattern examples, asks for approval, records validated ADRs and architecture
+    artifacts, prepares coding handoffs, and performs read-only conformance reviews.
+    The user's selected Codex model performs the reasoning. Transparent, short-lived
+    local hooks reinforce activation, continuation, static inspection, guarded
+    artifact writing, and response validation without network calls or a persistent
+    service.
+  initial_submission_release_notes: >-
+    Initial OpenAI Plugins Directory submission under the AUTOSOFT Engineering
+    brand by XAVIER MUFFATO LTDA. Includes
+    project-aware architecture and design-pattern guidance, stored Python pattern
+    examples, user-approved ADR and handoff artifacts, bounded static repository
+    review, and transparent Codex lifecycle-hook guardrails. No MCP server,
+    separate model API key, or persistent background process is required.
+  countries_and_regions:
+    selection: confirm-in-portal
+    intended: broadly-available-where-openai-plugin-directory-is-supported
+  supported_surface:
+    codex: full-skill-and-reviewed-hook-workflow
+    other_openai_surfaces: skill-guidance-without-codex-hook-guarantees
+starter_prompts:
+  - Suggest suitable design patterns for my current project.
+  - Give me Python examples of Abstract Factory.
+  - Compare suitable architectures for this project.
