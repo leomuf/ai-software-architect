@@ -53,10 +53,13 @@ def validate(root: Path) -> None:
             raise ValueError(f"packaged public document is missing: {legal_file}")
     default_prompts = manifest["interface"].get("defaultPrompt", [])
     long_description = manifest["interface"].get("longDescription", "")
-    warning = "⚠️ IMPORTANT: ACTIVATE ALL FIVE BUNDLED HOOKS BEFORE FIRST USE."
+    warning = (
+        "⚠️ IMPORTANT: BEFORE FIRST USE, ACTIVATE ALL FIVE BUNDLED HOOKS IN THE "
+        "HOOKS SECTION BELOW."
+    )
     hook_explanation = (
-        "All five hooks are required for reliable routing, continuation, safety checks, "
-        "validated architecture-artifact creation, and complete user-facing responses."
+        "All five are required for reliable routing, continuation, safety checks, "
+        "artifact validation, and complete responses."
     )
     onboarding_suffix = f"\n\n{warning} {hook_explanation}"
     if not isinstance(long_description, str) or not long_description.endswith(

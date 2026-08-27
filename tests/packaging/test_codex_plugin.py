@@ -45,10 +45,13 @@ def test_codex_plugin_is_reproducible_and_complete(
     assert all("$ai-software-architect" not in prompt for prompt in default_prompts)
     assert all("plugin://ai-software-architect" not in prompt for prompt in default_prompts)
     assert "Suggest suitable design patterns for my current project." in default_prompts
-    warning = "⚠️ IMPORTANT: ACTIVATE ALL FIVE BUNDLED HOOKS BEFORE FIRST USE."
+    warning = (
+        "⚠️ IMPORTANT: BEFORE FIRST USE, ACTIVATE ALL FIVE BUNDLED HOOKS IN THE "
+        "HOOKS SECTION BELOW."
+    )
     hook_explanation = (
-        "All five hooks are required for reliable routing, continuation, safety checks, "
-        "validated architecture-artifact creation, and complete user-facing responses."
+        "All five are required for reliable routing, continuation, safety checks, "
+        "artifact validation, and complete responses."
     )
     assert manifest["interface"]["longDescription"].endswith(
         f"\n\n{warning} {hook_explanation}"
@@ -117,7 +120,7 @@ def test_codex_plugin_is_reproducible_and_complete(
 
     metadata = yaml.safe_load((skill / "agents" / "openai.yaml").read_text("utf-8"))
     assert metadata["interface"]["short_description"] == (
-        "Suggest project-fit patterns and guide architecture decisions"
+        "Architecture & Design Pattern Advisor"
     )
     assert metadata["policy"]["allow_implicit_invocation"] is False
     assert metadata["interface"]["default_prompt"] == (
