@@ -46,8 +46,13 @@ def test_codex_plugin_is_reproducible_and_complete(
     assert all("plugin://ai-software-architect" not in prompt for prompt in default_prompts)
     assert "Suggest suitable design patterns for my current project." in default_prompts
     warning = "⚠️ IMPORTANT: ACTIVATE ALL FIVE BUNDLED HOOKS BEFORE FIRST USE."
-    assert manifest["interface"]["longDescription"].startswith(warning)
-    assert "all five hooks are required" in manifest["interface"]["longDescription"].lower()
+    hook_explanation = (
+        "All five hooks are required for reliable routing, continuation, safety checks, "
+        "validated architecture-artifact creation, and complete user-facing responses."
+    )
+    assert manifest["interface"]["longDescription"].endswith(
+        f"\n\n{warning} {hook_explanation}"
+    )
     assert manifest["license"] == "MIT"
     assert "mcpServers" not in manifest
     assert not (second / ".mcp.json").exists()

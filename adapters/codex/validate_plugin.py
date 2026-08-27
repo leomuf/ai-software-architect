@@ -54,8 +54,17 @@ def validate(root: Path) -> None:
     default_prompts = manifest["interface"].get("defaultPrompt", [])
     long_description = manifest["interface"].get("longDescription", "")
     warning = "⚠️ IMPORTANT: ACTIVATE ALL FIVE BUNDLED HOOKS BEFORE FIRST USE."
-    if not isinstance(long_description, str) or not long_description.startswith(warning):
-        raise ValueError("plugin long description must begin with the five-hook warning")
+    hook_explanation = (
+        "All five hooks are required for reliable routing, continuation, safety checks, "
+        "validated architecture-artifact creation, and complete user-facing responses."
+    )
+    onboarding_suffix = f"\n\n{warning} {hook_explanation}"
+    if not isinstance(long_description, str) or not long_description.endswith(
+        onboarding_suffix
+    ):
+        raise ValueError(
+            "plugin long description must end with the separated five-hook onboarding block"
+        )
     if not default_prompts or not all(
         isinstance(prompt, str)
         and prompt.strip()
