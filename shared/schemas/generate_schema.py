@@ -11,9 +11,8 @@ from pathlib import Path
 from ai_architect_schemas import ArchitectureArtifactBundle, ArchitectureContract
 
 
-def main() -> None:
-    generated = Path(__file__).parent / "generated"
-    generated.mkdir(parents=True, exist_ok=True)
+def generate_schemas(output_directory: Path) -> None:
+    output_directory.mkdir(parents=True, exist_ok=True)
     models = {
         "architecture-contract.schema.json": ArchitectureContract,
         "architecture-artifact-bundle.schema.json": ArchitectureArtifactBundle,
@@ -25,10 +24,15 @@ def main() -> None:
             "(AUTOSOFT Engineering - www.autosoft-engineering.de); "
             "SPDX-License-Identifier: MIT"
         )
-        (generated / filename).write_text(
+        (output_directory / filename).write_text(
             json.dumps(schema, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
+
+
+def main() -> None:
+    generate_schemas(Path(__file__).parent / "generated")
 
 
 if __name__ == "__main__":
