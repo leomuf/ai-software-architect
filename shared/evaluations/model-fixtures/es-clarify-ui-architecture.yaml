@@ -6,6 +6,7 @@ id: es-clarify-ui-architecture
 scenario: FLOW-001
 response_language: es
 activation:
+  type: direct-skill
   skill_invocation: $ai-software-architect
 prompt: >-
   Quiero desarrollar una aplicación con una interfaz web, creada con Python

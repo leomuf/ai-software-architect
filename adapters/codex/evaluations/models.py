@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 import yaml
 from ai_architect_schemas import PatternCategory
@@ -19,8 +19,33 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
 
-class Activation(StrictModel):
-    skill_invocation: str = Field(min_length=1)
+class DirectSkillActivation(StrictModel):
+    type: Literal["direct-skill"]
+    skill_invocation: Literal["$ai-software-architect"]
+
+    def render(self) -> str:
+        """Preserve the legacy direct-skill syntax used by comparison fixtures."""
+        return self.skill_invocation
+
+
+class StructuredPluginMentionActivation(StrictModel):
+    type: Literal["structured-plugin-mention"]
+    mention_label: Literal["ai-software-architect"]
+    plugin_name: Literal["ai-software-architect"]
+    marketplace: Literal["personal"]
+
+    def render(self) -> str:
+        """Render the exact picker-produced mention required by the smoke gate."""
+        return (
+            f"[@{self.mention_label}]"
+            f"(plugin://{self.plugin_name}@{self.marketplace})"
+        )
+
+
+Activation = Annotated[
+    DirectSkillActivation | StructuredPluginMentionActivation,
+    Field(discriminator="type"),
+]
 
 
 class VerificationPolicy(StrictModel):
@@ -161,7 +186,10 @@ class FixtureResult(StrictModel):
 
 
 class CampaignReport(StrictModel):
-    schema_version: str = "1.3.0"
+    schema_version: str = "1.4.0"
+    run_kind: Literal["exploratory-campaign", "release-gate-smoke"] = (
+        "exploratory-campaign"
+    )
     started_at: datetime
     completed_at: datetime
     codex_command: str

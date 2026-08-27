@@ -27,7 +27,7 @@ future GitHub Copilot, Claude Code, and Antigravity adapters can reuse them.
   converts missing semantic evidence into a pass.
 
 The runner uses the caller's existing Codex authentication and installed plugin.
-Install the exact release candidate and activate its reviewed hooks before running
+Install the exact release candidate and activate all five reviewed hooks before running
 the campaign. For real runs, it searches every marketplace, requires exactly one
 installed and enabled AI Software Architect, and records its plugin ID, marketplace,
 version, and available provenance digest. An optional expected version acts only as
@@ -36,6 +36,11 @@ switch, trust, disable, or uninstall a plugin.
 
 Use the repository-level PowerShell entry described in
 [`scripts/README.md`](../../../scripts/README.md#run-codex-exploratory-evaluations).
+
+The release-gate smoke fixture uses typed activation fields to render the exact
+structured mention `[@ai-software-architect](plugin://ai-software-architect@personal)`.
+Run it through `scripts/run-codex-plugin-invocation-smoke.ps1`; its report is kept
+separate from the five-fixture exploratory campaign and performance ledger.
 The default campaign retains the five established English fixtures. Pass
 `-Campaign german` to run the separately versioned German clarification and
 comparison workflows, including their continuation turns.

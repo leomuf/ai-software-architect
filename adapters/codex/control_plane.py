@@ -64,9 +64,10 @@ REFERENCE_SPECS: dict[str, tuple[str, str]] = {
 }
 MISSING_INVOCATION_GUIDANCE = (
     "AI Software Architect was selected without a request. Add your architecture "
-    "question after the plugin selection, or invoke `$ai-software-architect` "
-    "directly; the architect will choose focused pattern help or the complete "
-    "architecture workflow from your request."
+    "question after the structured selection from Codex's @ picker. Do not merely "
+    "type the literal display name. You can also invoke `$ai-software-architect` "
+    "directly for advanced use; the architect will choose focused pattern help or "
+    "the complete architecture workflow from your request."
 )
 SHELL_TOOL_NAMES = {"bash", "exec_command", "shell_command"}
 PATCH_TOOL_NAMES = {"apply_patch", "edit", "write"}

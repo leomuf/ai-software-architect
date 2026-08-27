@@ -158,12 +158,23 @@ acceptance. Follow the remaining gates in
 
 ## Run Codex Exploratory Evaluations
 
-Install the exact plugin candidate, review and activate its hooks, and then run the
+Install the exact plugin candidate, review and activate all five hooks, and then run the
 five shared fixtures with the Codex-specific adapter:
 
 ```powershell
 .\scripts\run-codex-exploratory-evaluations.ps1
 ```
+
+Before the five-fixture campaign, run the distinct structured-mention release
+smoke test:
+
+```powershell
+.\scripts\run-codex-plugin-invocation-smoke.ps1
+```
+
+It renders `[@ai-software-architect](plugin://ai-software-architect@personal)`
+from typed activation fields and never appends its result to
+`evaluation-data/exploratory-runs.jsonl`.
 
 Run the separate German-language campaign without changing the five-fixture English
 baseline:

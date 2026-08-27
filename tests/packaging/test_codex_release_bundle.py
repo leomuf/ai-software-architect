@@ -47,7 +47,9 @@ def test_install_guide_requires_no_development_runtime() -> None:
     assert "without Python, `uv`" in guide
     assert ".agents/plugins/marketplace.json" in guide
     assert "$ai-software-architect" in guide
-    assert "@AI Software Architect` plugin selector as a substitute" in guide
+    assert "selecting\n**AI Software Architect** from the picker" in guide
+    assert "Do not merely type the literal display name" in guide
+    assert "All five hooks are required" in guide
 
 
 def test_ci_packages_the_version_from_the_built_manifest() -> None:

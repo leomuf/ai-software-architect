@@ -4,7 +4,7 @@
 interface:
   display_name: "AI Software Architect"
   short_description: "Suggest project-fit patterns and guide architecture decisions"
-  default_prompt: "Use $ai-software-architect to suggest project-fit patterns or guide a complete architecture workflow."
+  default_prompt: "Suggest project-fit patterns or guide a complete architecture workflow."
 
 policy:
   allow_implicit_invocation: false

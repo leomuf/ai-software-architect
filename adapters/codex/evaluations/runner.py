@@ -613,10 +613,26 @@ def _load_campaign(
     return fixtures
 
 
+def _load_release_gate_smoke(manifest: Path) -> list[tuple[Path, EvaluationFixture]]:
+    """Load the smoke fixture separately from performance-comparison cohorts."""
+    raw = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    configured = raw.get("release_gate_smoke")
+    if not isinstance(configured, str) or not configured:
+        raise ValueError("verification manifest does not define release_gate_smoke")
+    path = ROOT / configured
+    return [(path, load_fixture(path))]
+
+
 def _summary(report: CampaignReport) -> str:
+    title = (
+        "Codex Structured Plugin Invocation Smoke Summary"
+        if report.run_kind == "release-gate-smoke"
+        else "Codex Exploratory Evaluation Summary"
+    )
     lines = [
-        "# Codex Exploratory Evaluation Summary",
+        f"# {title}",
         "",
+        f"- Run kind: `{report.run_kind}`",
         f"- Model: `{report.model}`",
         f"- Reasoning effort: `{report.reasoning_effort}`",
         f"- Speed: `{report.speed}`",
@@ -721,13 +737,31 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
     started = datetime.now(UTC)
     campaign_started = time.monotonic()
     selected = set(args.fixture or [])
-    fixtures = _load_campaign(args.manifest, selected, args.campaign)
+    run_kind: Literal["exploratory-campaign", "release-gate-smoke"]
+    if args.release_gate_smoke:
+        if selected or args.campaign != "default":
+            raise ValueError(
+                "release-gate smoke cannot be combined with exploratory fixture or "
+                "campaign selection"
+            )
+        fixtures = _load_release_gate_smoke(args.manifest)
+        run_kind = "release-gate-smoke"
+    else:
+        fixtures = _load_campaign(args.manifest, selected, args.campaign)
+        run_kind = "exploratory-campaign"
     if args.dry_run:
         codex_version = "not-checked (dry run)"
         installed_plugin = None
     else:
         codex_version = _codex_version(args.codex_command)
         installed_plugin = _installed_plugin_identity(args.codex_command)
+        if args.release_gate_smoke and installed_plugin.marketplace != "personal":
+            raise ValueError(
+                "The exact structured smoke mention targets "
+                "ai-software-architect@personal, but the enabled plugin is "
+                f"{installed_plugin.plugin_id}. Install the exact candidate in the "
+                "personal marketplace before running this gate."
+            )
         if (
             args.expected_plugin_version is not None
             and installed_plugin.version != args.expected_plugin_version
@@ -741,7 +775,12 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
     results: list[FixtureResult] = []
     fixture_count = len(fixtures)
 
-    print(f"Loaded {fixture_count} exploratory fixture(s).", flush=True)
+    fixture_label = (
+        "release-gate smoke fixture(s)"
+        if run_kind == "release-gate-smoke"
+        else "exploratory fixture(s)"
+    )
+    print(f"Loaded {fixture_count} {fixture_label}.", flush=True)
     if installed_plugin is not None:
         print(
             f"Installed plugin: {installed_plugin.plugin_id} "
@@ -767,7 +806,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
             continue
         try:
             _prepare_workspace(fixture, workspace)
-            initial_prompt = f"{fixture.activation.skill_invocation} {fixture.prompt}"
+            initial_prompt = f"{fixture.activation.render()} {fixture.prompt}"
             print(f"{progress}: running initial phase...", flush=True)
             initial = _run_phase(
                 name="initial",
@@ -866,6 +905,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
     elapsed = time.monotonic() - campaign_started
     git_commit = _git_commit()
     report = CampaignReport(
+        run_kind=run_kind,
         started_at=started,
         completed_at=completed_at,
         codex_command=args.codex_command,
@@ -893,7 +933,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
     (args.output_directory / "SUMMARY.md").write_text(
         _summary(report), encoding="utf-8", newline="\n"
     )
-    if not args.dry_run:
+    if not args.dry_run and run_kind == "exploratory-campaign":
         observations, exclusions = _report_observations(
             report_path=report_path,
             speed=SpeedMode(args.speed),
@@ -907,7 +947,7 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
             f"{len(exclusions)} exclusion(s).",
             flush=True,
         )
-    print(f"Campaign finished in {elapsed:.1f}s.", flush=True)
+    print(f"Evaluation run finished in {elapsed:.1f}s.", flush=True)
     return report
 
 
@@ -918,6 +958,14 @@ def _parser() -> argparse.ArgumentParser:
         "--campaign",
         default="default",
         help="Named exploratory campaign from the verification manifest.",
+    )
+    parser.add_argument(
+        "--release-gate-smoke",
+        action="store_true",
+        help=(
+            "Run only the structured plugin-mention release gate and do not append "
+            "performance observations."
+        ),
     )
     parser.add_argument("--fixture", action="append", help="Run one fixture ID; repeat as needed")
     parser.add_argument("--output-directory", type=Path, required=True)

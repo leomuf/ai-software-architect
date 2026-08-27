@@ -6,6 +6,7 @@ id: pt-br-architecture-option-comparison
 scenario: FLOW-004
 response_language: pt-BR
 activation:
+  type: direct-skill
   skill_invocation: $ai-software-architect
 prompt: >-
   Examine o repositório fornecido usando somente leituras estáticas,

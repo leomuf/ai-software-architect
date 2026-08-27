@@ -33,6 +33,7 @@ param(
     [string]$OutputDirectory,
     [string]$CodexCommand,
     [switch]$ContinueOnFailure,
+    [switch]$ReleaseGateSmoke,
     [switch]$DryRun
 )
 
@@ -183,12 +184,20 @@ foreach ($fixtureId in $Fixture) {
 if ($ContinueOnFailure) {
     $arguments += "--continue-on-failure"
 }
+if ($ReleaseGateSmoke) {
+    $arguments += "--release-gate-smoke"
+}
 if ($DryRun) {
     $arguments += "--dry-run"
 }
 
-Write-Host "Starting Codex exploratory evaluations..."
-Write-Host "Campaign: $Campaign"
+if ($ReleaseGateSmoke) {
+    Write-Host "Starting Codex structured plugin-invocation release-gate smoke test..."
+}
+else {
+    Write-Host "Starting Codex exploratory evaluations..."
+    Write-Host "Campaign: $Campaign"
+}
 Write-Host "Model: $Model ($ReasoningEffort reasoning)"
 if ($ExpectedPluginVersion) {
     Write-Host "Expected plugin version: $ExpectedPluginVersion"

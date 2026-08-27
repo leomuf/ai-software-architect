@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 schema_version: 1.0.0
+release_gate_smoke: shared/evaluations/model-fixtures/structured-plugin-invocation-smoke.yaml
 exploratory_campaign:
   - shared/evaluations/model-fixtures/clarify-ui-architecture.yaml
   - shared/evaluations/model-fixtures/architecture-option-comparison.yaml
@@ -32,6 +33,7 @@ scenarios:
   PLUGIN-001: {mode: deterministic-test, gate: GATE-PLUGIN}
   PLUGIN-002: {mode: deterministic-test, gate: GATE-PLUGIN}
   PLUGIN-003: {mode: deterministic-test, gate: GATE-CONTROL-PLANE}
+  PLUGIN-004: {mode: model-evaluation, gate: GATE-PLUGIN}
   HOST-001: {mode: model-evaluation, gate: GATE-PLUGIN}
   HOST-002: {mode: model-evaluation, gate: GATE-PLUGIN}
   FLOW-001: {mode: model-evaluation, gate: GATE-SCHEMA}

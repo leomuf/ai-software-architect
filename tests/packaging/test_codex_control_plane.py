@@ -262,6 +262,7 @@ def test_plugin_selection_without_request_blocks_before_model_or_tools(
     result = handle_user_prompt_submit(submit, tmp_path)
     assert result["decision"] == "block"
     assert "without a request" in result["reason"]
+    assert "@ picker" in result["reason"]
     assert "$ai-software-architect" in result["reason"]
     assert not (tmp_path / "control-plane").exists()
 
