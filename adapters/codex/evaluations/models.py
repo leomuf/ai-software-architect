@@ -20,6 +20,8 @@ class StrictModel(BaseModel):
 
 
 class DirectSkillActivation(StrictModel):
+    """Direct skill activation retained for canonical comparison fixtures."""
+
     type: Literal["direct-skill"]
     skill_invocation: Literal["$ai-software-architect"]
 
@@ -29,6 +31,8 @@ class DirectSkillActivation(StrictModel):
 
 
 class StructuredPluginMentionActivation(StrictModel):
+    """Picker-selected plugin activation used by the isolated release smoke gate."""
+
     type: Literal["structured-plugin-mention"]
     mention_label: Literal["ai-software-architect"]
     plugin_name: Literal["ai-software-architect"]
