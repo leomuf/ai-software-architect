@@ -37,7 +37,7 @@ Compare the displayed hash with `SHA256SUMS.txt`. Stop if they differ.
 4. Open **Plugins**.
 5. Select **AI Software Architect Release** from the marketplace selector.
 6. Open **AI Software Architect** and select **Install**.
-7. Review the bundled hook definitions and activate them. The hooks are
+7. Review and activate all five bundled hook definitions before first use. The hooks are
    short-lived local checks: they make no model or network calls, start no
    persistent process, and do not bypass Codex permissions.
 8. Start a new task before using the installed skill.
@@ -48,15 +48,20 @@ and the complete prebuilt plugin under `plugins/ai-software-architect/`.
 
 ## Try It
 
-Begin each new architecture request by selecting the public skill in the Codex
-composer:
+Begin each new architecture request by typing `@` in the Codex composer, selecting
+**AI Software Architect** from the picker, and adding the request after the
+structured mention:
 
 ```text
-$ai-software-architect Suggest suitable design patterns for my current project.
+@AI Software Architect Suggest suitable design patterns for my current project.
 ```
 
-Do not use the `@AI Software Architect` plugin selector as a substitute for the
-`$ai-software-architect` skill invocation.
+Do not merely type the literal display name. Codex must insert the plugin mention
+from the `@` picker. The direct `$ai-software-architect <request>` skill invocation
+remains supported for advanced use.
+
+All five hooks are required for reliable routing, continuation, safety checks,
+validated architecture-artifact creation, and complete user-facing responses.
 
 For the reproducible end-to-end demonstration, open the bundled source
 repository's `demo/expense-insights/` project and follow its `README.md` and
@@ -75,8 +80,8 @@ AI Software Architect process should remain running while the plugin is idle.
 - If the plugin is visible but cannot be installed, confirm that
   `plugins/ai-software-architect/.codex-plugin/plugin.json` exists and that the
   archive was fully extracted.
-- If hooks are disabled, open the plugin page, review their current definitions,
-  and activate them before testing the complete workflow.
+- If any hook is disabled, open the plugin page, review the current definitions,
+  and activate all five before using the complete workflow.
 - Report reproducible problems through the repository's public support and
   security channels. Do not publish credentials, private repository content, or
   sensitive diagnostic data.

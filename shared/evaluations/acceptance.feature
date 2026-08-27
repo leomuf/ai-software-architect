@@ -85,10 +85,12 @@ Feature: Agent Skills standard and progressive disclosure
     And the validator verifies the required plugin layout and real manifest values
 
   @PLUGIN-003
-  Scenario: Direct skill invocation and plugin-page prompts share one workflow
+  Scenario: Structured plugin selection and direct skill invocation share one workflow
     Given the AI Software Architect plugin is installed
-    When the user directly selects "$ai-software-architect" without an "@" plugin mention
+    When the user selects AI Software Architect from the "@" picker and adds a request
     Then the architecture workflow may begin
+    And merely typing the literal display name does not activate the plugin
+    And "$ai-software-architect" remains a supported direct advanced invocation
     And a namespaced Codex skill link remains a valid explicit invocation
     And every plugin default prompt contains task text without a plugin or skill activation marker
     Given Codex adds the installed plugin's "@" selection from the plugin page
@@ -97,7 +99,7 @@ Feature: Agent Skills standard and progressive disclosure
     Given the installed plugin is selected with an "@" mention
     When the selection contains no substantive request
     Then the control plane routes to "missing_skill_invocation"
-    And it explains how to add a request or invoke "$ai-software-architect"
+    And it explains how to add a request after a picker selection or invoke "$ai-software-architect"
     And the user prompt is blocked before model or MCP execution
     And no turn state is persisted
     And ordinary prompts without an architect activation marker do not enter the control plane
@@ -108,6 +110,15 @@ Feature: Agent Skills standard and progressive disclosure
     And an approved project-bound material decision enters "record_and_handoff"
     But an original no-create or no-modify restriction remains effective
     And approval never authorizes application-code changes
+
+  @PLUGIN-004
+  Scenario: Smoke-test the exact structured plugin mention outside performance history
+    Given the AI Software Architect plugin and all five hooks are installed and active
+    When the release gate renders typed activation data
+    Then it invokes "[@ai-software-architect](plugin://ai-software-architect@personal)"
+    And the Composite architecture workflow returns user-facing guidance
+    And the smoke result is reported separately from the five exploratory fixtures
+    And the smoke result is not appended to "evaluation-data/exploratory-runs.jsonl"
 
 Feature: Host-native architectural reasoning
 

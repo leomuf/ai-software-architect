@@ -29,6 +29,7 @@ from adapters.codex.evaluations.runner import (
     _expected_decision_assertion,
     _installed_plugin_identity,
     _load_campaign,
+    _load_release_gate_smoke,
     _parse_events,
     _phase_telemetry,
     main,
@@ -87,6 +88,11 @@ def test_all_campaign_fixtures_satisfy_the_shared_typed_contract() -> None:
     assert {fixture.id for fixture in fixtures} == {
         name.removesuffix(".yaml") for name in fixture_names
     }
+    assert all(fixture.activation.type == "direct-skill" for fixture in fixtures)
+    assert all(
+        fixture.activation.render() == "$ai-software-architect"
+        for fixture in fixtures
+    )
     assert all(fixture.verification.repository_changes == "forbid" for fixture in fixtures)
     comparison = next(
         fixture for fixture in fixtures if fixture.id == "architecture-option-comparison"
@@ -174,6 +180,18 @@ def test_python_project_variety_campaign_is_separate_and_typed() -> None:
 def test_unknown_campaign_is_rejected() -> None:
     with pytest.raises(ValueError, match="Unknown exploratory campaign"):
         _load_campaign(DEFAULT_MANIFEST, set(), "missing")
+
+
+def test_release_gate_smoke_uses_exact_typed_structured_mention() -> None:
+    fixtures = _load_release_gate_smoke(DEFAULT_MANIFEST)
+
+    assert len(fixtures) == 1
+    fixture = fixtures[0][1]
+    assert fixture.id == "structured-plugin-invocation-smoke"
+    assert fixture.activation.type == "structured-plugin-mention"
+    assert fixture.activation.render() == (
+        "[@ai-software-architect](plugin://ai-software-architect@personal)"
+    )
 
 
 def test_fixture_contract_rejects_repository_path_escape(tmp_path: Path) -> None:
@@ -516,6 +534,42 @@ def test_expected_plugin_version_mismatch_fails_before_evaluation(
     assert "Expected AI Software Architect 0.1.0" in capsys.readouterr().err
 
 
+def test_release_gate_smoke_requires_personal_marketplace_before_evaluation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from adapters.codex.evaluations import runner
+
+    output = tmp_path / "smoke"
+    monkeypatch.setattr(runner, "_codex_version", lambda _: "codex-cli test")
+    monkeypatch.setattr(
+        runner,
+        "_installed_plugin_identity",
+        lambda _: InstalledPluginIdentity(
+            "ai-software-architect@ai-software-architect-release",
+            "ai-software-architect-release",
+            "0.2.1",
+        ),
+    )
+
+    exit_code = main(
+        [
+            "--manifest",
+            str(DEFAULT_MANIFEST),
+            "--output-directory",
+            str(output),
+            "--codex-command",
+            "codex",
+            "--release-gate-smoke",
+        ]
+    )
+
+    assert exit_code == 2
+    assert not output.exists()
+    assert "targets ai-software-architect@personal" in capsys.readouterr().err
+
+
 def test_dry_run_plans_the_campaign_without_invoking_codex(tmp_path: Path) -> None:
     output = tmp_path / "campaign"
 
@@ -537,3 +591,31 @@ def test_dry_run_plans_the_campaign_without_invoking_codex(tmp_path: Path) -> No
     }
     assert report["installed_plugin_version"] is None
     assert not (output / "workspaces").exists()
+
+
+def test_release_gate_smoke_dry_run_is_distinct_from_performance_campaign(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "smoke"
+    ledger = tmp_path / "exploratory-runs.jsonl"
+
+    exit_code = main(
+        [
+            "--manifest",
+            str(DEFAULT_MANIFEST),
+            "--output-directory",
+            str(output),
+            "--performance-ledger",
+            str(ledger),
+            "--release-gate-smoke",
+            "--dry-run",
+        ]
+    )
+
+    report = json.loads((output / "report.json").read_text(encoding="utf-8"))
+    assert exit_code == 0
+    assert report["run_kind"] == "release-gate-smoke"
+    assert [result["fixture_id"] for result in report["results"]] == [
+        "structured-plugin-invocation-smoke"
+    ]
+    assert not ledger.exists()

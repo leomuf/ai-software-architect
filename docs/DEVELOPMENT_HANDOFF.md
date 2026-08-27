@@ -58,7 +58,15 @@ credits. No managed AI backend is required.
 
 ### One public Codex skill
 
-Users invoke one public entry point:
+Users normally select the plugin from Codex's `@` picker; Codex displays the
+structured selection as:
+
+```text
+@AI Software Architect <request>
+```
+
+Merely typing the literal display name does not activate the plugin. The direct,
+advanced skill entry remains supported:
 
 ```text
 $ai-software-architect <request>
@@ -66,9 +74,10 @@ $ai-software-architect <request>
 
 The host model chooses between focused help and the complete architecture workflow.
 Internal modular skills remain hidden implementation building blocks; users should
-not need to choose among them. Documentation should recommend `$` skill invocation,
-not `@` plugin selection. Bare or mistaken `@` activation receives recovery guidance
-from the control plane instead of silently doing nothing.
+not need to choose among them. Documentation should recommend structured selection
+from the `@` picker while retaining `$` skill invocation for direct/advanced use.
+Bare or mistaken `@` activation receives recovery guidance from the control plane
+instead of silently doing nothing.
 
 ### Strongest plugin-native workflow
 

@@ -53,7 +53,14 @@ Evidence or workflow URL: `<link or concise note>`
 
 Evidence: `<link or concise note>`
 
-## Gate C: Exploratory Fixtures
+## Gate C: Structured Plugin-Mention Smoke
+
+- exact structured mention: `[@ai-software-architect](plugin://ai-software-architect@personal)`
+- result:
+- evidence path:
+- confirmed excluded from exploratory performance ledger: [ ]
+
+## Gate D: Exploratory Fixtures
 
 - Runner output directory:
 - `report.json` SHA-256:
@@ -71,7 +78,7 @@ Evidence: `<link or concise note>`
 
 Unresolved infrastructure errors: `<none or details>`
 
-## Gate D: Codex Desktop Acceptance
+## Gate E: Codex Desktop Acceptance
 
 - [ ] exact candidate installed or updated through the Plugins window
 - [ ] current hook definitions reviewed and activated
@@ -85,7 +92,7 @@ Unresolved infrastructure errors: `<none or details>`
 
 Lifecycle evidence: `<process observations and concise result>`
 
-## Gate E: Clean-Machine Acceptance
+## Gate F: Clean-Machine Acceptance
 
 - [ ] tested on clean Windows x86-64
 - [ ] Python and `uv` were not preinstalled requirements

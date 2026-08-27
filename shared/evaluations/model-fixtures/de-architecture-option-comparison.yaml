@@ -6,6 +6,7 @@ id: de-architecture-option-comparison
 scenario: FLOW-004
 response_language: de
 activation:
+  type: direct-skill
   skill_invocation: $ai-software-architect
 prompt: >-
   Untersuche das bereitgestellte Repository mit begrenzten, host-nativen,

@@ -130,7 +130,7 @@ The selected design is the strongest plugin-native architecture for this scope:
 - The shared deterministic Python core supplies bounded validation and evidence functions. Codex invokes the required subset through short-lived trusted hooks; an optional STDIO MCP adapter remains available for hosts whose lifecycle is reliable.
 - The selected coding assistant remains the agent runtime and owns model reasoning, tool orchestration, permissions, and any runtime-created subagents.
 
-The product remains agentic without claiming to be a separately installed autonomous runtime. It MUST activate only through an explicit architect skill invocation, MUST keep material decisions under human approval, and MUST NOT operate as an unsupervised background process. A canonical skill MAY request bounded delegation when the host supports subagents, but the Codex plugin MUST NOT install, overwrite, or silently modify `.codex/agents/`, `~/.codex/agents/`, or `[agents]` configuration.
+The product remains agentic without claiming to be a separately installed autonomous runtime. It MUST activate only through an explicit structured plugin selection, supported direct skill invocation, or bounded continuation from one of those entries; it MUST keep material decisions under human approval and MUST NOT operate as an unsupervised background process. A canonical skill MAY request bounded delegation when the host supports subagents, but the Codex plugin MUST NOT install, overwrite, or silently modify `.codex/agents/`, `~/.codex/agents/`, or `[agents]` configuration.
 
 Advanced users MAY configure a separate Codex custom agent that invokes the same installed skills and tools. That optional setup is outside the plugin’s installation contract and MUST NOT be required for normal use.
 
@@ -727,7 +727,7 @@ The Codex plugin MUST NOT contain or write a top-level `.codex/agents/` custom-a
 
 The generated Codex `agents/openai.yaml` MUST set `policy.allow_implicit_invocation: false` for the MVP. Users explicitly invoke the architect skill, preventing ordinary coding requests from silently entering an architecture workflow. That file MAY declare UI metadata but MUST NOT declare an MCP dependency or duplicate security policy or domain knowledge.
 
-Codex has two distinct entry concepts. The normal and recommended composer workflow is to invoke the single installed skill directly with `$ai-software-architect`; the selected model then chooses focused help or the complete lifecycle from the request. Codex MAY render the selected skill as a namespaced Markdown link to the installed `SKILL.md`; this remains an explicit skill invocation. The user does not need to select the plugin separately with `@`. The plugin page's "Try now" flow adds the `@` plugin selection automatically, so every plugin default prompt MUST contain task text only and MUST NOT repeat the plugin or skill activation marker. A plugin selection followed by a substantive request enters the same Composite workflow. A bare `plugin://` selection without a request is incomplete and routes to correction guidance.
+Codex has two distinct entry concepts. The normal and recommended composer workflow is to type `@`, select AI Software Architect from the picker, and add a substantive request after Codex inserts the structured plugin mention publicly displayed as `@AI Software Architect`. Merely typing that literal display text is not activation. The direct `$ai-software-architect` skill invocation remains supported for advanced use; Codex MAY render it as a namespaced Markdown link to the installed `SKILL.md`. The selected model then chooses focused help or the complete lifecycle from the request. The plugin page's "Try now" flow adds the structured plugin selection automatically, so every plugin default prompt MUST contain task text only and MUST NOT repeat the plugin or skill activation marker. A plugin selection followed by a substantive request enters the same Composite workflow. A bare `plugin://` selection without a request is incomplete and routes to correction guidance.
 
 ### Modular workflow skills
 
@@ -1580,7 +1580,7 @@ that exact path once and MUST NOT search the workspace, public repository, resou
 registries, or the four packaged source copies for substitutes. Provenance maps
 every canonical source to the generated bundle.
 
-Skills remain the canonical reasoning workflow. The Codex adapter adds a small deterministic control plane as defense in depth because repeated model tests showed that prose-only constraints did not reliably enforce route, tool, artifact, and final-answer contracts. The bundled executable supports only the short-lived `--codex-hook` mode for `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostCompact`, and `Stop`. Every invocation MUST terminate after handling one bounded JSON event; it MUST NOT start an MCP server, listener, daemon, or background watchdog. One command handler is registered per lifecycle event; internal payload models, state managers, policies, validators, and renderers remain separate testable modules. Multiple same-event hooks MUST NOT depend on execution order because Codex may run matching hooks concurrently.
+Skills remain the canonical reasoning workflow. The Codex adapter adds a small deterministic control plane because repeated model tests showed that prose-only constraints did not reliably enforce route, tool, artifact, and final-answer contracts. The package MUST define exactly five short-lived hooks—one each for `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostCompact`, and `Stop`—and the user-facing plugin description MUST tell users to activate all five before first use. Together they are required for reliable routing, continuation, safety checks, validated architecture-artifact creation, and complete user-facing responses. The bundled executable supports only the short-lived `--codex-hook` mode. Every invocation MUST terminate after handling one bounded JSON event; it MUST NOT start an MCP server, listener, daemon, or background watchdog. One command handler is registered per lifecycle event; internal payload models, state managers, policies, validators, and renderers remain separate testable modules. Multiple same-event hooks MUST NOT depend on execution order because Codex may run matching hooks concurrently.
 
 ```yaml
 codex_control_plane:
@@ -1859,7 +1859,7 @@ complete_workflow_response:
 
 Single-reference explanations are not semantically policed by `Stop`; exact reference hints plus the hard skill gate make the expected resource explicit without trying to judge natural-language content. For a complete workflow, the hook applies strict comparison validation when any cataloged Alternatives heading is present, requires exactly one complete ordered locale set and its exact six-column header, validates the matching visible final decision section when present, and rejects mixed locale labels or leaked internal `ai-architect` markers. It deliberately cannot prove that a semantically required recommendation was chosen or that localized prose offers the correct choices; those remain skill and host-model responsibilities. A rendering failure generates one complete replacement request whose reason presents the supported locale contracts, category/link rule, and ordinal-fit rule; `stop_hook_active` prevents an infinite retry. Valid clarification and decision responses retain only a bounded session continuation record; all turn records are removed after completion.
 
-Codex requires users to review and trust non-managed plugin hooks. Therefore the skill MUST remain usable when hooks are disabled, untrusted, unsupported, or fail. Hook validation improves observed reliability but is not a security boundary or proof of semantic architectural quality. The README and installation testing MUST disclose the trust step and verify both trusted-hook and no-hook behavior.
+Codex requires users to review and trust non-managed plugin hooks. The plugin MUST prominently require activation of all five before first use. If hooks are disabled, untrusted, unsupported, or fail, the skill MAY provide degraded prose guidance but MUST disclose that the complete supported workflow and its reliability guarantees are unavailable. Hook validation is not a security boundary or proof of semantic architectural quality. The README and installation testing MUST disclose the trust step and distinguish the trusted-hook workflow from degraded no-hook behavior.
 
 ### Claude Code
 
@@ -2483,10 +2483,12 @@ Feature: Agent Skills standard and progressive disclosure
     And the validator verifies the required plugin layout and real manifest values
 
   @PLUGIN-003
-  Scenario: Direct skill invocation and plugin-page prompts share one workflow
+  Scenario: Structured plugin selection and direct skill invocation share one workflow
     Given the AI Software Architect plugin is installed
-    When the user directly selects "$ai-software-architect" without an "@" plugin mention
+    When the user selects AI Software Architect from the "@" picker and adds a request
     Then the architecture workflow may begin
+    And merely typing the literal display name does not activate the plugin
+    And "$ai-software-architect" remains a supported direct advanced invocation
     And a namespaced Codex skill link remains a valid explicit invocation
     And every plugin default prompt contains task text without a plugin or skill activation marker
     Given Codex adds the installed plugin's "@" selection from the plugin page
@@ -2495,7 +2497,7 @@ Feature: Agent Skills standard and progressive disclosure
     Given the installed plugin is selected with an "@" mention
     When the selection contains no substantive request
     Then the control plane routes to "missing_skill_invocation"
-    And it explains how to add a request or invoke "$ai-software-architect"
+    And it explains how to add a request after a picker selection or invoke "$ai-software-architect"
     And the user prompt is blocked before model or MCP execution
     And no turn state is persisted
     And ordinary prompts without an architect activation marker do not enter the control plane
@@ -2506,6 +2508,15 @@ Feature: Agent Skills standard and progressive disclosure
     And an approved project-bound material decision enters "record_and_handoff"
     But an original no-create or no-modify restriction remains effective
     And approval never authorizes application-code changes
+
+  @PLUGIN-004
+  Scenario: Smoke-test the exact structured plugin mention outside performance history
+    Given the AI Software Architect plugin and all five hooks are installed and active
+    When the release gate renders typed activation data
+    Then it invokes "[@ai-software-architect](plugin://ai-software-architect@personal)"
+    And the Composite architecture workflow returns user-facing guidance
+    And the smoke result is reported separately from the five exploratory fixtures
+    And the smoke result is not appended to "evaluation-data/exploratory-runs.jsonl"
 
 Feature: Host-native architectural reasoning
 

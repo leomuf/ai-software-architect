@@ -145,6 +145,8 @@ Additional requirements:
 - After a requested campaign, summarize fixture results, initial and continuation
   timings, total duration, installed plugin version, model, reasoning effort, speed
   mode, and any findings.
+- Keep the structured-plugin-mention release-gate smoke test separate from this
+  five-fixture comparison cohort and from `exploratory-runs.jsonl`.
 
 Use `scripts/show-exploratory-performance.ps1` to regenerate Markdown, CSV, and JSON
 views from the canonical ledger. These views are disposable; the versioned JSONL
@@ -155,7 +157,12 @@ ledger is the performance-history source of truth.
 Preserve these invariants unless the specification and acceptance criteria are
 explicitly changed:
 
-- `$ai-software-architect` is the normal public Codex invocation.
+- The normal public Codex invocation is the structured `@AI Software Architect`
+  mention inserted by selecting the plugin from the `@` picker; merely typing its
+  literal display name is not activation.
+- `$ai-software-architect` remains a supported direct/advanced skill invocation.
+- The complete supported workflow requires all five bundled hooks to be activated
+  before first use.
 - The Composite selects the smallest sufficient workflow; users do not choose an
   internal skill.
 - Hooks provide deterministic routing, continuation, validation, and safety around

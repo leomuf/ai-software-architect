@@ -288,7 +288,26 @@ Confirm:
 - every hook invokes the fixed bundled short-lived runtime with `--codex-hook`; and
 - the runtime starts without installing or downloading dependencies.
 
-### Gate C: Five Exploratory Fixtures
+### Gate C: Structured Plugin-Mention Smoke
+
+After installing the exact candidate and activating all five reviewed hooks, run:
+
+```powershell
+.\scripts\run-codex-plugin-invocation-smoke.ps1 `
+  -ExpectedPluginVersion 0.1.0 `
+  -Model gpt-5.6-sol `
+  -ReasoningEffort medium
+```
+
+This small release gate uses typed activation data to render the exact structured
+mention `[@ai-software-architect](plugin://ai-software-architect@personal)`.
+It verifies that the installed plugin enters the Composite workflow without
+repository changes. Its result is reported separately and is never added to the
+five-fixture exploratory cohort or `evaluation-data/exploratory-runs.jsonl`. Because
+the exact mention targets `@personal`, the runner fails before model use unless the
+one enabled candidate is the personal-marketplace installation prepared above.
+
+### Gate D: Five Exploratory Fixtures
 
 Run all fixtures named by
 [`verification-manifest.yaml`](../shared/evaluations/verification-manifest.yaml):
@@ -299,7 +318,7 @@ Run all fixtures named by
 4. `abstract-factory-example.yaml`
 5. `avoid-overengineering.yaml`
 
-After installing the exact candidate and activating its reviewed hooks, run:
+After installing the exact candidate and activating all five reviewed hooks, run:
 
 ```powershell
 .\scripts\run-codex-exploratory-evaluations.ps1 `
@@ -329,37 +348,40 @@ For the initial beta:
 - let the runner isolate each independent fixture and preserve the one session
   needed for the approval continuation;
 - install the exact release-candidate plugin, then invoke
-  `$ai-software-architect` directly for every fixture; do not add an `@` plugin
-  mention;
+  `$ai-software-architect` directly for every fixture; these five canonical `$`
+  fixtures remain the reproducible performance-comparison cohort and do not add an
+  `@` plugin mention;
 - assess every expected and forbidden behavior;
 - record repository status and side effects;
 - do not retry a behavioral failure merely to obtain a better answer; and
 - record the exact Codex and plugin versions.
 
-### Gate D: Manual Codex Desktop Acceptance
+### Gate E: Manual Codex Desktop Acceptance
 
 This gate is required even after future model-evaluation automation exists:
 
 1. Install or update the exact candidate through the Plugins window.
-2. Review and activate its current hook definitions.
-3. Confirm the single `$ai-software-architect` skill covers focused help and the
-   complete lifecycle without an `@` plugin mention.
-4. Confirm hook-based contract validation and secret scanning in at least one approved artifact workflow.
-5. Run the candidate from multiple tasks.
-6. Keep Codex Desktop open and uninstall on the first attempt.
-7. Confirm that no plugin runtime process or stale installed package remains.
-8. Reinstall once and confirm the same version and hook-review behavior.
+2. Review and activate all five current hook definitions.
+3. Type `@`, select **AI Software Architect** from the picker, add a substantive
+   request, and confirm the Composite covers focused help and the complete lifecycle.
+4. Confirm merely typing the literal display name does not count as selection, and
+   confirm `$ai-software-architect` remains available for direct/advanced use.
+5. Confirm hook-based contract validation and secret scanning in at least one approved artifact workflow.
+6. Run the candidate from multiple tasks.
+7. Keep Codex Desktop open and uninstall on the first attempt.
+8. Confirm that no plugin runtime process or stale installed package remains.
+9. Reinstall once and confirm the same version and hook-review behavior.
 
 If first-attempt uninstall fails, capture the Codex version, plugin version, active
 tasks, process ownership, elapsed time, and recovery steps. The release remains
 blocked; the Codex package is already designed without persistent MCP registration.
 
-### Gate E: Clean-Machine Acceptance
+### Gate F: Clean-Machine Acceptance
 
 On a clean Windows x86-64 environment without Python, `uv`, or development caches:
 
 1. install the exact package;
-2. activate the reviewed hooks;
+2. activate all five reviewed hooks;
 3. run one main workflow and one approved artifact write that exercises deterministic pre-write validation;
 4. verify that no first-run download or network listener appears; and
 5. uninstall successfully on the first attempt.
@@ -372,7 +394,7 @@ Copy [`release-evidence-template.md`](release-evidence-template.md) to:
 docs/releases/<version>.md
 ```
 
-Complete a working copy during Gates A–E without changing the candidate commit.
+Complete a working copy during Gates A–F without changing the candidate commit.
 Attach the sanitized result to the GitHub Release or include it in the release notes.
 If the project also keeps the record under `docs/releases/`, commit that copy after
 the release tag in a documentation-only commit and link it back to the immutable tag.
@@ -404,7 +426,7 @@ manifest version and release evidence before publishing.
 A release is ready only when:
 
 - the candidate commit and working tree are identified;
-- Gates A–E pass;
+- Gates A–F pass;
 - every critical expected/forbidden fixture behavior passes;
 - no infrastructure result is unresolved;
 - first-attempt uninstall passes;

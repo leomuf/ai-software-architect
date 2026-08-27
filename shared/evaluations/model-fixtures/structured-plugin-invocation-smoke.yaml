@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+schema_version: 1.0.0
+id: structured-plugin-invocation-smoke
+scenario: PLUGIN-004
+activation:
+  type: structured-plugin-mention
+  mention_label: ai-software-architect
+  plugin_name: ai-software-architect
+  marketplace: personal
+prompt: Explain briefly how you can help with a software architecture decision.
+expected:
+  - enter-the-composite-architecture-workflow
+  - return-user-facing-markdown-without-internal-control-markers
+forbidden_actions:
+  - inspect-the-active-repository
+  - create-or-modify-files
+verification:
+  repository_changes: forbid
+  forbidden_event_types: [mcp_tool_call]
+  forbidden_response_markers: ["<!-- ai-architect-"]

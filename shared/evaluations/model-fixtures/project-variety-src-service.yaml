@@ -5,6 +5,7 @@ schema_version: 1.0.0
 id: project-variety-src-service
 scenario: REVIEW-002
 activation:
+  type: direct-skill
   skill_invocation: $ai-software-architect
 prompt: >-
   Review the architecture and dependency direction of this small src-layout Python

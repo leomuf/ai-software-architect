@@ -70,7 +70,7 @@ def test_generated_acceptance_is_current_and_every_tag_is_mapped() -> None:
     expected = _spec_gherkin()
     assert FEATURE.read_text("utf-8") == expected
     tags = re.findall(r"^\s*@([A-Z]+-[0-9]{3})$", expected, re.MULTILINE)
-    assert len(tags) == len(set(tags)) == 50
+    assert len(tags) == len(set(tags)) == 51
     manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
     assert set(manifest["scenarios"]) == set(tags)
     assert {
@@ -130,6 +130,7 @@ def test_exploratory_campaign_covers_all_five_natural_prompts() -> None:
         )
         activation = fixture["activation"]
         assert "plugin_mention" not in activation
+        assert activation["type"] == "direct-skill"
         assert activation["skill_invocation"] == "$ai-software-architect"
         assert fixture["prompt"]
         assert fixture["expected"]
@@ -141,6 +142,25 @@ def test_exploratory_campaign_covers_all_five_natural_prompts() -> None:
                 in fixture["expected"]
             )
             assert visible_shape in fixture["expected"]
+
+
+def test_structured_plugin_mention_smoke_is_not_in_exploratory_cohort() -> None:
+    manifest = yaml.safe_load(MANIFEST.read_text("utf-8"))
+    smoke_path = manifest["release_gate_smoke"]
+    smoke = yaml.safe_load((ROOT / smoke_path).read_text("utf-8"))
+
+    assert smoke_path not in manifest["exploratory_campaign"]
+    assert all(
+        smoke_path not in paths
+        for paths in manifest["additional_exploratory_campaigns"].values()
+    )
+    assert smoke["scenario"] == "PLUGIN-004"
+    assert smoke["activation"] == {
+        "type": "structured-plugin-mention",
+        "mention_label": "ai-software-architect",
+        "plugin_name": "ai-software-architect",
+        "marketplace": "personal",
+    }
 
 
 @pytest.mark.parametrize(

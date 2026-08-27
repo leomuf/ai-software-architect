@@ -5,6 +5,7 @@ schema_version: 1.0.0
 id: read-only-architecture-review
 scenario: REVIEW-002
 activation:
+  type: direct-skill
   skill_invocation: $ai-software-architect
 prompt: >-
   Review the architecture of this Python project, identify the most important

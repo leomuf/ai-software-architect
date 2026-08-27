@@ -41,8 +41,13 @@ Run every release-candidate gate documented in
 inspection, exploratory fixtures, Codex Desktop acceptance, clean-machine
 installation, and first-attempt uninstall.
 
-After installing the exact candidate and activating its hooks, start the exploratory
-campaign with:
+After installing the exact candidate and activating all five hooks, run the
+structured plugin-invocation smoke test, then start the five-fixture exploratory
+campaign:
+
+```powershell
+.\scripts\run-codex-plugin-invocation-smoke.ps1
+```
 
 ```powershell
 .\scripts\run-codex-exploratory-evaluations.ps1
@@ -170,10 +175,14 @@ developers:
 Download `ai-software-architect-v0.1.0-windows-x86_64.zip` and follow its
 included `INSTALL.md`.
 
-After installation, review and activate the bundled hooks, start a new Codex
-task, and invoke:
+After installation, review and activate all five bundled hooks, start a new Codex
+task, type `@`, select **AI Software Architect** from the picker, and add the
+request after the selected structured mention:
 
-`$ai-software-architect Suggest suitable design patterns for my current project.`
+`@AI Software Architect Suggest suitable design patterns for my current project.`
+
+Do not merely type the literal display name. `$ai-software-architect <request>`
+remains supported as a direct/advanced invocation.
 
 ## Verification
 
@@ -209,8 +218,8 @@ After publication:
 5. Restart Codex if the marketplace is not immediately visible.
 6. Open **Plugins**, select the included marketplace, and install
    **AI Software Architect**.
-7. Review and activate the bundled hook definitions.
-8. Start a new task and invoke `$ai-software-architect`.
+7. Review and activate all five bundled hook definitions.
+8. Start a new task and select AI Software Architect from the `@` picker.
 9. Run the documented demonstration workflow.
 10. Uninstall the plugin successfully on the first attempt.
 

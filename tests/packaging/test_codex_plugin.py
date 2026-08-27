@@ -45,6 +45,9 @@ def test_codex_plugin_is_reproducible_and_complete(
     assert all("$ai-software-architect" not in prompt for prompt in default_prompts)
     assert all("plugin://ai-software-architect" not in prompt for prompt in default_prompts)
     assert "Suggest suitable design patterns for my current project." in default_prompts
+    warning = "⚠️ IMPORTANT: ACTIVATE ALL FIVE BUNDLED HOOKS BEFORE FIRST USE."
+    assert manifest["interface"]["longDescription"].startswith(warning)
+    assert "all five hooks are required" in manifest["interface"]["longDescription"].lower()
     assert manifest["license"] == "MIT"
     assert "mcpServers" not in manifest
     assert not (second / ".mcp.json").exists()
@@ -112,6 +115,9 @@ def test_codex_plugin_is_reproducible_and_complete(
         "Suggest project-fit patterns and guide architecture decisions"
     )
     assert metadata["policy"]["allow_implicit_invocation"] is False
+    assert metadata["interface"]["default_prompt"] == (
+        "Suggest project-fit patterns or guide a complete architecture workflow."
+    )
     assert "dependencies" not in metadata
     assert not (second / "scripts" / "start-mcp.ps1").exists()
     assert (
@@ -122,6 +128,7 @@ def test_codex_plugin_is_reproducible_and_complete(
         / "ai-architect-runtime.exe"
     ).is_file()
     hooks = json.loads((second / "hooks" / "hooks.json").read_text("utf-8"))
+    assert hooks["description"].startswith("Five required local hooks")
     assert set(hooks["hooks"]) == {
         "UserPromptSubmit",
         "PreToolUse",
@@ -129,6 +136,11 @@ def test_codex_plugin_is_reproducible_and_complete(
         "PostCompact",
         "Stop",
     }
+    assert sum(
+        len(group["hooks"])
+        for groups in hooks["hooks"].values()
+        for group in groups
+    ) == 5
     assert "--codex-hook" in str(hooks)
     pre_tool_matcher = hooks["hooks"]["PreToolUse"][0]["matcher"]
     assert "Bash" in pre_tool_matcher

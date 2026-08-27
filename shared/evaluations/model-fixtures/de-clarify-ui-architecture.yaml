@@ -6,6 +6,7 @@ id: de-clarify-ui-architecture
 scenario: FLOW-001
 response_language: de
 activation:
+  type: direct-skill
   skill_invocation: $ai-software-architect
 prompt: >-
   Ich möchte eine Anwendung mit einer Weboberfläche entwickeln, gebaut mit

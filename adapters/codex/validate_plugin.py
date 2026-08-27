@@ -52,6 +52,10 @@ def validate(root: Path) -> None:
         if not (root / legal_file).is_file():
             raise ValueError(f"packaged public document is missing: {legal_file}")
     default_prompts = manifest["interface"].get("defaultPrompt", [])
+    long_description = manifest["interface"].get("longDescription", "")
+    warning = "⚠️ IMPORTANT: ACTIVATE ALL FIVE BUNDLED HOOKS BEFORE FIRST USE."
+    if not isinstance(long_description, str) or not long_description.startswith(warning):
+        raise ValueError("plugin long description must begin with the five-hook warning")
     if not default_prompts or not all(
         isinstance(prompt, str)
         and prompt.strip()
@@ -100,6 +104,12 @@ def validate(root: Path) -> None:
     if not hooks_path.is_file():
         raise ValueError("the default Codex control-plane hook file is missing")
     hooks = json.loads(hooks_path.read_text("utf-8"))
+    if sum(
+        len(group["hooks"])
+        for groups in hooks["hooks"].values()
+        for group in groups
+    ) != 5:
+        raise ValueError("Codex package must define exactly five command hooks")
     if set(hooks["hooks"]) != {
         "UserPromptSubmit",
         "PreToolUse",
