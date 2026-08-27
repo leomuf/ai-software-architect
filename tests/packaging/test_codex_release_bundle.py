@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MARKETPLACE_TEMPLATE = ROOT / "adapters" / "codex" / "templates" / "marketplace.json"
 INSTALL_GUIDE = ROOT / "docs" / "INSTALL_CODEX_PLUGIN.md"
 PACKAGE_SCRIPT = ROOT / "scripts" / "package-codex-release.ps1"
+CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
 
 def test_release_marketplace_points_to_bundled_plugin() -> None:
@@ -47,6 +48,14 @@ def test_install_guide_requires_no_development_runtime() -> None:
     assert ".agents/plugins/marketplace.json" in guide
     assert "$ai-software-architect" in guide
     assert "@AI Software Architect` plugin selector as a substitute" in guide
+
+
+def test_ci_packages_the_version_from_the_built_manifest() -> None:
+    workflow = CI_WORKFLOW.read_text("utf-8")
+
+    assert "dist/codex/ai-software-architect/.codex-plugin/plugin.json" in workflow
+    assert "-PluginVersion $manifest.version" in workflow
+    assert "package-codex-release.ps1 -PluginVersion 0.1.0" not in workflow
 
 
 @pytest.mark.skipif(

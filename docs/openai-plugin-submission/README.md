@@ -1,0 +1,44 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+SPDX-License-Identifier: MIT
+-->
+
+# OpenAI Plugin Submission
+
+This directory is the version-controlled source for the OpenAI plugin-directory
+submission. **AUTOSOFT Engineering** is the public brand and **XAVIER MUFFATO
+LTDA** is the registered legal publisher and the business identity that must be
+verified and selected. The files support manual entry in the OpenAI developer
+portal; they do not submit or publish anything.
+
+- [`listing.yaml`](listing.yaml) contains publisher, listing, regional, and starter
+  prompt values.
+- [`test-cases.yaml`](test-cases.yaml) contains the five positive and three
+  negative review cases required by the submission workflow.
+- `scripts/package-openai-plugin-submission.ps1` creates the dedicated upload
+  archive from an already built and validated plugin.
+
+The OpenAI submission archive is different from the GitHub marketplace bundle.
+Its ZIP root is the actual plugin root, including `.codex-plugin/plugin.json`,
+`skills/`, `hooks/`, and the self-contained runtime. It contains no outer
+marketplace catalog and requires no Python or `uv` installation.
+
+Before copying values into the portal:
+
+1. review every statement against the exact release candidate;
+2. confirm the repository, privacy, terms, support, and security URLs are public;
+3. test the exact upload archive on a clean supported Windows environment;
+4. confirm the publishing OpenAI organization exposes `XAVIER MUFFATO LTDA` as
+   the verified business identity and the submitter has Apps Management Write
+   permission; and
+5. confirm the live portal's available category and region choices.
+
+Hooks are part of the submitted Codex experience. Users review and activate them
+in Codex. They are not described as providing identical enforcement on hosts that
+do not support Codex lifecycle hooks.
+
+In the portal's **Developer Identity** field, select the exact verified value
+`XAVIER MUFFATO LTDA`. Do not replace it with the brand name or the combined
+brand/legal wording. Public descriptive fields may use `AUTOSOFT Engineering`; the
+manifest author and legal documents make the relationship explicit as
+`AUTOSOFT Engineering (a brand of XAVIER MUFFATO LTDA)`.

@@ -7,7 +7,7 @@ SPDX-License-Identifier: MIT
 
 ## Supported versions
 
-Security fixes are provided for the latest released minor version. Before the first public release, only the current `main` branch is supported.
+Security fixes are provided for the latest released minor version.
 
 ## Reporting a vulnerability
 

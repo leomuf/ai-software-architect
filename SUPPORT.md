@@ -5,6 +5,9 @@ SPDX-License-Identifier: MIT
 
 # Support
 
+AI Software Architect is published and supported under the **AUTOSOFT
+Engineering** brand by **XAVIER MUFFATO LTDA**.
+
 ## Questions and Bug Reports
 
 Use the repository's
@@ -12,7 +15,7 @@ Use the repository's
 
 - installation or update problems;
 - hook activation questions;
-- MCP startup or lifecycle failures;
+- hook activation or lifecycle failures;
 - incorrect or confusing architecture behavior; and
 - documentation improvements.
 
@@ -42,7 +45,11 @@ Do not report vulnerabilities through a public issue. Use the private process in
 
 ## Current Support Scope
 
-Before the first public release, the project supports the current `main` branch for
-development feedback. The initial packaged runtime targets Windows x86-64. GitHub
+The latest released minor version receives support. The current packaged runtime
+targets Windows x86-64. GitHub
 Copilot, Claude Code, Google Antigravity, and other coding-agent adapters are not yet
 implemented.
+
+For questions that are unsuitable for a public issue, contact
+[info@autosoft-engineering.de](mailto:info@autosoft-engineering.de). Response times
+are best-effort unless a separate written support agreement applies.

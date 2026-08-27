@@ -5,7 +5,27 @@ SPDX-License-Identifier: MIT
 
 # Changelog
 
-## [0.2.0] - Unreleased
+## [0.2.1] - Unreleased
+
+### Added
+
+- Public privacy policy, terms of use, and expanded support documentation for
+  plugin-directory submission.
+- Versioned OpenAI submission listing, starter prompts, and reviewer-ready
+  positive and negative test cases.
+- A dedicated, validated OpenAI plugin submission archive that keeps the plugin
+  root separate from the local repository-marketplace bundle.
+
+### Changed
+
+- Identified AUTOSOFT Engineering as the public brand and XAVIER MUFFATO LTDA as
+  the registered legal publisher and business identity to verify for submission.
+- Added public website, privacy-policy, and terms-of-service metadata to the Codex
+  plugin manifest.
+- Updated the default development package version to `0.2.1` while preserving the
+  immutable `v0.2.0` release.
+
+## [0.2.0] - 2026-08-26
 
 ### Added
 
