@@ -18,6 +18,8 @@ SPDX-License-Identifier: MIT
   after submission or approval without publishing another software release.
 - Prepared the default development build and submission examples for version
   `0.2.2`.
+- Unified the plugin, workspace, schema, and deterministic-tools package metadata
+  under version `0.2.2`, with a conformance test preventing future drift.
 
 ### Fixed
 

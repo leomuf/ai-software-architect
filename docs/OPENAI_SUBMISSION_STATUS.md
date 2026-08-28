@@ -22,7 +22,7 @@ documentation-only pull request without publishing another GitHub Release.
 | Submission date | Not yet confirmed |
 | Approval date | Not yet applicable |
 | Public directory URL | Not yet available |
-| OpenAI submission ZIP SHA-256 | `dc7be163559b3bb7436132ae6e7b9fe1d94119dd04b7c74aa794db977c10fd9c` |
+| OpenAI submission ZIP SHA-256 | Record from the final tagged build before submission |
 
 “Ready for submission” means that the repository contains a validated candidate;
 it does not claim that OpenAI has received, reviewed, approved, endorsed, or
@@ -32,7 +32,10 @@ published the plugin.
 
 After the portal confirms receipt, change the status to **Submitted — awaiting
 review**, record the submission date, and retain the exact submitted version and
-SHA-256. After approval, change it to **Approved and available**, record the
+SHA-256 from the immutable release asset. Do not commit a candidate hash before
+the final tag: the repository commit is part of package provenance, so another
+commit produces a different archive. After approval, change the status to
+**Approved and available**, record the
 approval date, and add the official public directory URL.
 
 These status-only edits should use a small documentation pull request. They do
@@ -58,4 +61,3 @@ documentation-only changes.
 > **OpenAI Plugin Directory status: Approved and available.** AI Software
 > Architect v0.2.2 was approved on `YYYY-MM-DD` and is available at
 > `[official directory URL]`.
-

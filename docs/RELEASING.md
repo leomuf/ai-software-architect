@@ -81,13 +81,30 @@ GitHub Release. Follow [`ReleaseGuide.md`](ReleaseGuide.md) for that procedure.
 
 ## Version Policy
 
-Use Semantic Versioning for public packages:
+Use one Semantic Versioning value for the public plugin and the bundled internal
+Python workspace packages. Although the Python packages are not independently
+published to PyPI, aligning their metadata prevents installed-runtime and
+repository diagnostics from reporting a stale product version.
 
-- first beta: `0.1.0-beta.1`;
-- first stable release: `0.1.0`;
-- local iteration: `0.1.0+codex.<UTC timestamp>`.
+The canonical source is
+[`adapters/codex/templates/plugin.json`](../adapters/codex/templates/plugin.json).
+For each release, keep that value aligned with:
 
-The Git tag adds a `v`, for example `v0.1.0-beta.1`; the plugin manifest does not.
+- the root `ai-software-architect-workspace` project;
+- `ai-architect-schemas`;
+- `ai-architect-tools` and `ai_architect_tools.__version__`; and
+- the corresponding workspace package entries generated in `uv.lock`.
+
+Never edit `uv.lock` manually; regenerate it with `uv lock` after changing the
+project metadata. A deterministic conformance test rejects version drift.
+
+Examples:
+
+- stable release: `0.2.2`;
+- prerelease: `0.3.0-beta.1`;
+- local iteration: `0.2.2+codex.<UTC timestamp>`.
+
+The Git tag adds a `v`, for example `v0.2.2`; the plugin manifest does not.
 
 Supply the complete version to `scripts/build-codex-plugin.ps1` during assembly.
 Never edit the generated manifest or recalculate provenance after the build. Any

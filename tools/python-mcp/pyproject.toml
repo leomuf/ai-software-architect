@@ -7,7 +7,7 @@ build-backend = "uv_build"
 
 [project]
 name = "ai-architect-tools"
-version = "0.1.0"
+version = "0.2.2"
 description = "Read-only deterministic MCP and CLI tools for AI Software Architect."
 requires-python = ">=3.11,<3.14"
 dependencies = [
@@ -23,4 +23,3 @@ ai-architect-mcp = "ai_architect_tools.mcp_server:main"
 
 [tool.uv.sources]
 ai-architect-schemas = { workspace = true }
-
