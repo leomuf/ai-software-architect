@@ -25,6 +25,7 @@ def test_manifest_identifies_company_publisher_and_public_policies() -> None:
         "AUTOSOFT Engineering (a brand of XAVIER MUFFATO LTDA)"
     )
     assert manifest["interface"]["developerName"] == "AUTOSOFT Engineering"
+    assert manifest["interface"]["category"] == "Developer Tools"
     for field in ("websiteURL", "privacyPolicyURL", "termsOfServiceURL"):
         assert manifest["interface"][field].startswith("https://")
 
@@ -38,6 +39,7 @@ def test_submission_listing_has_three_realistic_starter_prompts() -> None:
         == "XAVIER MUFFATO LTDA"
     )
     assert listing["plugin"]["portal_submission_type"] == "Skills only"
+    assert listing["plugin"]["category_preference"] == "Developer Tools"
     assert len(listing["starter_prompts"]) == 3
     assert all(prompt.strip() for prompt in listing["starter_prompts"])
 
