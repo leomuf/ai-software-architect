@@ -21,7 +21,9 @@ portal; they do not submit or publish anything.
 The OpenAI submission archive is different from the GitHub marketplace bundle.
 Its ZIP root is the actual plugin root, including `.codex-plugin/plugin.json`,
 `skills/`, `hooks/`, and the self-contained runtime. It contains no outer
-marketplace catalog and requires no Python or `uv` installation.
+marketplace catalog and requires no Python or `uv` installation. The packaging
+script writes normalized ZIP member paths without a leading `./`, so the archive
+can also be opened and extracted with Windows Explorer.
 
 Before copying values into the portal:
 
