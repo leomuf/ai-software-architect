@@ -14,6 +14,8 @@ SPDX-License-Identifier: MIT
 - Added transparent, public evaluation-volume evidence to the plugin listing and
   repository documentation without presenting development observations as passed
   tests.
+- Added a canonical OpenAI Plugin Directory status record that can be updated
+  after submission or approval without publishing another software release.
 - Prepared the default development build and submission examples for version
   `0.2.2`.
 
