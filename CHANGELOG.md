@@ -15,6 +15,8 @@ SPDX-License-Identifier: MIT
   positive and negative test cases.
 - A dedicated, validated OpenAI plugin submission archive that keeps the plugin
   root separate from the local repository-marketplace bundle.
+- A separate structured plugin-mention smoke gate that verifies picker-based
+  activation without changing the canonical five-fixture performance cohort.
 
 ### Changed
 
@@ -24,6 +26,10 @@ SPDX-License-Identifier: MIT
   plugin manifest.
 - Updated the default development package version to `0.2.1` while preserving the
   immutable `v0.2.0` release.
+- Made picker-selected `@AI Software Architect` the simplest public invocation
+  while retaining `$ai-software-architect` as a direct advanced alternative.
+- Refined the marketplace title and description and prominently require users to
+  activate all five bundled hooks before first use.
 
 ## [0.2.0] - 2026-08-26
 
