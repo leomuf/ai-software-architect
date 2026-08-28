@@ -3,7 +3,7 @@
 
 interface:
   display_name: "AI Software Architect"
-  short_description: "Suggest project-fit patterns and guide architecture decisions"
+  short_description: "Architecture & Design Pattern Advisor"
   default_prompt: "Suggest project-fit patterns or guide a complete architecture workflow."
 
 policy:
