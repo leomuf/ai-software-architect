@@ -35,7 +35,6 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 
 $PluginName = "ai-software-architect"
 $RepositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
@@ -153,7 +152,17 @@ try {
     $Archive.Dispose()
 }
 
-$ArchiveHash = (Get-FileHash -LiteralPath $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+$HashStream = [IO.File]::OpenRead($ArchivePath)
+$Sha256 = [Security.Cryptography.SHA256]::Create()
+try {
+    $ArchiveHash = [BitConverter]::ToString($Sha256.ComputeHash($HashStream)).Replace(
+        "-",
+        ""
+    ).ToLowerInvariant()
+} finally {
+    $Sha256.Dispose()
+    $HashStream.Dispose()
+}
 Set-Content -LiteralPath $ChecksumPath -Value "$ArchiveHash  $ArchiveName`n" -Encoding ascii
 
 Write-Host ""

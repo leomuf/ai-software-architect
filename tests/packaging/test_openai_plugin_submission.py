@@ -56,7 +56,9 @@ def test_openai_package_script_preserves_plugin_root() -> None:
     script = PACKAGE_SCRIPT.read_text("utf-8-sig")
 
     assert "IO.Compression.ZipArchive" in script
+    assert "Security.Cryptography.SHA256" in script
     assert 'Replace("\\", "/")' in script
+    assert "Get-FileHash" not in script
     assert "tar.exe" not in script
     assert '".codex-plugin/plugin.json"' in script
     assert '".agents/plugins/marketplace.json"' in script
