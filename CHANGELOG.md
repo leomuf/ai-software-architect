@@ -5,7 +5,26 @@ SPDX-License-Identifier: MIT
 
 # Changelog
 
-## [0.2.1] - Unreleased
+## [0.2.2] - Unreleased
+
+### Changed
+
+- Classified the canonical plugin manifest and submission listing under
+  **Developer Tools**.
+- Added transparent, public evaluation-volume evidence to the plugin listing and
+  repository documentation without presenting development observations as passed
+  tests.
+- Prepared the default development build and submission examples for version
+  `0.2.2`.
+
+### Fixed
+
+- Made the OpenAI submission archive directly extractable with Windows Explorer
+  by emitting portable ZIP member paths.
+- Made release hashing independent of optional Windows PowerShell modules so the
+  submission packaging regression runs reliably in GitHub Actions.
+
+## [0.2.1] - 2026-08-28
 
 ### Added
 

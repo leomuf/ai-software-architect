@@ -521,6 +521,16 @@ Codex, and reopen the plugin from **Personal**. Do not edit Codex's installed-pl
 cache. Detailed troubleshooting and clean-reinstall instructions are in
 [`docs/RELEASING.md`](docs/RELEASING.md#install-or-update-from-the-codex-plugins-window).
 
+## Testing and Evaluation Evidence
+
+The public, privacy-preserving history currently records more than 350 eligible
+exploratory evaluation observations across more than 140 campaigns and 13
+fixtures, complemented by more than 160 deterministic automated tests. These
+observations include successful release evidence and failure-finding development
+runs; they are not presented as more than 350 passed tests. The underlying data
+and reproducible reporting workflow are documented in
+[`evaluation-data/`](evaluation-data/README.md).
+
 ## Release Documentation
 
 - [`docs/ReleaseGuide.md`](docs/ReleaseGuide.md) is the concise operator guide

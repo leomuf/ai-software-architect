@@ -241,7 +241,7 @@ After the exact plugin is built and validated, create the separate OpenAI
 plugin-directory archive:
 
 ```powershell
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.1
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.2
 ```
 
 Unlike the GitHub marketplace bundle, this archive places

@@ -25,6 +25,17 @@ marketplace catalog and requires no Python or `uv` installation. The packaging
 script writes normalized ZIP member paths without a leading `./`, so the archive
 can also be opened and extracted with Windows Explorer.
 
+## Testing and Evaluation Evidence
+
+The public, privacy-preserving history currently records more than 350 eligible
+exploratory evaluation observations across more than 140 campaigns and 13
+fixtures, complemented by more than 160 deterministic automated tests. This
+history intentionally contains successful release evidence as well as
+failure-finding development runs; it is evidence of repeated evaluation, not a
+claim that more than 350 tests passed. The source observations and reproducible
+reporting instructions are versioned under
+[`evaluation-data/`](../../evaluation-data/README.md).
+
 Before copying values into the portal:
 
 1. review every statement against the exact release candidate;
