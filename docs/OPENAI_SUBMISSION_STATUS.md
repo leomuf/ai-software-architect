@@ -32,10 +32,10 @@ published the plugin.
 
 After the portal confirms receipt, change the status to **Submitted — awaiting
 review**, record the submission date, and retain the exact submitted version and
-SHA-256 from the immutable release asset. Do not commit a candidate hash before
-the final tag: the repository commit is part of package provenance, so another
-commit produces a different archive. After approval, change the status to
-**Approved and available**, record the
+SHA-256 from the immutable release asset. Do not present a provisional candidate
+hash as final: the authoritative value is calculated from the exact archive that
+is published and submitted. Record its source commit separately in the release
+evidence. After approval, change the status to **Approved and available**, record the
 approval date, and add the official public directory URL.
 
 These status-only edits should use a small documentation pull request. They do
