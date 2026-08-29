@@ -27,7 +27,7 @@ def test_manifest_identifies_company_publisher_and_public_policies() -> None:
     )
     assert manifest["interface"]["developerName"] == "AUTOSOFT Engineering"
     assert manifest["interface"]["category"] == "Developer Tools"
-    assert "more than 350 eligible exploratory observations" in (
+    assert "eligible exploratory observations" not in (
         manifest["interface"]["longDescription"]
     )
     for field in ("websiteURL", "privacyPolicyURL", "termsOfServiceURL"):

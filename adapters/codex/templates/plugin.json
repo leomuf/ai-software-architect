@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "AI Software Architect",
     "shortDescription": "Architecture & Design Pattern Advisor",
-    "longDescription": "Helps you and your coding agent choose the best-fit software architecture for your project by analyzing needs, comparing architectural options and design patterns, and explaining trade-offs before implementation. Guides evidence-based decisions with guardrails, validated Architecture Decision Records (ADRs), coding handoffs, and conformance reviews using the user's selected AI model. The public, privacy-preserving evaluation history records more than 350 eligible exploratory observations across more than 140 campaigns, complemented by more than 160 deterministic automated tests.\n\n⚠️ IMPORTANT: BEFORE FIRST USE, ACTIVATE ALL FIVE BUNDLED HOOKS IN THE HOOKS SECTION BELOW. All five are required for reliable routing, continuation, safety checks, artifact validation, and complete responses.",
+    "longDescription": "Helps you and your coding agent choose the best-fit software architecture for your project by analyzing needs, comparing architectural options and design patterns, and explaining trade-offs before implementation. Guides evidence-based decisions with guardrails, validated Architecture Decision Records (ADRs), coding handoffs, and conformance reviews using the user's selected AI model.\n\n⚠️ IMPORTANT: BEFORE FIRST USE, ACTIVATE ALL FIVE BUNDLED HOOKS IN THE HOOKS SECTION BELOW. All five are required for reliable routing, continuation, safety checks, artifact validation, and complete responses.",
     "developerName": "AUTOSOFT Engineering",
     "category": "Developer Tools",
     "capabilities": ["Read", "Write"],
