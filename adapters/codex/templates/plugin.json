@@ -1,6 +1,6 @@
 {
   "name": "ai-software-architect",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Project-aware design-pattern and architecture guidance using your Codex model, with transparent local safety and quality hooks.",
   "author": {
     "name": "AUTOSOFT Engineering (a brand of XAVIER MUFFATO LTDA)",
@@ -16,7 +16,7 @@
     "shortDescription": "Architecture & Design Pattern Advisor",
     "longDescription": "Helps you and your coding agent choose the best-fit software architecture for your project by analyzing needs, comparing architectural options and design patterns, and explaining trade-offs before implementation. Guides evidence-based decisions with guardrails, validated Architecture Decision Records (ADRs), coding handoffs, and conformance reviews using the user's selected AI model.\n\n⚠️ IMPORTANT: BEFORE FIRST USE, ACTIVATE ALL FIVE BUNDLED HOOKS IN THE HOOKS SECTION BELOW. All five are required for reliable routing, continuation, safety checks, artifact validation, and complete responses.",
     "developerName": "AUTOSOFT Engineering",
-    "category": "Productivity",
+    "category": "Developer Tools",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/leomuf/ai-software-architect",
     "privacyPolicyURL": "https://github.com/leomuf/ai-software-architect/blob/main/PRIVACY.md",

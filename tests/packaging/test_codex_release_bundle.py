@@ -36,7 +36,7 @@ def test_release_marketplace_points_to_bundled_plugin() -> None:
                 "installation": "AVAILABLE",
                 "authentication": "ON_INSTALL",
             },
-            "category": "Productivity",
+            "category": "Developer Tools",
         }
     ]
 

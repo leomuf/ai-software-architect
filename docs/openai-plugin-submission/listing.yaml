@@ -32,9 +32,11 @@ plugin:
     The user's selected Codex model performs the reasoning. Transparent, short-lived
     local hooks reinforce activation, continuation, static inspection, guarded
     artifact writing, and response validation without network calls or a persistent
-    service.
+    service. The public, privacy-preserving evaluation history records more than
+    350 eligible exploratory observations across more than 140 campaigns,
+    complemented by more than 160 deterministic automated tests.
   initial_submission_release_notes: >-
-    Initial OpenAI Plugins Directory submission under the AUTOSOFT Engineering
+    Version 0.2.2 OpenAI Plugins Directory submission under the AUTOSOFT Engineering
     brand by XAVIER MUFFATO LTDA. Includes
     project-aware architecture and design-pattern guidance, stored Python pattern
     examples, user-approved ADR and handoff artifacts, bounded static repository

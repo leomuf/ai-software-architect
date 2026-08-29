@@ -11,6 +11,14 @@ AI Software Architect is an open-source, host-native architecture agent for codi
 
 Maintained by Leonardo Muffato at [AUTOSOFT Engineering](https://www.autosoft-engineering.de).
 
+## OpenAI Plugin Directory Status
+
+**Current status: Ready for submission.** The validated AI Software Architect
+v0.2.2 candidate has been prepared, but submission and approval have not yet been
+confirmed. See the canonical
+[`OpenAI Plugin Directory status`](docs/OPENAI_SUBMISSION_STATUS.md) for the
+submitted package identity and future review or availability updates.
+
 ## Why AI Software Architect?
 
 AI coding assistants are excellent at generating working code quickly, but they can begin implementation before making the architecture explicit. Important questions about constraints, quality attributes, component boundaries, data ownership, viable alternatives, and long-term trade-offs may therefore remain hidden inside one conversation—or never be considered at all. The result can work today while becoming unnecessarily coupled, difficult to test, or expensive to evolve.
@@ -521,6 +529,16 @@ Codex, and reopen the plugin from **Personal**. Do not edit Codex's installed-pl
 cache. Detailed troubleshooting and clean-reinstall instructions are in
 [`docs/RELEASING.md`](docs/RELEASING.md#install-or-update-from-the-codex-plugins-window).
 
+## Testing and Evaluation Evidence
+
+The public, privacy-preserving history currently records more than 350 eligible
+exploratory evaluation observations across more than 140 campaigns and 13
+fixtures, complemented by more than 160 deterministic automated tests. These
+observations include successful release evidence and failure-finding development
+runs; they are not presented as more than 350 passed tests. The underlying data
+and reproducible reporting workflow are documented in
+[`evaluation-data/`](evaluation-data/README.md).
+
 ## Release Documentation
 
 - [`docs/ReleaseGuide.md`](docs/ReleaseGuide.md) is the concise operator guide
@@ -528,6 +546,8 @@ cache. Detailed troubleshooting and clean-reinstall instructions are in
   completing the Devpost submission.
 - [`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md) is the
   dependency-free installation path for users.
+- [`docs/OPENAI_SUBMISSION_STATUS.md`](docs/OPENAI_SUBMISSION_STATUS.md) is the
+  canonical, independently updateable OpenAI Plugin Directory status record.
 - [`docs/RELEASING.md`](docs/RELEASING.md) is the canonical maintainer guide for
   local builds, personal-marketplace testing, exact release-candidate gates,
   Codex Desktop acceptance, and GitHub publication.

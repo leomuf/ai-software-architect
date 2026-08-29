@@ -23,7 +23,7 @@ Directory for the ZIP and checksum. Relative paths resolve from the repository r
 Expected Semantic Versioning value. When omitted, the manifest version is used.
 
 .EXAMPLE
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.1
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.2
 #>
 
 [CmdletBinding()]
@@ -100,29 +100,38 @@ foreach ($OldPath in @($ArchivePath, $ChecksumPath)) {
     }
 }
 
-# Compress-Archive can omit dot-prefixed paths. tar.exe preserves the required
-# .codex-plugin directory while placing the plugin contents at the ZIP root.
-$Tar = Get-Command tar.exe -CommandType Application -ErrorAction Stop |
-    Select-Object -First 1 -ExpandProperty Source
-& $Tar -a -c -f $ArchivePath -C $Source .
-if ($LASTEXITCODE -ne 0) {
-    throw "tar.exe failed to create '$ArchivePath' with exit code $LASTEXITCODE."
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$ArchiveStream = [IO.File]::Open($ArchivePath, [IO.FileMode]::CreateNew)
+$Archive = New-Object IO.Compression.ZipArchive(
+    $ArchiveStream,
+    [IO.Compression.ZipArchiveMode]::Create,
+    $false
+)
+try {
+    foreach ($File in Get-ChildItem -LiteralPath $Source -Recurse -File) {
+        $RelativePath = $File.FullName.Substring($Source.Length + 1).Replace("\", "/")
+        [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $Archive,
+            $File.FullName,
+            $RelativePath,
+            [IO.Compression.CompressionLevel]::Optimal
+        ) | Out-Null
+    }
+} finally {
+    $Archive.Dispose()
+    $ArchiveStream.Dispose()
 }
 
-Add-Type -AssemblyName System.IO.Compression.FileSystem
 $Archive = [IO.Compression.ZipFile]::OpenRead($ArchivePath)
 try {
-    $Members = @(
-        $Archive.Entries |
-            ForEach-Object {
-                $Normalized = $_.FullName.Replace("\", "/")
-                if ($Normalized.StartsWith("./", [StringComparison]::Ordinal)) {
-                    $Normalized.Substring(2)
-                } else {
-                    $Normalized
-                }
-            }
-    )
+    $Members = @($Archive.Entries | ForEach-Object { $_.FullName.Replace("\", "/") })
+    $NonPortableMember = $Members | Where-Object {
+        $_.StartsWith("./", [StringComparison]::Ordinal) -or $_.Contains("\")
+    } | Select-Object -First 1
+    if ($null -ne $NonPortableMember) {
+        throw "Submission archive contains a non-portable member path: $NonPortableMember"
+    }
     foreach ($RequiredMember in @(
         ".codex-plugin/plugin.json",
         "skills/ai-software-architect/SKILL.md",
@@ -143,7 +152,17 @@ try {
     $Archive.Dispose()
 }
 
-$ArchiveHash = (Get-FileHash -LiteralPath $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+$HashStream = [IO.File]::OpenRead($ArchivePath)
+$Sha256 = [Security.Cryptography.SHA256]::Create()
+try {
+    $ArchiveHash = [BitConverter]::ToString($Sha256.ComputeHash($HashStream)).Replace(
+        "-",
+        ""
+    ).ToLowerInvariant()
+} finally {
+    $Sha256.Dispose()
+    $HashStream.Dispose()
+}
 Set-Content -LiteralPath $ChecksumPath -Value "$ArchiveHash  $ArchiveName`n" -Encoding ascii
 
 Write-Host ""

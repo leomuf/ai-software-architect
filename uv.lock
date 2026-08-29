@@ -11,7 +11,7 @@ members = [
 
 [[package]]
 name = "ai-architect-schemas"
-version = "0.1.0"
+version = "0.2.2"
 source = { editable = "shared/schemas" }
 dependencies = [
     { name = "pydantic" },
@@ -22,7 +22,7 @@ requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
 
 [[package]]
 name = "ai-architect-tools"
-version = "0.1.0"
+version = "0.2.2"
 source = { editable = "tools/python-mcp" }
 dependencies = [
     { name = "ai-architect-schemas" },
@@ -39,7 +39,7 @@ requires-dist = [
 
 [[package]]
 name = "ai-software-architect-workspace"
-version = "0.1.0"
+version = "0.2.2"
 source = { virtual = "." }
 
 [package.dev-dependencies]

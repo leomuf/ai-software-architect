@@ -11,6 +11,11 @@ LTDA** is the registered legal publisher and the business identity that must be
 verified and selected. The files support manual entry in the OpenAI developer
 portal; they do not submit or publish anything.
 
+The public lifecycle state is maintained separately in
+[`docs/OPENAI_SUBMISSION_STATUS.md`](../OPENAI_SUBMISSION_STATUS.md). Update that
+record after confirmed submission or approval without changing an already
+published release artifact.
+
 - [`listing.yaml`](listing.yaml) contains publisher, listing, regional, and starter
   prompt values.
 - [`test-cases.yaml`](test-cases.yaml) contains the five positive and three
@@ -21,7 +26,20 @@ portal; they do not submit or publish anything.
 The OpenAI submission archive is different from the GitHub marketplace bundle.
 Its ZIP root is the actual plugin root, including `.codex-plugin/plugin.json`,
 `skills/`, `hooks/`, and the self-contained runtime. It contains no outer
-marketplace catalog and requires no Python or `uv` installation.
+marketplace catalog and requires no Python or `uv` installation. The packaging
+script writes normalized ZIP member paths without a leading `./`, so the archive
+can also be opened and extracted with Windows Explorer.
+
+## Testing and Evaluation Evidence
+
+The public, privacy-preserving history currently records more than 350 eligible
+exploratory evaluation observations across more than 140 campaigns and 13
+fixtures, complemented by more than 160 deterministic automated tests. This
+history intentionally contains successful release evidence as well as
+failure-finding development runs; it is evidence of repeated evaluation, not a
+claim that more than 350 tests passed. The source observations and reproducible
+reporting instructions are versioned under
+[`evaluation-data/`](../../evaluation-data/README.md).
 
 Before copying values into the portal:
 
