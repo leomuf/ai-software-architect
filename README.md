@@ -13,9 +13,9 @@ Maintained by Leonardo Muffato at [AUTOSOFT Engineering](https://www.autosoft-en
 
 ## OpenAI Plugin Directory Status
 
-**Current status: Release preparation in progress.** The AI Software Architect
-v0.2.3 release is being prepared; its exact package, submission, and approval have
-not yet been confirmed. See the canonical
+**Current status: Ready for submission.** The validated AI Software Architect
+v0.2.3 candidate has been prepared, but submission and approval have not yet been
+confirmed. See the canonical
 [`OpenAI Plugin Directory status`](docs/OPENAI_SUBMISSION_STATUS.md) for the
 submitted package identity and future review or availability updates.
 

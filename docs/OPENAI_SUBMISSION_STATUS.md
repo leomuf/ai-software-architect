@@ -14,19 +14,19 @@ documentation-only pull request without publishing another GitHub Release.
 
 | Field | Value |
 | --- | --- |
-| Status | **Release preparation in progress** |
+| Status | **Ready for submission** |
 | Plugin version | `0.2.3` |
 | Publisher brand | AUTOSOFT Engineering |
 | Verified legal publisher | XAVIER MUFFATO LTDA |
-| Candidate prepared | Pending the versioned build |
+| Candidate prepared | 2026-08-30 |
 | Submission date | Not yet confirmed |
 | Approval date | Not yet applicable |
 | Public directory URL | Not yet available |
 | OpenAI submission ZIP SHA-256 | Record from the final tagged build before submission |
 
-“Release preparation in progress” means that the repository version is being
-prepared for a candidate build; it does not claim that a final candidate exists or
-that OpenAI has received, reviewed, approved, endorsed, or published the plugin.
+“Ready for submission” means that the repository contains a validated candidate;
+it does not claim that OpenAI has received, reviewed, approved, endorsed, or
+published the plugin.
 
 ## How to Update This Record
 
