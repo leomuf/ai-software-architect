@@ -542,8 +542,7 @@ and reproducible reporting workflow are documented in
 ## Release Documentation
 
 - [`docs/RELEASING.md`](docs/RELEASING.md) is the canonical operator guide
-  for tagging, creating the release bundle, drafting the GitHub Release, and
-  completing the Devpost submission.
+  for tagging, creating the release bundle, and drafting the GitHub Release.
 - [`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md) is the
   dependency-free installation path for users.
 - [`docs/OPENAI_SUBMISSION_STATUS.md`](docs/OPENAI_SUBMISSION_STATUS.md) is the

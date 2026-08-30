@@ -526,17 +526,6 @@ first-attempt uninstallation.
 Never move or recreate a published release tag. Correct a published release by
 publishing an appropriate new version.
 
-## Complete the Build Week Submission (When Applicable)
-
-Use the published GitHub repository and release URLs in the OpenAI Build Week
-submission. Before the deadline, confirm that the repository is public or shared
-with the required evaluator accounts, the public demonstration meets the current
-event requirements, the required Codex feedback session ID and category are
-selected, installation and testing link to the dependency-free release, and the
-submission is marked **Submitted**, not **Draft**. Keep the submitted repository,
-release, video, and project description available throughout the evaluation
-period.
-
 ## Release Decision
 
 A release is ready only when:
