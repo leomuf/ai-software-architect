@@ -120,7 +120,7 @@ def test_codex_plugin_is_reproducible_and_complete(
 
     metadata = yaml.safe_load((skill / "agents" / "openai.yaml").read_text("utf-8"))
     assert metadata["interface"]["short_description"] == (
-        "Architecture & Design Pattern Advisor"
+        "Choose best design patterns"
     )
     assert metadata["policy"]["allow_implicit_invocation"] is False
     assert metadata["interface"]["default_prompt"] == (
