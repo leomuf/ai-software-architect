@@ -62,6 +62,10 @@ Evidence: `<link or concise note>`
 
 ## Gate D: Exploratory Fixtures
 
+Choose one path and record it completely.
+
+### Full campaign
+
 - Runner output directory:
 - `report.json` SHA-256:
 - `SUMMARY.md` reviewed:
@@ -77,6 +81,15 @@ Evidence: `<link or concise note>`
 | `avoid-overengineering` | `<pass/fail>` | `<result>` | `<result>` | `<result>` | `<link/note>` |
 
 Unresolved infrastructure errors: `<none or details>`
+
+### Approved waiver
+
+- [ ] candidate changed only version alignment, documentation, portal metadata, or package-discovery metadata
+- [ ] assembled package, provenance, and runtime smoke tests passed
+- [ ] no skill, hook definition/runtime behavior, contract, fixture, model prompt, or dependency changed
+- [ ] Gate C, Gate E, and Gate F completed for the exact candidate
+- Exact unchanged behavioral surface:
+- Maintainer rationale and approver:
 
 ## Gate E: Codex Desktop Acceptance
 
