@@ -7,7 +7,7 @@ build-backend = "uv_build"
 
 [project]
 name = "ai-architect-schemas"
-version = "0.2.2"
+version = "0.2.3"
 description = "Canonical Pydantic contracts for AI Software Architect."
 requires-python = ">=3.11,<3.14"
 dependencies = ["pydantic>=2.12,<3"]

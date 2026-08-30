@@ -14,7 +14,7 @@ Maintained by Leonardo Muffato at [AUTOSOFT Engineering](https://www.autosoft-en
 ## OpenAI Plugin Directory Status
 
 **Current status: Ready for submission.** The validated AI Software Architect
-v0.2.2 candidate has been prepared, but submission and approval have not yet been
+v0.2.3 candidate has been prepared, but submission and approval have not yet been
 confirmed. See the canonical
 [`OpenAI Plugin Directory status`](docs/OPENAI_SUBMISSION_STATUS.md) for the
 submitted package identity and future review or availability updates.
@@ -541,9 +541,8 @@ and reproducible reporting workflow are documented in
 
 ## Release Documentation
 
-- [`docs/ReleaseGuide.md`](docs/ReleaseGuide.md) is the concise operator guide
-  for tagging, creating the release bundle, drafting the GitHub Release, and
-  completing the Devpost submission.
+- [`docs/RELEASING.md`](docs/RELEASING.md) is the canonical operator guide
+  for tagging, creating the release bundle, and drafting the GitHub Release.
 - [`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md) is the
   dependency-free installation path for users.
 - [`docs/OPENAI_SUBMISSION_STATUS.md`](docs/OPENAI_SUBMISSION_STATUS.md) is the

@@ -433,27 +433,6 @@ The existing proposal is documented in
 on every pull request: it is slower, consumes credits, requires a protected secret,
 and has nondeterministic semantic output.
 
-## Release Status and Remaining Work
-
-The intended first public release is `0.1.0`. The exact remaining blockers are the
-authoritative checklist in `TODO.md`; do not copy that checklist into another
-source of truth. At handoff, the major remaining activities were:
-
-- commit and rerun the deterministic release-candidate gates from a clean commit;
-- inspect the marketplace ZIP, checksum, and provenance;
-- run and record the exact installed-candidate exploratory campaign;
-- complete first-attempt uninstall and clean-machine Windows acceptance;
-- publish and verify the public GitHub Release;
-- finish the public under-three-minute demo and Devpost submission.
-
-The demo video must be under three minutes and include audio explaining how Codex
-and GPT-5.6 were used. The project runtime is not tied to GPT-5.6: users receive
-architecture reasoning from whichever compatible model they select in their coding
-assistant. Do not reintroduce wording that claims the plugin always runs GPT-5.6.
-
-`docs/DEMO_VIDEO.md` existed as an untracked draft at handoff. The main README must
-not mention `DEMO_VIDEO.md` unless that decision is explicitly revisited.
-
 ## Safety and Maintenance Constraints
 
 - Treat the public repository as attacker-readable; controls must not depend on

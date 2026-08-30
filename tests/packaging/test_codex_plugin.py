@@ -57,6 +57,7 @@ def test_codex_plugin_is_reproducible_and_complete(
         f"\n\n{warning} {hook_explanation}"
     )
     assert manifest["license"] == "MIT"
+    assert manifest["hooks"] == "./hooks/hooks.json"
     assert "mcpServers" not in manifest
     assert not (second / ".mcp.json").exists()
     assert not (second / ".codex-plugin" / ".mcp.json").exists()

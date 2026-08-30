@@ -35,13 +35,14 @@ plugin:
     service. The public, privacy-preserving evaluation history records more than
     350 eligible exploratory observations across more than 140 campaigns,
     complemented by more than 160 deterministic automated tests.
-  initial_submission_release_notes: >-
-    Version 0.2.2 OpenAI Plugins Directory submission under the AUTOSOFT Engineering
-    brand by XAVIER MUFFATO LTDA. Includes
-    project-aware architecture and design-pattern guidance, stored Python pattern
-    examples, user-approved ADR and handoff artifacts, bounded static repository
-    review, and transparent Codex lifecycle-hook guardrails. No MCP server,
-    separate model API key, or persistent background process is required.
+  update_release_notes: >-
+    Update from version 0.2.2 to 0.2.3 under the AUTOSOFT Engineering brand by
+    XAVIER MUFFATO LTDA. This version explicitly declares the bundled
+    hooks/hooks.json configuration so public Codex plugin installations can
+    discover, review, and activate all five lifecycle hooks. The project-aware
+    architecture and design-pattern guidance, stored pattern examples,
+    user-approved ADR and handoff artifacts, bounded static repository review,
+    short-lived local runtime, and no-MCP design are otherwise unchanged.
   countries_and_regions:
     selection: confirm-in-portal
     intended: broadly-available-where-openai-plugin-directory-is-supported

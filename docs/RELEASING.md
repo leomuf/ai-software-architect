@@ -44,7 +44,7 @@ process-scoped alternative is documented in
 | Changes intended for users | [`CHANGELOG.md`](../CHANGELOG.md) |
 | Pull-request and `main` validation | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 | Tag-triggered package build | [`.github/workflows/release.yml`](../.github/workflows/release.yml) |
-| Concise GitHub and Devpost release procedure | [`ReleaseGuide.md`](ReleaseGuide.md) |
+| GitHub and OpenAI publication procedure | This guide: [Publish Through GitHub](#publish-through-github) and [Update an Existing OpenAI Plugin Directory Entry](#update-an-existing-openai-plugin-directory-entry) |
 | Dependency-free installation | [`INSTALL_CODEX_PLUGIN.md`](INSTALL_CODEX_PLUGIN.md) |
 | OpenAI plugin-directory submission | [`openai-plugin-submission/`](openai-plugin-submission/README.md) |
 | Scenario-to-gate mapping | [`shared/evaluations/verification-manifest.yaml`](../shared/evaluations/verification-manifest.yaml) |
@@ -77,7 +77,7 @@ It currently does **not**:
 
 The uploaded artifact is a release candidate until the remaining manual gates
 pass and a maintainer attaches the inner release ZIP and checksum to a reviewed
-GitHub Release. Follow [`ReleaseGuide.md`](ReleaseGuide.md) for that procedure.
+GitHub Release. The publication procedure is documented below.
 
 ## Version Policy
 
@@ -100,15 +100,59 @@ project metadata. A deterministic conformance test rejects version drift.
 
 Examples:
 
-- stable release: `0.2.2`;
+- stable release: `0.2.3`;
 - prerelease: `0.3.0-beta.1`;
-- local iteration: `0.2.2+codex.<UTC timestamp>`.
+- local iteration: `0.2.3+codex.<UTC timestamp>`.
 
-The Git tag adds a `v`, for example `v0.2.2`; the plugin manifest does not.
+The Git tag adds a `v`, for example `v0.2.3`; the plugin manifest does not.
 
 Supply the complete version to `scripts/build-codex-plugin.ps1` during assembly.
 Never edit the generated manifest or recalculate provenance after the build. Any
 post-build mutation must make validation fail.
+
+## Prepare a Public Plugin Update
+
+Use this procedure when an already published AI Software Architect version needs
+a package, hook, skill, runtime, permission, or other user-visible change. Make
+a new patch, minor, or major release as appropriate; never replace an existing
+published archive in place.
+
+Start from current `origin/main`, create a dedicated branch, and rebase it onto
+current `origin/main` before opening or updating the pull request. This avoids
+replaying commits that were squash-merged by an earlier release pull request.
+
+For the target version, update these source-controlled locations together:
+
+1. `adapters/codex/templates/plugin.json` — public plugin version. Retain the
+   explicit `"hooks": "./hooks/hooks.json"` entry so public installations can
+   discover the bundled lifecycle hooks.
+2. `pyproject.toml`, `shared/schemas/pyproject.toml`,
+   `tools/python-mcp/pyproject.toml`, and
+   `tools/python-mcp/src/ai_architect_tools/__init__.py` — aligned workspace and
+   runtime versions.
+3. `uv.lock` — regenerate with `uv lock`; never edit it by hand.
+4. `scripts/build-codex-plugin.ps1` — update the default cache-busted
+   development-version prefix.
+5. `CHANGELOG.md`, the current-version examples in `README.md`,
+   `docs/RELEASING.md`, `scripts/README.md`, and
+   `scripts/package-openai-plugin-submission.ps1`.
+6. `docs/OPENAI_SUBMISSION_STATUS.md` and
+   `docs/openai-plugin-submission/listing.yaml` — prepare the public directory
+   metadata. For an existing listing, use `update_release_notes`, explicitly name
+   the prior and target versions, and summarize the user-visible change. Reserve
+   `initial_submission_release_notes` for the first public submission only.
+7. Release-version assertions in `tests/packaging/` — update them with the same
+   target version and add a regression assertion when the package contract
+   changes.
+
+The release marketplace template, `adapters/codex/templates/openai.yaml`, and
+the tag-triggered GitHub workflow have no release-version literal. Leave them
+unchanged unless their own metadata or behavior changes; the release workflow
+derives its version from the tag.
+
+Before merging, run at minimum `uv lock --check`, the version-conformance and
+packaging tests, and Ruff. Do not create release archives, checksums, a tag, or
+release evidence from an unmerged candidate commit.
 
 ## Prepare the Candidate Commit
 
@@ -258,7 +302,7 @@ After the exact plugin is built and validated, create the separate OpenAI
 plugin-directory archive:
 
 ```powershell
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.2
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.3
 ```
 
 Unlike the GitHub marketplace bundle, this archive places
@@ -274,6 +318,23 @@ positive plus three negative cases from
 [`openai-plugin-submission/`](openai-plugin-submission/README.md) into the OpenAI
 developer portal. Portal submission and publication remain manual, authenticated
 actions. Confirm the exact live category and regional choices before submission.
+
+## Update an Existing OpenAI Plugin Directory Entry
+
+After the `v<version>` package has passed the release gates, use the existing
+plugin entry in the OpenAI plugin submission portal; do not create a second
+plugin listing for a normal product update. Upload the exact validated submission
+archive and use the prepared `update_release_notes` from
+`docs/openai-plugin-submission/listing.yaml`. The notes must say that this is an
+update and explain what changed since the prior submitted version.
+
+Submit the update for review. Approval and publication remain separate portal
+actions, so do not claim that users have received the update until the approved
+version is published. Update `docs/OPENAI_SUBMISSION_STATUS.md` only with
+confirmed portal facts: the submitted version, date, and final archive SHA-256
+after submission; approval date and directory URL after approval/publication.
+These status-only changes belong in a small documentation pull request and must
+not modify the immutable tagged archive or its release-evidence attachment.
 
 ## Exact Release-Candidate Gates
 
@@ -424,19 +485,46 @@ record, not in the README.
 
 ## Publish Through GitHub
 
-The intended future automated flow is:
+After the approved candidate is merged and every gate passes, record its exact
+commit and create an annotated tag. Replace the placeholders with the reviewed
+values:
 
-1. merge the approved candidate commit;
-2. confirm required CI and CodeQL checks;
-3. create the annotated tag, for example `v0.1.0-beta.1`;
-4. build the immutable package from that tag and record its checksum and provenance;
-5. create a GitHub prerelease;
-6. attach the ZIP, checksum, provenance/evidence summary, and release notes; and
-7. verify installation from the published distribution path.
+```powershell
+git status --short
+git rev-parse HEAD
+git tag -a v<version> <commit-sha> -m "AI Software Architect v<version>"
+git push origin v<version>
+```
 
-Until `.github/workflows/release.yml` creates the GitHub Release, publish its
-tag-versioned artifact manually only after the recorded gates pass. Confirm the
-manifest version and release evidence before publishing.
+The tag triggers [`.github/workflows/release.yml`](../.github/workflows/release.yml).
+Open the **Release artifact** run for `v<version>` on the
+[GitHub Actions page](https://github.com/leomuf/ai-software-architect/actions)
+and confirm that all steps pass. The workflow uploads a release candidate
+containing the installable marketplace ZIP and `SHA256SUMS.txt`; it does not
+create a GitHub Release.
+
+Download and inspect the artifact. GitHub wraps downloaded Actions artifacts in
+an outer ZIP, so attach the inner marketplace bundle and its checksum—not that
+outer ZIP—to the GitHub Release. The bundle must include `INSTALL.md` and
+`VERSION.txt` and be suitable for clean-machine installation.
+
+Create a draft at [GitHub Releases](https://github.com/leomuf/ai-software-architect/releases/new):
+
+1. select and verify the `v<version>` tag and reviewed commit SHA;
+2. use the title `AI Software Architect v<version>`;
+3. attach the exact marketplace ZIP, `SHA256SUMS.txt`, and sanitized release
+   evidence when available;
+4. add release notes that accurately describe changes since the previous release;
+5. verify all assets and checksums, then publish the draft.
+
+Do not attach development caches, credentials, local paths, hidden reasoning, or
+sensitive evidence. After publishing, download the release as an independent
+user, verify its checksum, install it in a clean supported Windows environment,
+review and activate all five hooks, test structured `@` invocation, and confirm
+first-attempt uninstallation.
+
+Never move or recreate a published release tag. Correct a published release by
+publishing an appropriate new version.
 
 ## Release Decision
 

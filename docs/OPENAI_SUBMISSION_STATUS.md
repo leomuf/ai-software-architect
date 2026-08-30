@@ -15,10 +15,10 @@ documentation-only pull request without publishing another GitHub Release.
 | Field | Value |
 | --- | --- |
 | Status | **Ready for submission** |
-| Plugin version | `0.2.2` |
+| Plugin version | `0.2.3` |
 | Publisher brand | AUTOSOFT Engineering |
 | Verified legal publisher | XAVIER MUFFATO LTDA |
-| Candidate prepared | 2026-08-28 |
+| Candidate prepared | 2026-08-30 |
 | Submission date | Not yet confirmed |
 | Approval date | Not yet applicable |
 | Public directory URL | Not yet available |
@@ -53,11 +53,11 @@ documentation-only changes.
 ### After Submission
 
 > **OpenAI Plugin Directory status: Submitted — awaiting review.** AI Software
-> Architect v0.2.2 was submitted on `YYYY-MM-DD`. Submission does not imply
+> Architect v0.2.3 was submitted on `YYYY-MM-DD`. Submission does not imply
 > approval or endorsement by OpenAI.
 
 ### After Approval
 
 > **OpenAI Plugin Directory status: Approved and available.** AI Software
-> Architect v0.2.2 was approved on `YYYY-MM-DD` and is available at
+> Architect v0.2.3 was approved on `YYYY-MM-DD` and is available at
 > `[official directory URL]`.
