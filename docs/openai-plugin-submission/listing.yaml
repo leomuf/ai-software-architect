@@ -36,7 +36,7 @@ plugin:
     350 eligible exploratory observations across more than 140 campaigns,
     complemented by more than 160 deterministic automated tests.
   initial_submission_release_notes: >-
-    Version 0.2.2 OpenAI Plugins Directory submission under the AUTOSOFT Engineering
+    Version 0.2.3 OpenAI Plugins Directory submission under the AUTOSOFT Engineering
     brand by XAVIER MUFFATO LTDA. Includes
     project-aware architecture and design-pattern guidance, stored Python pattern
     examples, user-approved ADR and handoff artifacts, bounded static repository

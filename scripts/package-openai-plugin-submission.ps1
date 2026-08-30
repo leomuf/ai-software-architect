@@ -23,7 +23,7 @@ Directory for the ZIP and checksum. Relative paths resolve from the repository r
 Expected Semantic Versioning value. When omitted, the manifest version is used.
 
 .EXAMPLE
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.2
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.3
 #>
 
 [CmdletBinding()]

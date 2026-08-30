@@ -14,19 +14,19 @@ documentation-only pull request without publishing another GitHub Release.
 
 | Field | Value |
 | --- | --- |
-| Status | **Ready for submission** |
-| Plugin version | `0.2.2` |
+| Status | **Release preparation in progress** |
+| Plugin version | `0.2.3` |
 | Publisher brand | AUTOSOFT Engineering |
 | Verified legal publisher | XAVIER MUFFATO LTDA |
-| Candidate prepared | 2026-08-28 |
+| Candidate prepared | Pending the versioned build |
 | Submission date | Not yet confirmed |
 | Approval date | Not yet applicable |
 | Public directory URL | Not yet available |
 | OpenAI submission ZIP SHA-256 | Record from the final tagged build before submission |
 
-“Ready for submission” means that the repository contains a validated candidate;
-it does not claim that OpenAI has received, reviewed, approved, endorsed, or
-published the plugin.
+“Release preparation in progress” means that the repository version is being
+prepared for a candidate build; it does not claim that a final candidate exists or
+that OpenAI has received, reviewed, approved, endorsed, or published the plugin.
 
 ## How to Update This Record
 
@@ -53,11 +53,11 @@ documentation-only changes.
 ### After Submission
 
 > **OpenAI Plugin Directory status: Submitted — awaiting review.** AI Software
-> Architect v0.2.2 was submitted on `YYYY-MM-DD`. Submission does not imply
+> Architect v0.2.3 was submitted on `YYYY-MM-DD`. Submission does not imply
 > approval or endorsement by OpenAI.
 
 ### After Approval
 
 > **OpenAI Plugin Directory status: Approved and available.** AI Software
-> Architect v0.2.2 was approved on `YYYY-MM-DD` and is available at
+> Architect v0.2.3 was approved on `YYYY-MM-DD` and is available at
 > `[official directory URL]`.

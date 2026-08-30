@@ -128,7 +128,7 @@ not the local repository-marketplace wrapper. After building the exact version,
 run:
 
 ```powershell
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.2
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.3
 ```
 
 The script validates the assembled plugin and its provenance, preserves the

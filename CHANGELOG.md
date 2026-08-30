@@ -5,6 +5,14 @@ SPDX-License-Identifier: MIT
 
 # Changelog
 
+## [0.2.3] - 2026-08-30
+
+### Fixed
+
+- Explicitly declared the bundled `hooks/hooks.json` file in the Codex plugin
+  manifest so public plugin installations can discover, review, and activate
+  the five lifecycle hooks.
+
 ## [0.2.2] - 2026-08-29
 
 ### Changed

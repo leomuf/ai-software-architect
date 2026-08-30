@@ -1,6 +1,6 @@
 {
   "name": "ai-software-architect",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Project-aware design-pattern and architecture guidance using your Codex model, with transparent local safety and quality hooks.",
   "author": {
     "name": "AUTOSOFT Engineering (a brand of XAVIER MUFFATO LTDA)",

@@ -21,7 +21,7 @@ PACKAGE_SCRIPT = ROOT / "scripts" / "package-openai-plugin-submission.ps1"
 def test_manifest_identifies_company_publisher_and_public_policies() -> None:
     manifest = json.loads(MANIFEST.read_text("utf-8"))
 
-    assert manifest["version"] == "0.2.2"
+    assert manifest["version"] == "0.2.3"
     assert manifest["author"]["name"] == (
         "AUTOSOFT Engineering (a brand of XAVIER MUFFATO LTDA)"
     )
@@ -84,7 +84,7 @@ def test_openai_package_has_windows_explorer_compatible_member_paths(
     plugin = tmp_path / "plugin"
     required_files = {
         ".codex-plugin/plugin.json": json.dumps(
-            {"name": "ai-software-architect", "version": "0.2.2"}
+            {"name": "ai-software-architect", "version": "0.2.3"}
         ),
         "skills/ai-software-architect/SKILL.md": "# Test skill\n",
         "hooks/hooks.json": "{}\n",
@@ -120,7 +120,7 @@ def test_openai_package_has_windows_explorer_compatible_member_paths(
             "-OutputDirectory",
             str(output),
             "-PluginVersion",
-            "0.2.2",
+            "0.2.3",
         ],
         cwd=ROOT,
         env=environment,
@@ -130,7 +130,7 @@ def test_openai_package_has_windows_explorer_compatible_member_paths(
     )
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
-    archive_path = output / "ai-software-architect-v0.2.2-openai-plugin.zip"
+    archive_path = output / "ai-software-architect-v0.2.3-openai-plugin.zip"
     with zipfile.ZipFile(archive_path) as archive:
         members = archive.namelist()
 

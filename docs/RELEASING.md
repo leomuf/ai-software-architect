@@ -100,11 +100,11 @@ project metadata. A deterministic conformance test rejects version drift.
 
 Examples:
 
-- stable release: `0.2.2`;
+- stable release: `0.2.3`;
 - prerelease: `0.3.0-beta.1`;
-- local iteration: `0.2.2+codex.<UTC timestamp>`.
+- local iteration: `0.2.3+codex.<UTC timestamp>`.
 
-The Git tag adds a `v`, for example `v0.2.2`; the plugin manifest does not.
+The Git tag adds a `v`, for example `v0.2.3`; the plugin manifest does not.
 
 Supply the complete version to `scripts/build-codex-plugin.ps1` during assembly.
 Never edit the generated manifest or recalculate provenance after the build. Any
@@ -258,7 +258,7 @@ After the exact plugin is built and validated, create the separate OpenAI
 plugin-directory archive:
 
 ```powershell
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.2
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.3
 ```
 
 Unlike the GitHub marketplace bundle, this archive places
