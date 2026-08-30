@@ -44,7 +44,7 @@ process-scoped alternative is documented in
 | Changes intended for users | [`CHANGELOG.md`](../CHANGELOG.md) |
 | Pull-request and `main` validation | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 | Tag-triggered package build | [`.github/workflows/release.yml`](../.github/workflows/release.yml) |
-| Concise GitHub and Devpost release procedure | [`ReleaseGuide.md`](ReleaseGuide.md) |
+| GitHub and OpenAI publication procedure | This guide: [Publish Through GitHub](#publish-through-github) and [Update an Existing OpenAI Plugin Directory Entry](#update-an-existing-openai-plugin-directory-entry) |
 | Dependency-free installation | [`INSTALL_CODEX_PLUGIN.md`](INSTALL_CODEX_PLUGIN.md) |
 | OpenAI plugin-directory submission | [`openai-plugin-submission/`](openai-plugin-submission/README.md) |
 | Scenario-to-gate mapping | [`shared/evaluations/verification-manifest.yaml`](../shared/evaluations/verification-manifest.yaml) |
@@ -77,7 +77,7 @@ It currently does **not**:
 
 The uploaded artifact is a release candidate until the remaining manual gates
 pass and a maintainer attaches the inner release ZIP and checksum to a reviewed
-GitHub Release. Follow [`ReleaseGuide.md`](ReleaseGuide.md) for that procedure.
+GitHub Release. The publication procedure is documented below.
 
 ## Version Policy
 
@@ -485,19 +485,57 @@ record, not in the README.
 
 ## Publish Through GitHub
 
-The intended future automated flow is:
+After the approved candidate is merged and every gate passes, record its exact
+commit and create an annotated tag. Replace the placeholders with the reviewed
+values:
 
-1. merge the approved candidate commit;
-2. confirm required CI and CodeQL checks;
-3. create the annotated tag, for example `v0.1.0-beta.1`;
-4. build the immutable package from that tag and record its checksum and provenance;
-5. create a GitHub prerelease;
-6. attach the ZIP, checksum, provenance/evidence summary, and release notes; and
-7. verify installation from the published distribution path.
+```powershell
+git status --short
+git rev-parse HEAD
+git tag -a v<version> <commit-sha> -m "AI Software Architect v<version>"
+git push origin v<version>
+```
 
-Until `.github/workflows/release.yml` creates the GitHub Release, publish its
-tag-versioned artifact manually only after the recorded gates pass. Confirm the
-manifest version and release evidence before publishing.
+The tag triggers [`.github/workflows/release.yml`](../.github/workflows/release.yml).
+Open the **Release artifact** run for `v<version>` on the
+[GitHub Actions page](https://github.com/leomuf/ai-software-architect/actions)
+and confirm that all steps pass. The workflow uploads a release candidate
+containing the installable marketplace ZIP and `SHA256SUMS.txt`; it does not
+create a GitHub Release.
+
+Download and inspect the artifact. GitHub wraps downloaded Actions artifacts in
+an outer ZIP, so attach the inner marketplace bundle and its checksum—not that
+outer ZIP—to the GitHub Release. The bundle must include `INSTALL.md` and
+`VERSION.txt` and be suitable for clean-machine installation.
+
+Create a draft at [GitHub Releases](https://github.com/leomuf/ai-software-architect/releases/new):
+
+1. select and verify the `v<version>` tag and reviewed commit SHA;
+2. use the title `AI Software Architect v<version>`;
+3. attach the exact marketplace ZIP, `SHA256SUMS.txt`, and sanitized release
+   evidence when available;
+4. add release notes that accurately describe changes since the previous release;
+5. verify all assets and checksums, then publish the draft.
+
+Do not attach development caches, credentials, local paths, hidden reasoning, or
+sensitive evidence. After publishing, download the release as an independent
+user, verify its checksum, install it in a clean supported Windows environment,
+review and activate all five hooks, test structured `@` invocation, and confirm
+first-attempt uninstallation.
+
+Never move or recreate a published release tag. Correct a published release by
+publishing an appropriate new version.
+
+## Complete the Build Week Submission (When Applicable)
+
+Use the published GitHub repository and release URLs in the OpenAI Build Week
+submission. Before the deadline, confirm that the repository is public or shared
+with the required evaluator accounts, the public demonstration meets the current
+event requirements, the required Codex feedback session ID and category are
+selected, installation and testing link to the dependency-free release, and the
+submission is marked **Submitted**, not **Draft**. Keep the submitted repository,
+release, video, and project description available throughout the evaluation
+period.
 
 ## Release Decision
 

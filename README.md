@@ -541,7 +541,7 @@ and reproducible reporting workflow are documented in
 
 ## Release Documentation
 
-- [`docs/ReleaseGuide.md`](docs/ReleaseGuide.md) is the concise operator guide
+- [`docs/RELEASING.md`](docs/RELEASING.md) is the canonical operator guide
   for tagging, creating the release bundle, drafting the GitHub Release, and
   completing the Devpost submission.
 - [`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md) is the
