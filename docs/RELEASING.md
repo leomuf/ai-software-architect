@@ -387,6 +387,27 @@ one enabled candidate is the personal-marketplace installation prepared above.
 
 ### Gate D: Five Exploratory Fixtures
 
+Run this gate for every release that changes any skill or reference loaded by a
+skill, hook definition or hook/runtime behavior, artifact contract or validation
+logic, evaluation fixture, model prompt, dependency, or other behavior a user can
+exercise in a Codex task.
+
+A maintainer may waive this gate only for a release limited to version alignment,
+documentation, portal metadata, or package-discovery metadata. All of the
+following must be true:
+
+1. the assembled package, provenance, and runtime smoke tests pass;
+2. no skill, hook definition, hook/runtime behavior, contract, fixture, or
+   dependency changed;
+3. Gate C, Gate E, and Gate F are completed with the exact candidate; and
+4. the release evidence identifies the exact unchanged behavioral surface and
+   records the maintainer's rationale for the waiver.
+
+The waiver is not available for an untested change that could alter a user's
+workflow merely because its source diff is small. For example, versioned plugin
+manifest metadata that only makes already-packaged hooks discoverable can qualify;
+changing the hook configuration itself cannot.
+
 Run all fixtures named by
 [`verification-manifest.yaml`](../shared/evaluations/verification-manifest.yaml):
 
@@ -532,7 +553,8 @@ A release is ready only when:
 
 - the candidate commit and working tree are identified;
 - Gates A–F pass;
-- every critical expected/forbidden fixture behavior passes;
+- every critical expected/forbidden fixture behavior passes, or an eligible Gate D
+  waiver is fully recorded;
 - no infrastructure result is unresolved;
 - first-attempt uninstall passes;
 - release notes and support information are public; and
