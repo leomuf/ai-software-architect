@@ -44,6 +44,10 @@ def test_submission_listing_has_three_realistic_starter_prompts() -> None:
     )
     assert listing["plugin"]["portal_submission_type"] == "Skills only"
     assert listing["plugin"]["category_preference"] == "Developer Tools"
+    assert "initial_submission_release_notes" not in listing["plugin"]
+    assert "Update from version 0.2.2 to 0.2.3" in listing["plugin"][
+        "update_release_notes"
+    ]
     assert "more than 350 eligible exploratory observations" in (
         listing["plugin"]["description"]
     )
