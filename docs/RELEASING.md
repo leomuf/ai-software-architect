@@ -110,6 +110,50 @@ Supply the complete version to `scripts/build-codex-plugin.ps1` during assembly.
 Never edit the generated manifest or recalculate provenance after the build. Any
 post-build mutation must make validation fail.
 
+## Prepare a Public Plugin Update
+
+Use this procedure when an already published AI Software Architect version needs
+a package, hook, skill, runtime, permission, or other user-visible change. Make
+a new patch, minor, or major release as appropriate; never replace an existing
+published archive in place.
+
+Start from current `origin/main`, create a dedicated branch, and rebase it onto
+current `origin/main` before opening or updating the pull request. This avoids
+replaying commits that were squash-merged by an earlier release pull request.
+
+For the target version, update these source-controlled locations together:
+
+1. `adapters/codex/templates/plugin.json` — public plugin version. Retain the
+   explicit `"hooks": "./hooks/hooks.json"` entry so public installations can
+   discover the bundled lifecycle hooks.
+2. `pyproject.toml`, `shared/schemas/pyproject.toml`,
+   `tools/python-mcp/pyproject.toml`, and
+   `tools/python-mcp/src/ai_architect_tools/__init__.py` — aligned workspace and
+   runtime versions.
+3. `uv.lock` — regenerate with `uv lock`; never edit it by hand.
+4. `scripts/build-codex-plugin.ps1` — update the default cache-busted
+   development-version prefix.
+5. `CHANGELOG.md`, the current-version examples in `README.md`,
+   `docs/RELEASING.md`, `scripts/README.md`, and
+   `scripts/package-openai-plugin-submission.ps1`.
+6. `docs/OPENAI_SUBMISSION_STATUS.md` and
+   `docs/openai-plugin-submission/listing.yaml` — prepare the public directory
+   metadata. For an existing listing, use `update_release_notes`, explicitly name
+   the prior and target versions, and summarize the user-visible change. Reserve
+   `initial_submission_release_notes` for the first public submission only.
+7. Release-version assertions in `tests/packaging/` — update them with the same
+   target version and add a regression assertion when the package contract
+   changes.
+
+The release marketplace template, `adapters/codex/templates/openai.yaml`, and
+the tag-triggered GitHub workflow have no release-version literal. Leave them
+unchanged unless their own metadata or behavior changes; the release workflow
+derives its version from the tag.
+
+Before merging, run at minimum `uv lock --check`, the version-conformance and
+packaging tests, and Ruff. Do not create release archives, checksums, a tag, or
+release evidence from an unmerged candidate commit.
+
 ## Prepare the Candidate Commit
 
 Before building a release candidate:
@@ -274,6 +318,23 @@ positive plus three negative cases from
 [`openai-plugin-submission/`](openai-plugin-submission/README.md) into the OpenAI
 developer portal. Portal submission and publication remain manual, authenticated
 actions. Confirm the exact live category and regional choices before submission.
+
+## Update an Existing OpenAI Plugin Directory Entry
+
+After the `v<version>` package has passed the release gates, use the existing
+plugin entry in the OpenAI plugin submission portal; do not create a second
+plugin listing for a normal product update. Upload the exact validated submission
+archive and use the prepared `update_release_notes` from
+`docs/openai-plugin-submission/listing.yaml`. The notes must say that this is an
+update and explain what changed since the prior submitted version.
+
+Submit the update for review. Approval and publication remain separate portal
+actions, so do not claim that users have received the update until the approved
+version is published. Update `docs/OPENAI_SUBMISSION_STATUS.md` only with
+confirmed portal facts: the submitted version, date, and final archive SHA-256
+after submission; approval date and directory URL after approval/publication.
+These status-only changes belong in a small documentation pull request and must
+not modify the immutable tagged archive or its release-evidence attachment.
 
 ## Exact Release-Candidate Gates
 
