@@ -11,6 +11,7 @@
   "license": "MIT",
   "keywords": ["architecture", "adr", "design-patterns", "agent-skills"],
   "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "AI Software Architect",
     "shortDescription": "Choose best design patterns",

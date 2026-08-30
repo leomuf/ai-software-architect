@@ -32,6 +32,10 @@ def validate(root: Path) -> None:
         raise ValueError("plugin name or version is invalid")
     if "mcpServers" in manifest or (root / ".mcp.json").exists():
         raise ValueError("the Codex package must not register a persistent MCP server")
+    if manifest.get("hooks") != "./hooks/hooks.json":
+        raise ValueError(
+            "the manifest must explicitly declare the bundled hook configuration"
+        )
     expected_author = "AUTOSOFT Engineering (a brand of XAVIER MUFFATO LTDA)"
     if manifest["author"].get("name") != expected_author:
         raise ValueError("the manifest author must identify the brand and legal publisher")
