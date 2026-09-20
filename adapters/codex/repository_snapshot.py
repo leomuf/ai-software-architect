@@ -120,7 +120,7 @@ TEXT_EXTENSIONS = {
 
 def _is_reparse_point(path: Path) -> bool:
     try:
-        attributes = path.lstat().st_file_attributes
+        attributes = path.lstat().st_file_attributes  # type: ignore[attr-defined]
     except (AttributeError, OSError):
         return path.is_symlink()
     return bool(attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)

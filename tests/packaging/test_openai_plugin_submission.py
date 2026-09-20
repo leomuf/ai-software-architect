@@ -82,7 +82,7 @@ def test_openai_package_has_windows_explorer_compatible_member_paths(
     tmp_path: Path,
 ) -> None:
     powershell = shutil.which("powershell") or shutil.which("pwsh")
-    if powershell is None:
+    if os.name != "nt" or powershell is None:
         return
 
     plugin = tmp_path / "plugin"

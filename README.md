@@ -266,14 +266,14 @@ permissions, tool execution, and the actual filesystem writes.
 
 - A Codex version that supports plugins, Agent Skills, and hooks. Subagent support is optional; the workflow falls back to the main agent when unavailable.
 - All five lifecycle hooks explicitly reviewed and activated from the plugin page before first use.
-- Windows x86-64 for the initial packaged runtime.
+- Windows x86-64 or macOS Apple Silicon for the packaged runtime.
 - A Codex account and model allocation.
 - No separate OpenAI API key, Python installation, `uv`, virtual environment, or first-run dependency download.
 
 #### Install a Published Release
 
-Users should download the prebuilt Windows x86-64 marketplace
-bundle from the project's GitHub Release and follow
+Users should download the prebuilt marketplace bundle matching their host
+from the project's GitHub Release and follow
 [`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md). The extracted
 bundle contains its own repository marketplace and complete self-contained
 plugin; users do not run the development build or personal-marketplace copy
@@ -410,7 +410,8 @@ The current build and packaging commands target the implemented Codex adapter.
 - Git.
 - [uv](https://docs.astral.sh/uv/) `0.11.x`.
 - Python `3.13.12`, as recorded in [`.python-version`](.python-version). `uv` can provision it.
-- Windows x86-64 to build and smoke-test the initial self-contained runtime.
+- Windows x86-64 or macOS Apple Silicon to build and smoke-test the
+  corresponding self-contained runtime.
 
 ### Setup and Validation
 
@@ -452,12 +453,26 @@ uv run python shared/evaluations/generate_acceptance.py
 > [`scripts/README.md`](scripts/README.md#powershell-execution-policy) for a
 > temporary, process-scoped alternative.
 
-For a full local development build, create a self-contained Windows x86-64
-runtime, assign a unique cache-busted version, validate the package, and
-smoke-test the packaged short-lived hook runtime:
+On Windows, create a self-contained Windows x86-64 runtime, assign a unique
+cache-busted version, validate the package, and smoke-test the packaged
+short-lived hook runtime:
 
 ```powershell
 .\scripts\build-codex-plugin.ps1
+```
+
+On macOS Apple Silicon, build the native `aarch64-darwin` package with the
+cross-platform entry points:
+
+```sh
+uv run python adapters/codex/build_plugin.py --build-runtime \
+  --target aarch64-darwin --plugin-version 0.2.3
+uv run python adapters/codex/validate_plugin.py --target aarch64-darwin \
+  dist/codex/ai-software-architect
+uv run python adapters/codex/smoke_test_runtime.py \
+  dist/codex/ai-software-architect/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime
+uv run python scripts/package_codex_release.py --target aarch64-darwin \
+  --plugin-version 0.2.3
 ```
 
 The assembled plugin is written to `dist/codex/ai-software-architect/`.

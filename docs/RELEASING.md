@@ -9,8 +9,9 @@ This is the canonical maintainer guide for preparing, validating, testing, and
 publishing the Codex plugin through GitHub. It documents the current repository
 behavior as well as the manual gates that remain necessary before a release.
 
-The initial supported package is Windows x86-64. Future coding-agent adapters and
-operating-system packages require their own validated release procedures.
+The supported packaged targets are Windows x86-64 and native macOS Apple Silicon
+(`aarch64-darwin`). Each target has its own runtime path, hook commands, archive,
+validation, and clean-machine acceptance procedure.
 
 ## PowerShell Execution Policy
 
@@ -62,10 +63,12 @@ It currently:
 
 1. starts automatically when a tag matching `v*` is pushed;
 2. derives the plugin version from that tag;
-3. builds the self-contained Windows x86-64 plugin with that exact version;
-4. validates and smoke-tests the assembled package;
-5. creates an installable repository marketplace ZIP and SHA-256 checksum; and
-6. uploads them as GitHub Actions artifacts.
+3. builds the self-contained Windows x86-64 and macOS Apple Silicon plugins with
+   that exact version;
+4. validates and smoke-tests both assembled packages;
+5. creates a target-specific installable repository marketplace ZIP and SHA-256
+   checksum for each package; and
+6. uploads both artifacts as GitHub Actions artifacts.
 
 It currently does **not**:
 
@@ -346,6 +349,20 @@ Run from a clean candidate commit:
 .\scripts\run-release-candidate-gates.ps1 -PluginVersion 0.1.0-beta.1
 ```
 
+For the native macOS Apple Silicon package, run the equivalent target-specific
+checks from a clean candidate tree:
+
+```sh
+uv run python adapters/codex/build_plugin.py --build-runtime \
+  --target aarch64-darwin --plugin-version 0.1.0-beta.1
+uv run python adapters/codex/validate_plugin.py --target aarch64-darwin \
+  dist/codex/ai-software-architect
+uv run python adapters/codex/smoke_test_runtime.py \
+  dist/codex/ai-software-architect/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime
+uv run python scripts/package_codex_release.py --target aarch64-darwin \
+  --plugin-version 0.1.0-beta.1
+```
+
 The script verifies that the candidate tree is clean, checks and synchronizes the
 lockfile, regenerates and compares derived artifacts, runs linting, type checks,
 and tests, performs a full build, package validation, and runtime smoke test,
@@ -477,7 +494,8 @@ blocked; the Codex package is already designed without persistent MCP registrati
 
 ### Gate F: Clean-Machine Acceptance
 
-On a clean Windows x86-64 environment without Python, `uv`, or development caches:
+On clean Windows x86-64 and macOS Apple Silicon environments without Python,
+`uv`, or development caches:
 
 1. install the exact package;
 2. activate all five reviewed hooks;
@@ -539,10 +557,10 @@ Create a draft at [GitHub Releases](https://github.com/leomuf/ai-software-archit
 5. verify all assets and checksums, then publish the draft.
 
 Do not attach development caches, credentials, local paths, hidden reasoning, or
-sensitive evidence. After publishing, download the release as an independent
-user, verify its checksum, install it in a clean supported Windows environment,
-review and activate all five hooks, test structured `@` invocation, and confirm
-first-attempt uninstallation.
+sensitive evidence. After publishing, download each target archive as an independent
+user, verify its checksum, install it in the corresponding clean supported
+environment, review and activate all five hooks, test structured `@` invocation,
+and confirm first-attempt uninstallation.
 
 Never move or recreate a published release tag. Correct a published release by
 publishing an appropriate new version.

@@ -59,10 +59,10 @@ def _parent_is_alive(parent_pid: int) -> bool:
 
         synchronize = 0x00100000
         wait_timeout = 0x00000102
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
         handle = int(kernel32.OpenProcess(synchronize, False, parent_pid))
         if handle == 0:
-            return ctypes.get_last_error() == 5
+            return bool(ctypes.get_last_error() == 5)  # type: ignore[attr-defined]
         try:
             return int(kernel32.WaitForSingleObject(handle, 0)) == wait_timeout
         finally:

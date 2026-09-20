@@ -13,27 +13,45 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+try:
+    from adapters.codex.runtime_targets import detect_packaged_target
+except ModuleNotFoundError as exc:
+    if exc.name != "adapters":
+        raise
+    from runtime_targets import detect_packaged_target  # type: ignore[import-not-found, no-redef]
 
-def _windows_hook_commands(executable: Path) -> dict[str, str]:
+
+def _hook_commands(executable: Path) -> tuple[dict[str, str], bool]:
     plugin_root = executable.resolve().parents[3]
+    target = detect_packaged_target(plugin_root)
     hooks = json.loads((plugin_root / "hooks" / "hooks.json").read_text("utf-8"))
+    windows = target.name == "windows-x86_64"
+    field = "commandWindows" if windows else "command"
     commands = {
-        event: groups[0]["hooks"][0]["commandWindows"]
+        event: groups[0]["hooks"][0][field]
         for event, groups in hooks["hooks"].items()
     }
     if not all(isinstance(command, str) for command in commands.values()):
-        raise TypeError("every Windows hook command must be a string")
-    return commands
+        raise TypeError("every native hook command must be a string")
+    return commands, windows
 
 
 def _run_hook(
-    powershell: str,
     command: str,
     payload: dict[str, object],
     environment: dict[str, str],
+    *,
+    windows: bool,
 ) -> dict[str, object]:
+    if windows:
+        powershell = shutil.which("powershell.exe")
+        if powershell is None:
+            raise RuntimeError("PowerShell is required to test the Windows hook command")
+        invocation = [powershell, "-NoProfile", "-NonInteractive", "-Command", command]
+    else:
+        invocation = ["/bin/sh", "-c", command]
     result = subprocess.run(  # noqa: S603
-        [powershell, "-NoProfile", "-NonInteractive", "-Command", command],
+        invocation,
         input=json.dumps(payload),
         text=True,
         capture_output=True,
@@ -54,10 +72,8 @@ def _hook_output(response: dict[str, object]) -> dict[str, object]:
 
 
 def smoke_test_hook(executable: Path) -> None:
-    powershell = shutil.which("powershell.exe")
-    if powershell is None:
-        raise RuntimeError("PowerShell is required to test the Windows hook command")
-    commands = _windows_hook_commands(executable)
+    executable = executable.resolve(strict=True)
+    commands, windows = _hook_commands(executable)
     with tempfile.TemporaryDirectory() as plugin_data, tempfile.TemporaryDirectory() as workspace:
         sample = Path(workspace) / "sample.py"
         sample.write_text("import pathlib\n", encoding="utf-8")
@@ -87,7 +103,9 @@ def smoke_test_hook(executable: Path) -> None:
             "hook_event_name": "UserPromptSubmit",
             "prompt": "$ai-software-architect Review this project architecture.",
         }
-        response = _run_hook(powershell, commands["UserPromptSubmit"], submit, environment)
+        response = _run_hook(
+            commands["UserPromptSubmit"], submit, environment, windows=windows
+        )
         context = _hook_output(response).get("additionalContext")
         if "Route: model-selected workflow" not in str(context):
             raise RuntimeError(f"hook routing smoke test failed: {response}")
@@ -97,7 +115,9 @@ def smoke_test_hook(executable: Path) -> None:
             "hook_event_name": "PostCompact",
             "trigger": "auto",
         }
-        compact_response = _run_hook(powershell, commands["PostCompact"], compact, environment)
+        compact_response = _run_hook(
+            commands["PostCompact"], compact, environment, windows=windows
+        )
         compact_context = _hook_output(compact_response).get("additionalContext")
         if "typed workflow checkpoint: phase=active" not in str(compact_context):
             raise RuntimeError(
@@ -110,7 +130,9 @@ def smoke_test_hook(executable: Path) -> None:
             "tool_name": "Bash",
             "tool_input": {"command": "python -m py_compile analyzed_repository.py"},
         }
-        shell_response = _run_hook(powershell, commands["PreToolUse"], shell, environment)
+        shell_response = _run_hook(
+            commands["PreToolUse"], shell, environment, windows=windows
+        )
         if _hook_output(shell_response).get("permissionDecision") != "deny":
             raise RuntimeError(f"read-only shell guard failed: {shell_response}")
 
@@ -125,7 +147,7 @@ def smoke_test_hook(executable: Path) -> None:
             ),
         }
         invalid_response = _run_hook(
-            powershell, commands["PreToolUse"], invalid_contract, environment
+            commands["PreToolUse"], invalid_contract, environment, windows=windows
         )
         if _hook_output(invalid_response).get("permissionDecision") != "deny":
             raise RuntimeError(f"invalid contract was not blocked: {invalid_response}")
@@ -147,7 +169,7 @@ def smoke_test_hook(executable: Path) -> None:
             ),
         }
         if _run_hook(
-            powershell, commands["PreToolUse"], valid_contract, environment
+            commands["PreToolUse"], valid_contract, environment, windows=windows
         ) != {}:
             raise RuntimeError("valid architecture contract was unexpectedly blocked")
 
@@ -161,7 +183,7 @@ def smoke_test_hook(executable: Path) -> None:
             ),
         }
         unsupported_response = _run_hook(
-            powershell, commands["PreToolUse"], unsupported_artifact, environment
+            commands["PreToolUse"], unsupported_artifact, environment, windows=windows
         )
         if _hook_output(unsupported_response).get("permissionDecision") != "deny":
             raise RuntimeError(
@@ -178,7 +200,9 @@ def smoke_test_hook(executable: Path) -> None:
                 "<!-- ai-architect-outcome: recommendation -->"
             ),
         }
-        stop_response = _run_hook(powershell, commands["Stop"], stop, environment)
+        stop_response = _run_hook(
+            commands["Stop"], stop, environment, windows=windows
+        )
         if stop_response.get("decision") != "block":
             raise RuntimeError(f"visible-response marker guard failed: {stop_response}")
 

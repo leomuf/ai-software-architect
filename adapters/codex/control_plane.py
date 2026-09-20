@@ -24,6 +24,12 @@ try:
         locale_containing_section,
         matching_comparison_locale,
     )
+    from adapters.codex.runtime_targets import (
+        RUNTIME_TARGETS,
+        RuntimeTarget,
+        detect_packaged_target,
+        target_for_name,
+    )
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
@@ -41,6 +47,12 @@ except ModuleNotFoundError as exc:
         contains_comparison_section,
         locale_containing_section,
         matching_comparison_locale,
+    )
+    from runtime_targets import (  # type: ignore[import-not-found, no-redef]
+        RUNTIME_TARGETS,
+        RuntimeTarget,
+        detect_packaged_target,
+        target_for_name,
     )
 
 MAIN_SKILL_MARKER = "$ai-software-architect"
@@ -89,14 +101,6 @@ HIDDEN_HTML_COMMENT_PATTERN = re.compile(
     r"<!--.*?-->",
     flags=re.DOTALL,
 )
-SNAPSHOT_RUNTIME_RELATIVE_PATH = (
-    Path("runtime")
-    / "windows-x86_64"
-    / "ai-architect-runtime"
-    / "ai-architect-runtime.exe"
-)
-
-
 class CodexTurnRoute(StrEnum):
     INACTIVE = "inactive"
     MISSING_SKILL_INVOCATION = "missing_skill_invocation"
@@ -320,9 +324,20 @@ def developer_context(
     )
 
 
-def repository_snapshot_command(plugin_root: Path) -> str:
-    executable = plugin_root.resolve(strict=False) / SNAPSHOT_RUNTIME_RELATIVE_PATH
-    return f'& "{executable}" --repository-snapshot --root .'
+def _snapshot_target(plugin_root: Path) -> RuntimeTarget:
+    if not any(
+        (plugin_root / target.executable_relative_path).is_file()
+        for target in RUNTIME_TARGETS.values()
+    ):
+        return target_for_name("windows-x86_64")
+    return detect_packaged_target(plugin_root)
+
+
+def repository_snapshot_command(
+    plugin_root: Path,
+    target: RuntimeTarget | None = None,
+) -> str:
+    return (target or _snapshot_target(plugin_root)).snapshot_command(plugin_root)
 
 
 def _normalized_local_tool_name(value: object) -> str | None:

@@ -14,14 +14,29 @@ import subprocess
 import sys
 from pathlib import Path
 
+try:
+    from adapters.codex.runtime_targets import (
+        RUNTIME_DIRECTORY_NAME,
+        RUNTIME_TARGETS,
+        RuntimeTarget,
+        target_for_name,
+    )
+except ModuleNotFoundError as exc:
+    if exc.name != "adapters":
+        raise
+    from runtime_targets import (  # type: ignore[import-not-found, no-redef]
+        RUNTIME_DIRECTORY_NAME,
+        RUNTIME_TARGETS,
+        RuntimeTarget,
+        target_for_name,
+    )
+
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS_ROOT = ROOT / "shared" / "skills"
 TEMPLATES = ROOT / "adapters" / "codex" / "templates"
 OUTPUT_PARENT = ROOT / "dist" / "codex"
 OUTPUT = OUTPUT_PARENT / "ai-software-architect"
 BUILD = ROOT / "build"
-RUNTIME_NAME = "ai-architect-runtime.exe"
-RUNTIME_DIR_NAME = "ai-architect-runtime"
 AUTHORING_BUNDLE_OUTPUT = "assets/artifact-authoring-bundle.md"
 REFERENCE_CATALOG_SOURCE = ROOT / "adapters" / "codex" / "reference_catalog.json"
 CANONICAL_REFERENCE_BASE = (
@@ -366,7 +381,7 @@ def _append_reference_catalog_to_comparison_bundle(
     }
 
 
-def _build_runtime() -> Path:
+def _build_runtime(target: RuntimeTarget) -> Path:
     runtime_dist = BUILD / "runtime"
     runtime_work = BUILD / "pyinstaller"
     command = [
@@ -392,14 +407,37 @@ def _build_runtime() -> Path:
         str(ROOT / "adapters" / "codex" / "runtime_entry.py"),
     ]
     subprocess.run(command, cwd=ROOT, check=True)  # noqa: S603
-    runtime = runtime_dist / RUNTIME_DIR_NAME
-    executable = runtime / RUNTIME_NAME
+    runtime = runtime_dist / RUNTIME_DIRECTORY_NAME
+    executable = runtime / target.executable_name
     if not executable.is_file():
         raise FileNotFoundError(f"runtime build did not create {executable}")
     return runtime
 
 
-def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
+def _write_hooks(destination: Path, target: RuntimeTarget) -> None:
+    hooks = json.loads((TEMPLATES / "hooks.json").read_text(encoding="utf-8"))
+    for event, groups in hooks["hooks"].items():
+        for group in groups:
+            for hook in group["hooks"]:
+                hook["command"] = target.hook_command(event)
+                if target.name == "windows-x86_64":
+                    hook["commandWindows"] = target.windows_hook_command(event)
+                else:
+                    hook.pop("commandWindows", None)
+    destination.write_text(
+        json.dumps(hooks, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+def assemble(
+    runtime: Path,
+    *,
+    plugin_version: str | None = None,
+    target: RuntimeTarget | None = None,
+) -> Path:
+    target = target or target_for_name("windows-x86_64")
     output_resolved = OUTPUT.resolve()
     expected_parent = OUTPUT_PARENT.resolve()
     if output_resolved.parent != expected_parent or output_resolved.name != "ai-software-architect":
@@ -456,7 +494,7 @@ def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
     )
     hooks = OUTPUT / "hooks"
     hooks.mkdir()
-    shutil.copyfile(TEMPLATES / "hooks.json", hooks / "hooks.json")
+    _write_hooks(hooks / "hooks.json", target)
     shutil.copyfile(ROOT / "LICENSE", OUTPUT / "LICENSE")
     shutil.copyfile(ROOT / "NOTICE", OUTPUT / "NOTICE")
     shutil.copyfile(ROOT / "THIRD_PARTY_NOTICES.md", OUTPUT / "THIRD_PARTY_NOTICES.md")
@@ -467,7 +505,7 @@ def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
     assets.mkdir()
     shutil.copyfile(ROOT / "assets" / "codex-plugin-icon.png", assets / "logo.png")
 
-    runtime_target = OUTPUT / "runtime" / "windows-x86_64" / RUNTIME_DIR_NAME
+    runtime_target = OUTPUT / "runtime" / target.name / RUNTIME_DIRECTORY_NAME
     runtime_target.parent.mkdir(parents=True)
     shutil.copytree(runtime, runtime_target)
 
@@ -493,17 +531,24 @@ def main() -> None:
     parser.add_argument("--runtime", type=Path)
     parser.add_argument("--build-runtime", action="store_true")
     parser.add_argument("--plugin-version")
+    parser.add_argument(
+        "--target",
+        choices=sorted(RUNTIME_TARGETS),
+        default="windows-x86_64",
+    )
     args = parser.parse_args()
     selected_modes = sum((args.runtime is not None, args.build_runtime))
     if selected_modes != 1:
         parser.error("use exactly one of --runtime or --build-runtime")
-    runtime = _build_runtime() if args.build_runtime else args.runtime
+    target = target_for_name(args.target)
+    runtime = _build_runtime(target) if args.build_runtime else args.runtime
     if runtime is None or not runtime.resolve().is_dir():
         parser.error("provide --runtime <reviewed one-directory runtime> or --build-runtime")
     print(
         assemble(
             runtime.resolve(),
             plugin_version=args.plugin_version,
+            target=target,
         )
     )
 

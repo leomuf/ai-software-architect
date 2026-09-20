@@ -9,9 +9,27 @@ import argparse
 import hashlib
 import json
 import re
+import stat
 from pathlib import Path
 
 import yaml
+
+try:
+    from adapters.codex.runtime_targets import (
+        RUNTIME_TARGETS,
+        RuntimeTarget,
+        detect_packaged_target,
+        target_for_name,
+    )
+except ModuleNotFoundError as exc:
+    if exc.name != "adapters":
+        raise
+    from runtime_targets import (  # type: ignore[import-not-found, no-redef]
+        RUNTIME_TARGETS,
+        RuntimeTarget,
+        detect_packaged_target,
+        target_for_name,
+    )
 
 SEMVER = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
@@ -20,8 +38,13 @@ SEMVER = re.compile(
 )
 
 
-def validate(root: Path) -> None:
+def validate(
+    root: Path,
+    *,
+    target: RuntimeTarget | None = None,
+) -> None:
     root = root.resolve(strict=True)
+    target = target or detect_packaged_target(root)
     manifest_path = root / ".codex-plugin" / "plugin.json"
     manifest = json.loads(manifest_path.read_text("utf-8"))
     required = {"name", "version", "description", "author", "license", "skills", "interface"}
@@ -111,9 +134,11 @@ def validate(root: Path) -> None:
     openai = yaml.safe_load((skill_root / "agents" / "openai.yaml").read_text("utf-8"))
     if openai["policy"]["allow_implicit_invocation"] is not False:
         raise ValueError("implicit invocation must remain disabled")
-    executable = root / "runtime/windows-x86_64/ai-architect-runtime/ai-architect-runtime.exe"
+    executable = root / target.executable_relative_path
     if not executable.is_file():
         raise ValueError("bundled short-lived Codex runtime is missing")
+    if target.name != "windows-x86_64" and not executable.stat().st_mode & stat.S_IXUSR:
+        raise ValueError("native runtime executable is not user-executable")
     if (root / "scripts" / "start-mcp.ps1").exists():
         raise ValueError("legacy persistent MCP launcher must not be packaged")
     hooks_path = root / "hooks" / "hooks.json"
@@ -139,23 +164,21 @@ def validate(root: Path) -> None:
             for hook in group["hooks"]:
                 if hook["type"] != "command" or hook["timeout"] > 5:
                     raise ValueError("control-plane hooks must be bounded command hooks")
-                if "--codex-hook" not in hook["commandWindows"]:
-                    raise ValueError("Windows control-plane hook entry is invalid")
-                windows_command = hook["commandWindows"]
                 expected_suffix = f"--codex-hook --event {event}"
-                if expected_suffix not in hook["command"] or expected_suffix not in windows_command:
+                if hook.get("command") != target.hook_command(event):
                     raise ValueError(
-                        f"{event} hook must declare its exact fail-closed runtime event"
+                        f"{event} hook must declare the exact {target.name} runtime command"
                     )
-                if "$env:PLUGIN_ROOT" not in windows_command:
+                if expected_suffix not in hook["command"]:
+                    raise ValueError(f"{event} hook event arguments are invalid")
+                if target.name == "windows-x86_64":
+                    windows_command = hook.get("commandWindows")
+                    if windows_command != target.windows_hook_command(event):
+                        raise ValueError("Windows control-plane hook entry is invalid")
+                elif "commandWindows" in hook:
                     raise ValueError(
-                        "Windows control-plane hooks must use PowerShell plugin-root "
-                        "environment syntax"
+                        "macOS control-plane hooks must not declare a Windows override"
                     )
-                if "%PLUGIN_ROOT%" in windows_command:
-                    raise ValueError("cmd.exe environment syntax is invalid in a PowerShell hook")
-                if "ai-architect-runtime.exe" not in windows_command:
-                    raise ValueError("hooks must use the short-lived Codex runtime")
     text_files = (
         path
         for path in root.rglob("*")
@@ -186,8 +209,12 @@ def validate(root: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("plugin", type=Path)
+    parser.add_argument("--target", choices=sorted(RUNTIME_TARGETS))
     args = parser.parse_args()
-    validate(args.plugin)
+    validate(
+        args.plugin,
+        target=target_for_name(args.target) if args.target else None,
+    )
     print(f"Plugin validation passed: {args.plugin.resolve()}")
 
 

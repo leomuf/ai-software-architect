@@ -5,9 +5,10 @@ SPDX-License-Identifier: MIT
 
 # Maintainer Scripts
 
-These PowerShell scripts make the documented Codex plugin build and release
-commands repeatable. Run them from a PowerShell terminal in the repository root.
-They require Windows PowerShell 5.1 or later, `git`, and `uv`.
+These PowerShell scripts and cross-platform Python entry points make the documented
+Codex plugin build and release commands repeatable. Run them from the repository
+root. The PowerShell wrappers require Windows PowerShell 5.1 or later, `git`, and
+`uv`.
 
 ## PowerShell Execution Policy
 
@@ -68,6 +69,21 @@ reuse the existing reviewed runtime:
 .\scripts\build-codex-plugin.ps1 -ReuseRuntime
 ```
 
+On macOS Apple Silicon, use the cross-platform Python entry points to build the
+native `aarch64-darwin` runtime and package layout:
+
+```sh
+uv run python adapters/codex/build_plugin.py \
+  --build-runtime \
+  --target aarch64-darwin \
+  --plugin-version 0.2.3
+uv run python adapters/codex/validate_plugin.py \
+  --target aarch64-darwin \
+  dist/codex/ai-software-architect
+uv run python adapters/codex/smoke_test_runtime.py \
+  dist/codex/ai-software-architect/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime
+```
+
 Do not use `-ReuseRuntime` after runtime Python, shared domain code, schemas, dependencies,
 `uv.lock`, Python, or PyInstaller configuration changes. When uncertain, use the
 full build.
@@ -108,10 +124,20 @@ dependencies:
 .\scripts\package-codex-release.ps1 -PluginVersion 0.1.0
 ```
 
+On macOS Apple Silicon, package the already validated native build with:
+
+```sh
+uv run python scripts/package_codex_release.py \
+  --target aarch64-darwin \
+  --plugin-version 0.2.3
+```
+
 The script checks that the assembled manifest version matches the requested
 version, copies the plugin into a release-only marketplace layout, adds the
-dependency-free installation guide, creates the Windows x86-64 ZIP, and writes
-its SHA-256 checksum. It does not rebuild or revalidate the plugin runtime.
+dependency-free installation guide, creates the target-specific ZIP, and writes
+its SHA-256 checksum. The Python entry point validates the target-specific plugin
+and writes deterministic archive metadata. Neither entry point rebuilds the runtime
+during packaging.
 
 Generated output is written under `dist/release/` and remains ignored by Git.
 Publish the ZIP and `SHA256SUMS.txt` as assets of the matching GitHub Release.
@@ -119,7 +145,8 @@ The versioned source inputs are:
 
 - `adapters/codex/templates/marketplace.json`;
 - `docs/INSTALL_CODEX_PLUGIN.md`; and
-- `scripts/package-codex-release.ps1`.
+- `scripts/package-codex-release.ps1`; and
+- `scripts/package_codex_release.py`.
 
 ## Package an OpenAI Plugin-Directory Submission
 

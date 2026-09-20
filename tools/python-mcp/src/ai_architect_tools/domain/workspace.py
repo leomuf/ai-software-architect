@@ -112,7 +112,7 @@ def validate_inline_python_path(path: str) -> PurePosixPath:
 
 def _is_reparse_point(path: Path) -> bool:
     try:
-        attributes = path.lstat().st_file_attributes
+        attributes = path.lstat().st_file_attributes  # type: ignore[attr-defined]
     except AttributeError:
         return path.is_symlink()
     return bool(attributes & FILE_ATTRIBUTE_REPARSE_POINT)
@@ -121,18 +121,24 @@ def _is_reparse_point(path: Path) -> bool:
 def _final_windows_path(handle: BinaryIO) -> Path:
     import msvcrt
 
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
     function = kernel32.GetFinalPathNameByHandleW
     function.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32]
     function.restype = ctypes.c_uint32
-    os_handle = msvcrt.get_osfhandle(handle.fileno())
+    os_handle = msvcrt.get_osfhandle(handle.fileno())  # type: ignore[attr-defined]
     size = function(os_handle, None, 0, 0)
     if size == 0:
-        raise OSError(ctypes.get_last_error(), "GetFinalPathNameByHandleW failed")
+        raise OSError(
+            ctypes.get_last_error(),  # type: ignore[attr-defined]
+            "GetFinalPathNameByHandleW failed",
+        )
     buffer = ctypes.create_unicode_buffer(size + 1)
     written = function(os_handle, buffer, len(buffer), 0)
     if written == 0 or written >= len(buffer):
-        raise OSError(ctypes.get_last_error(), "GetFinalPathNameByHandleW failed")
+        raise OSError(
+            ctypes.get_last_error(),  # type: ignore[attr-defined]
+            "GetFinalPathNameByHandleW failed",
+        )
     value = buffer.value
     if value.startswith("\\\\?\\UNC\\"):
         value = "\\\\" + value[8:]

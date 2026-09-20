@@ -52,6 +52,7 @@ from adapters.codex.repository_snapshot import (
     serialize_repository_snapshot,
 )
 from adapters.codex.response_locales import comparison_locale
+from adapters.codex.runtime_targets import target_for_name
 
 
 def _payload(event: str) -> dict[str, object]:
@@ -1229,11 +1230,24 @@ def test_pending_architect_continuation_expires(tmp_path: Path) -> None:
     assert not continuation.exists()
 
 
+def test_macos_snapshot_command_uses_posix_runtime_path(tmp_path: Path) -> None:
+    plugin_root = tmp_path / "installed plugin"
+    command = repository_snapshot_command(
+        plugin_root, target=target_for_name("aarch64-darwin")
+    )
+
+    assert (
+        "runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime" in command
+    )
+    assert not command.startswith("& ")
+    assert "--repository-snapshot --root ." in command
+
+
 def test_turn_state_is_minimal_and_stale_files_are_bounded(tmp_path: Path) -> None:
     submit = _payload("UserPromptSubmit")
     submit["prompt"] = "$ai-software-architect Review this project."
     handle_user_prompt_submit(submit, tmp_path)
-    state = next((tmp_path / "control-plane").glob("*.json"))
+    state = next((tmp_path / "control-plane").glob("turn-*.json"))
     state_text = state.read_text("utf-8")
     assert "Review this project" not in state_text
     assert "prompt" not in state_text

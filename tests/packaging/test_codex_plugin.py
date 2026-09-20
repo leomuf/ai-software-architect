@@ -11,6 +11,7 @@ import yaml
 from pytest import MonkeyPatch, raises
 
 from adapters.codex import build_plugin, validate_plugin
+from adapters.codex.runtime_targets import target_for_name
 
 
 def _snapshot(root: Path) -> dict[str, str]:
@@ -185,3 +186,36 @@ def test_codex_plugin_is_reproducible_and_complete(
     notice.write_text(notice.read_text("utf-8") + "post-build mutation\n", encoding="utf-8")
     with raises(ValueError, match="provenance hash mismatch"):
         validate_plugin.validate(versioned)
+
+
+def test_codex_plugin_assembles_native_macos_runtime(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    output_parent = tmp_path / "dist" / "codex"
+    output = output_parent / "ai-software-architect"
+    monkeypatch.setattr(build_plugin, "OUTPUT_PARENT", output_parent)
+    monkeypatch.setattr(build_plugin, "OUTPUT", output)
+    runtime = tmp_path / "ai-architect-runtime"
+    runtime.mkdir()
+    executable = runtime / "ai-architect-runtime"
+    executable.write_bytes(b"reviewed-macos-test-runtime")
+    executable.chmod(0o755)
+
+    target = target_for_name("aarch64-darwin")
+    assembled = build_plugin.assemble(
+        runtime,
+        plugin_version="0.2.3+darwin.test",
+        target=target,
+    )
+
+    packaged_executable = assembled / target.executable_relative_path
+    assert packaged_executable.is_file()
+    assert packaged_executable.stat().st_mode & 0o111
+    hooks = json.loads((assembled / "hooks" / "hooks.json").read_text("utf-8"))
+    for event, groups in hooks["hooks"].items():
+        for group in groups:
+            for hook in group["hooks"]:
+                assert hook["command"] == target.hook_command(event)
+                assert "commandWindows" not in hook
+
+    validate_plugin.validate(assembled, target=target)
