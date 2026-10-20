@@ -1,6 +1,6 @@
 {
   "name": "ai-software-architect",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Project-aware design-pattern and architecture guidance using your Codex model, with transparent local safety and quality hooks.",
   "author": {
     "name": "AUTOSOFT Engineering (a brand of XAVIER MUFFATO LTDA)",
@@ -15,7 +15,7 @@
   "interface": {
     "displayName": "AI Software Architect",
     "shortDescription": "Choose best design patterns",
-    "longDescription": "Helps you and your coding agent choose the best-fit software architecture for your project by analyzing needs, comparing architectural options and design patterns, and explaining trade-offs before implementation. Guides evidence-based decisions with guardrails, validated Architecture Decision Records (ADRs), coding handoffs, and conformance reviews using the user's selected AI model.\n\n⚠️ IMPORTANT: BEFORE FIRST USE, ACTIVATE ALL FIVE BUNDLED HOOKS IN THE HOOKS SECTION BELOW. All five are required for reliable routing, continuation, safety checks, artifact validation, and complete responses.",
+    "longDescription": "Helps you and your coding agent choose the best-fit software architecture for your project by analyzing needs, comparing architectural options and design patterns, and explaining trade-offs before implementation. Guides evidence-based decisions with guardrails, validated Architecture Decision Records (ADRs), coding handoffs, and conformance reviews using the user's selected AI model.\n\n⚠️ IMPORTANT: BEFORE FIRST USE, REVIEW AND ENABLE ALL FIVE BUNDLED HOOKS. All five are required for reliable routing, continuation, safety checks, artifact validation, and complete responses. In Codex, go to Settings → Coding → Hooks to review and approve all five AI Software Architect hooks. Alternatively, click the hook icon with the yellow dot below the message input (“Review hooks”) to review and approve pending hooks.",
     "developerName": "AUTOSOFT Engineering",
     "category": "Developer Tools",
     "capabilities": ["Read", "Write"],

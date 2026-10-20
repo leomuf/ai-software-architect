@@ -7,12 +7,12 @@ build-backend = "uv_build"
 
 [project]
 name = "ai-architect-tools"
-version = "0.2.3"
+version = "0.2.4"
 description = "Read-only deterministic MCP and CLI tools for AI Software Architect."
 requires-python = ">=3.11,<3.14"
 dependencies = [
   "ai-architect-schemas",
-  "mcp>=1.27,<2",
+  "mcp>=1.30,<2",
   "pyyaml>=6.0,<7",
 ]
 license = "MIT"

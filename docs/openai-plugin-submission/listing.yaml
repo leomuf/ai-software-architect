@@ -36,13 +36,12 @@ plugin:
     350 eligible exploratory observations across more than 140 campaigns,
     complemented by more than 160 deterministic automated tests.
   update_release_notes: >-
-    Update from version 0.2.2 to 0.2.3 under the AUTOSOFT Engineering brand by
-    XAVIER MUFFATO LTDA. This version explicitly declares the bundled
-    hooks/hooks.json configuration so public Codex plugin installations can
-    discover, review, and activate all five lifecycle hooks. The project-aware
-    architecture and design-pattern guidance, stored pattern examples,
-    user-approved ADR and handoff artifacts, bounded static repository review,
-    short-lived local runtime, and no-MCP design are otherwise unchanged.
+    Update from version 0.2.3 to 0.2.4 under the AUTOSOFT Engineering brand by
+    XAVIER MUFFATO LTDA. This version updates MCP to 1.30.0 and PyJWT to 2.15.0
+    to address dependency vulnerabilities. It clarifies how to review and enable
+    all five bundled hooks in Codex through Settings → Coding → Hooks or the
+    yellow-dot Review hooks icon below the message input. The architecture
+    workflows and short-lived local runtime design are unchanged.
   countries_and_regions:
     selection: confirm-in-portal
     intended: broadly-available-where-openai-plugin-directory-is-supported

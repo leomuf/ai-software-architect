@@ -46,12 +46,15 @@ def test_codex_plugin_is_reproducible_and_complete(
     assert all("plugin://ai-software-architect" not in prompt for prompt in default_prompts)
     assert "Suggest suitable design patterns for my current project." in default_prompts
     warning = (
-        "⚠️ IMPORTANT: BEFORE FIRST USE, ACTIVATE ALL FIVE BUNDLED HOOKS IN THE "
-        "HOOKS SECTION BELOW."
+        "⚠️ IMPORTANT: BEFORE FIRST USE, REVIEW AND ENABLE ALL FIVE BUNDLED HOOKS."
     )
     hook_explanation = (
         "All five are required for reliable routing, continuation, safety checks, "
-        "artifact validation, and complete responses."
+        "artifact validation, and complete responses. "
+        "In Codex, go to Settings → Coding → Hooks to review and approve all five "
+        "AI Software Architect hooks. Alternatively, click the hook icon with the "
+        "yellow dot below the message input (“Review hooks”) to review and approve "
+        "pending hooks."
     )
     assert manifest["interface"]["longDescription"].endswith(
         f"\n\n{warning} {hook_explanation}"

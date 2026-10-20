@@ -28,6 +28,14 @@ documentation-only pull request without publishing another GitHub Release.
 it does not claim that OpenAI has received, reviewed, approved, endorsed, or
 published the plugin.
 
+## Next Update Preparation
+
+Version `0.2.4` is in preparation as an update from `0.2.3`. It updates MCP and
+PyJWT dependencies and clarifies hook review and approval instructions. The
+listing contains draft update notes. The current status above remains the
+record for `0.2.3`; no `0.2.4` archive, submission, approval, or release-gate
+completion is claimed. Dependency changes require Gate D before publication.
+
 ## How to Update This Record
 
 After the portal confirms receipt, change the status to **Submitted — awaiting

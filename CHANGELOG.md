@@ -5,6 +5,21 @@ SPDX-License-Identifier: MIT
 
 # Changelog
 
+## [0.2.4] - Unreleased
+
+### Security
+
+- Updated MCP to `1.30.0` and PyJWT to `2.15.0` to address all 14 open
+  Dependabot alerts, including critical and high-severity PyJWT vulnerabilities.
+
+### Changed
+
+- Clarified how to review and enable all five bundled hooks through Codex
+  Settings → Coding → Hooks or the yellow-dot Review hooks icon.
+- Updated pinned GitHub Actions: setup-uv `10.3.0`, upload-artifact `7.0.2`,
+  and CodeQL init/analyze `4.38.3`.
+- Aligned plugin and bundled workspace metadata for release `0.2.4`.
+
 ## [0.2.3] - 2026-08-30
 
 ### Fixed

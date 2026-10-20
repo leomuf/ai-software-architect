@@ -3,4 +3,4 @@
 
 """Deterministic, read-only tools used by AI Software Architect."""
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"

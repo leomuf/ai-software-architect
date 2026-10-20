@@ -23,13 +23,13 @@ The Windows executable bundles the runtime dependencies below. Copyright remains
 | idna | 3.18 | BSD-3-Clause | https://github.com/kjd/idna/blob/master/HISTORY.md |
 | jsonschema | 4.26.0 | MIT | https://github.com/python-jsonschema/jsonschema |
 | jsonschema-specifications | 2025.9.1 | MIT | https://jsonschema-specifications.readthedocs.io/ |
-| mcp | 1.28.1 | MIT License | https://modelcontextprotocol.io |
+| mcp | 1.30.0 | MIT License | https://modelcontextprotocol.io |
 | pydantic | 2.13.4 | MIT | https://github.com/pydantic/pydantic |
 | pydantic_core | 2.46.4 | MIT | https://github.com/pydantic/pydantic |
 | pydantic-settings | 2.14.2 | MIT | https://github.com/pydantic/pydantic-settings |
 | pyinstaller | 6.21.0 | GNU General Public License v2 (GPLv2) | https://pyinstaller.org |
 | pyinstaller-hooks-contrib | 2026.6 | Apache Software License, GNU General Public License v2 (GPLv2) | https://github.com/pyinstaller/pyinstaller-hooks-contrib |
-| PyJWT | 2.13.0 | MIT | https://github.com/jpadilla/pyjwt |
+| PyJWT | 2.15.0 | MIT | https://github.com/jpadilla/pyjwt |
 | python-dotenv | 1.2.2 | BSD-3-Clause | https://github.com/theskumar/python-dotenv |
 | python-multipart | 0.0.32 | Apache-2.0 | https://github.com/Kludex/python-multipart |
 | pywin32 | 312 | Python Software Foundation License | https://github.com/mhammond/pywin32 |

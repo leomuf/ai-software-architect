@@ -58,12 +58,15 @@ def validate(root: Path) -> None:
     default_prompts = manifest["interface"].get("defaultPrompt", [])
     long_description = manifest["interface"].get("longDescription", "")
     warning = (
-        "⚠️ IMPORTANT: BEFORE FIRST USE, ACTIVATE ALL FIVE BUNDLED HOOKS IN THE "
-        "HOOKS SECTION BELOW."
+        "⚠️ IMPORTANT: BEFORE FIRST USE, REVIEW AND ENABLE ALL FIVE BUNDLED HOOKS."
     )
     hook_explanation = (
         "All five are required for reliable routing, continuation, safety checks, "
-        "artifact validation, and complete responses."
+        "artifact validation, and complete responses. "
+        "In Codex, go to Settings → Coding → Hooks to review and approve all five "
+        "AI Software Architect hooks. Alternatively, click the hook icon with the "
+        "yellow dot below the message input (“Review hooks”) to review and approve "
+        "pending hooks."
     )
     onboarding_suffix = f"\n\n{warning} {hook_explanation}"
     if not isinstance(long_description, str) or not long_description.endswith(
