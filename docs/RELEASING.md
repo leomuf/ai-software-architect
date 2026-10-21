@@ -64,8 +64,10 @@ It currently:
 2. derives the plugin version from that tag;
 3. builds the self-contained Windows x86-64 plugin with that exact version;
 4. validates and smoke-tests the assembled package;
-5. creates the ZIP used to install the plugin through a repository marketplace,
-   plus a SHA-256 checksum to check that the ZIP has not changed;
+5. creates the installation ZIP and a SHA-256 checksum. Windows users can compare
+   the result of `Get-FileHash` in PowerShell with `SHA256SUMS.txt` to check that
+   their downloaded ZIP matches the release file (see
+   [Verify a download on Windows 11](#verify-a-download-on-windows-11));
 6. uploads the output from each platform build separately; and
 7. gathers the ZIPs from successful builds into `release-assets-v<version>` and
    creates one `SHA256SUMS.txt` with a checksum for every expected download.
@@ -569,6 +571,28 @@ first-attempt uninstallation.
 
 Never move or recreate a published release tag. Correct a published release by
 publishing an appropriate new version.
+
+## Verify a Download on Windows 11
+
+Windows includes PowerShell, so you do not need to install another tool:
+
+1. Download the plugin ZIP and `SHA256SUMS.txt` from the same GitHub Release.
+2. Open the download folder in File Explorer. Right-click an empty area and
+   select **Open in Terminal**. Use a **Windows PowerShell** or **PowerShell** tab.
+3. Run the following command. Replace `your-plugin-file.zip` with the exact name
+   of the downloaded ZIP, keeping the quotation marks:
+
+   ```powershell
+   Get-FileHash -LiteralPath ".\your-plugin-file.zip" -Algorithm SHA256
+   ```
+
+4. Open `SHA256SUMS.txt` in Notepad and find the line with that ZIP's filename.
+5. Compare the checksum on that line with the value under **Hash** in PowerShell.
+   All characters must match; uppercase and lowercase letters count as the same.
+
+If the values match, the ZIP matches the published checksum. If they differ, do
+not install it. Download the files again from the same release and repeat the
+check. If they still differ, report the problem to the maintainer.
 
 ## Release Decision
 

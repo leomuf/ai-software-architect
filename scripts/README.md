@@ -118,6 +118,9 @@ The local `SHA256SUMS.txt` lets you check the ZIP from this build. To publish a
 release, download the final `release-assets-v<version>` output from GitHub Actions.
 It contains the ZIP for each supported platform and one combined `SHA256SUMS.txt`.
 Publish these ZIPs and the combined checksum file together.
+Windows users can follow
+[Verify a download on Windows 11](../docs/RELEASING.md#verify-a-download-on-windows-11)
+to compare the ZIP's checksum with `SHA256SUMS.txt` using PowerShell.
 
 The collection script, `collect_release_assets.py`, calculates a new checksum for
 each ZIP. It stops if an expected ZIP is missing or appears more than once. See
