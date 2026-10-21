@@ -114,11 +114,16 @@ dependency-free installation guide, creates the Windows x86-64 ZIP, and writes
 its SHA-256 checksum. It does not rebuild or revalidate the plugin runtime.
 
 Generated output is written under `dist/release/` and remains ignored by Git.
-The checksum here verifies one local build. For publication, use the final
-`release-assets-v<version>` workflow artifact: it contains all platform ZIPs and
-one combined `SHA256SUMS.txt`. `collect_release_assets.py` recalculates hashes
-from the collected ZIPs and rejects missing or duplicate inputs. See
-[`docs/RELEASING.md`](../docs/RELEASING.md) for multi-platform integration.
+The local `SHA256SUMS.txt` lets you check the ZIP from this build. To publish a
+release, download the final `release-assets-v<version>` output from GitHub Actions.
+It contains the ZIP for each supported platform and one combined `SHA256SUMS.txt`.
+Publish these ZIPs and the combined checksum file together.
+
+The collection script, `collect_release_assets.py`, calculates a new checksum for
+each ZIP. It stops if an expected ZIP is missing or appears more than once. See
+[`docs/RELEASING.md`](../docs/RELEASING.md) for the full publication steps and how
+to add another platform.
+
 The versioned source inputs are:
 
 - `adapters/codex/templates/marketplace.json`;

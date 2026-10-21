@@ -38,12 +38,13 @@ plugin:
   update_release_notes: >-
     Update from version 0.2.3 to 0.2.4 under the AUTOSOFT Engineering brand by
     XAVIER MUFFATO LTDA. This version updates MCP to 1.30.0 and PyJWT to 2.15.0
-    to address dependency vulnerabilities. It clarifies how to review and enable
+    to fix security issues in those dependencies. It explains how to review and enable
     all five bundled hooks in Codex through Settings → Coding → Hooks or the
-    yellow-dot Review hooks icon below the message input. Shell inspection is
-    restricted to the exact bundled repository reader and validated shell options
-    to prevent shell expansion from executing project code. Additional static
-    reads use native file tools. The short-lived local runtime design is retained.
+    yellow-dot Review hooks icon below the message input. It also fixes a security
+    issue where a command meant to read project files could run project code.
+    Shell commands can now start only the reader included with the plugin, using
+    checked settings. Further file reads use the host's file-reading tools.
+    The plugin still runs locally only when needed, with no background service.
   countries_and_regions:
     selection: confirm-in-portal
     intended: broadly-available-where-openai-plugin-directory-is-supported

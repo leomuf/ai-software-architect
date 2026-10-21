@@ -30,12 +30,15 @@ published the plugin.
 
 ## Next Update Preparation
 
-Version `0.2.4` is in preparation as an update from `0.2.3`. It updates MCP and
-PyJWT dependencies, restricts shell inspection to the trusted bundled reader,
-and clarifies hook review and approval instructions. The
-listing contains draft update notes. The current status above remains the
-record for `0.2.3`; no `0.2.4` archive, submission, approval, or release-gate
-completion is claimed. Dependency changes require Gate D before publication.
+Version `0.2.4` is being prepared as an update from `0.2.3`. It updates the MCP
+and PyJWT dependencies, fixes a file-reading security issue, and explains how to
+review and enable all five hooks. Shell commands can start only the reader
+included with the plugin.
+
+The listing contains draft update notes. The status above still applies to
+`0.2.3`. The `0.2.4` submission archive, submission, approval, and release checks
+are still pending. Because dependencies changed, Gate D's five exploratory tests
+must run before publication; this check cannot be skipped.
 
 ## How to Update This Record
 

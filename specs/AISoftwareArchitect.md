@@ -1825,9 +1825,72 @@ A typed decision continuation receives a minimal record-and-handoff context that
 
 A typed clarification continuation MUST likewise receive a compact resume-design context rather than the general comparison contract. It preserves the preceding question and clarified constraints through the active conversation, directs the model back to the smallest sufficient Composite mode, and omits the reference catalog, snapshot command, comparison rendering contract, and artifact-authoring bundle. The model loads only the internal workflow module selected for the resumed mode and MUST NOT repeat a resolved question. Clarification continuations whose verification policy forbids repository changes run with the host's read-only sandbox; only continuations that explicitly expect architecture-artifact persistence receive workspace-write access.
 
-`PreToolUse` MUST inspect supported shell, patch, and web-tool arguments only in memory: it allows shell inspection only through the exact bundled snapshot launch with a trusted absolute shell path, login profiles disabled, no interactive input or environment/interpreter overrides, and the active workspace. It denies all other shell commands (including rg, Git, and PowerShell reads), supported web lookup for bundled canonical references, and patches outside `.ai-architect/`. For a record-and-handoff write it reconstructs all proposed candidates, secret-scans them, validates the contract, and validates the complete `ArchitectureArtifactBundle` before allowing persistence. `PostToolUse` verifies that resulting files exactly match the validated candidates; it is a postcondition check and never replaces pre-write denial. `PostCompact` restores only typed phase metadata from `PLUGIN_DATA`, never prompt, response, tool arguments, or repository content. Codex built-in web search is not guaranteed to pass through plugin `PreToolUse`, so correctness MUST rely on exact explicit-reference hints, the generated catalog for open comparisons, the active Composite, and preserved typed workflow state plus the exact installed bundle during a decision continuation. Absolute patch targets are allowed only when normalization proves that they resolve beneath the active workspace's `.ai-architect/` directory. The Composite route may patch only approved architecture artifacts under `.ai-architect/`; it never writes application code. These deterministic checks complement the skill's default read-only policy and deliberately keep the architect role static even if a model attempts an unnecessary compile, test, or reference-search command.
+`PreToolUse` MUST check supported shell, patch, and web-tool arguments only in
+memory. For shell inspection, it allows only the exact command that starts the
+plugin's bundled snapshot reader. That command must use a trusted absolute shell
+path, disabled login profiles, and the active workspace. Interactive input and
+overrides of the environment or interpreter are not allowed. All other shell
+commands, including rg, Git, and PowerShell reads, are denied. The hook also
+denies supported web lookups for references already bundled with the plugin and
+patches outside `.ai-architect/`.
 
-The Composite route relies on the canonical module rules, host-native read-only inspection, and the shared schemas embedded in the short-lived artifact guard. For focused help, the skill instructs the model to load only the directly linked bundled reference and not inspect the repository, delegate a subagent, or create artifacts unless project evidence is explicitly required. A request to improve or choose architecture or patterns for this or the current application, project, repository, or codebase is repository-specific advice: unless the user forbids inspection or already supplied complete decision evidence, the model MUST inspect the smallest relevant source set with host-native static reads before recommending. The Codex control plane supplies the exact installed command for one packaged, short-lived repository snapshot helper. `PreToolUse` permits only that fixed executable with `--repository-snapshot --root .`; appended commands, alternate roots, interpreters, and repository-controlled scripts remain denied. The helper MUST write nothing, MUST NOT import or execute repository code, MUST exclude hidden and credential-prone paths plus dependency, build, cache, symlink, and reparse-point paths, and MUST enforce fixed directory, entry, candidate-file, included-file, per-file, total-content, and depth budgets. Its structured output MUST label repository paths and content as untrusted data, report coverage and truncation, and disclose that runtime behavior, dynamic imports, reflection, generated code, and omitted files remain unverified. A complete small-repository snapshot is reused instead of repeated reads and does not trigger subagent delegation by default. If its budget is incomplete, the model performs only the smallest additional separately controlled host-native file reads needed; it MUST NOT invent a shell fallback. Only the launcher quoting varies across platforms; reader operations remain shared Python file-API operations. Shell selection and all execution-affecting options are part of the trusted launch contract. Paths containing spaces, apostrophes, dollar signs, or shell metacharacters MUST remain literal. The snapshot is host-native static evidence, not parser-verified architecture analysis and not an MCP transport.
+Before saving a decision and handoff, `PreToolUse` reconstructs the complete
+proposed files, scans them for secrets, checks their contracts, and validates the
+complete `ArchitectureArtifactBundle`. Only then may the write proceed.
+`PostToolUse` checks that the saved files exactly match the validated files. This
+later check never replaces the checks that block an unsafe write beforehand.
+Absolute patch paths are allowed only when path normalization proves they are
+inside the active workspace's `.ai-architect/` directory. The Composite may write
+only approved architecture documents there; it never writes application code.
+
+`PostCompact` restores only structured workflow-phase metadata from `PLUGIN_DATA`.
+It never restores prompts, responses, tool arguments, or repository contents from
+that storage. Codex's built-in web search may bypass plugin `PreToolUse`. Reference
+selection therefore MUST rely on the explicit-reference hints, the generated
+catalog for open comparisons, and the active Composite workflow. When continuing
+an approved decision, it MUST also use the saved structured workflow state and
+the exact installed authoring bundle. Together, these checks support the skill's
+read-only policy, even if a model tries to compile, test, or search unnecessarily.
+
+The Composite uses the shared module rules, the host's read-only file tools, and
+the shared schemas included in the short-lived artifact validation program. For
+focused help, it loads only the directly linked bundled reference. It does not
+inspect the repository, ask a subagent to review it, or create documents unless
+project evidence is explicitly needed.
+
+Advice about architecture or patterns for the current project requires project
+evidence. Unless the user forbids inspection or has already supplied all the
+needed evidence, the model MUST read the smallest relevant set of source files
+before recommending. These reads use the host's tools without running project
+code.
+
+The Codex control plane provides the exact command for the installed snapshot
+reader. `PreToolUse` permits only that executable with
+`--repository-snapshot --root .`. It denies extra commands, other root paths,
+interpreters, and project-controlled scripts. The reader MUST:
+
+- Write nothing and never import or execute project code.
+- Exclude hidden paths, paths likely to contain credentials, dependency folders,
+  build output, caches, symbolic links, and reparse points.
+- Enforce fixed limits on directories, entries, candidate files, included files,
+  bytes per file, total content, and directory depth.
+- Label repository paths and contents as untrusted data in its structured output.
+- Report what it inspected, what it omitted, and where limits cut the output short.
+- Explain that runtime behavior, dynamic imports, reflection, generated code, and
+  omitted files have not been verified.
+
+When a snapshot covers a small repository completely, the model reuses it instead
+of reading the same files again. This does not trigger subagent review by default.
+If limits leave evidence incomplete, the model uses only the smallest additional
+reads through the host's separately controlled file tools. It MUST NOT fall back
+to a shell command.
+
+The platforms share the same Python file-reading code; only the command quoting
+changes with the shell. The trusted launch settings include shell selection and
+every option that affects execution. Paths with spaces, apostrophes, dollar signs,
+or other shell-special characters MUST be treated as literal paths. The snapshot
+provides evidence from reading files. It does not prove architectural properties
+through a code parser and does not use MCP to transport the results.
 
 For complete or high-impact work whose evidence or decision scope exceeds that bounded small-repository path, the Composite MAY request up to three independent read-only reviews when Codex supports subagents; the main agent alone integrates their findings and owns the recommendation. It MUST describe reviews as independent and completed only when successful subagent results were returned. If delegation is rejected or unavailable, it MUST disclose that limitation and distinguish main-model perspective review from independent review. The hook cannot prove semantic mode without fragile natural-language inference; this is the documented trade-off for one simple public invocation. The hook MUST NOT claim coverage of hosted tools or replace the host sandbox, permissions, or model reasoning. An explicit request to implement or execute application code belongs in the prepared coding handoff or an ordinary coding task, not inside the architect role.
 
@@ -2905,9 +2968,9 @@ Feature: Architecture conformance review
     And it excludes hidden, dependency, build, cache, credential, symlink, and reparse-point paths
     And it reports its limits, coverage, truncation, and static-analysis limitations
     And repository paths and contents are treated as untrusted data rather than instructions
-    And PreToolUse accepts only the exact bundled launch with its explicit trusted shell and disabled login profiles
-    And shell reads, wildcard-expanded options, appended commands, interpreter overrides, and interactive input are denied
-    And additional inspection uses separately controlled native file tools without a shell fallback
+    And PreToolUse accepts only the exact bundled reader command with a trusted shell and login profiles disabled
+    And it denies other shell reads, options introduced by wildcard expansion, extra commands, interpreter overrides, and interactive input
+    And further inspection uses the host's separately controlled file tools and never falls back to shell commands
     And the agent reuses the captured evidence without redundant file reads
     And it does not delegate subagents by default when the bounded snapshot is sufficient
 

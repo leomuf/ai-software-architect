@@ -64,10 +64,11 @@ It currently:
 2. derives the plugin version from that tag;
 3. builds the self-contained Windows x86-64 plugin with that exact version;
 4. validates and smoke-tests the assembled package;
-5. creates an installable repository marketplace ZIP and SHA-256 checksum;
-6. uploads each platform build separately; and
-7. collects successful build ZIPs into `release-assets-v<version>` with one freshly
-   calculated `SHA256SUMS.txt` for all expected downloads.
+5. creates the ZIP used to install the plugin through a repository marketplace,
+   plus a SHA-256 checksum to check that the ZIP has not changed;
+6. uploads the output from each platform build separately; and
+7. gathers the ZIPs from successful builds into `release-assets-v<version>` and
+   creates one `SHA256SUMS.txt` with a checksum for every expected download.
 
 It currently does **not**:
 
@@ -526,21 +527,30 @@ and confirm that all steps pass. The workflow uploads a release candidate
 containing the installable marketplace ZIP and `SHA256SUMS.txt`; it does not
 create a GitHub Release.
 
-Download and inspect the final `release-assets-v<version>` artifact. Its
-`SHA256SUMS.txt` is the publication manifest. Attach every inner platform ZIP and
-that single combined checksum file to the GitHub Release. Do not publish or merge
-the per-build `SHA256SUMS.txt` files: those are local verification outputs. GitHub
-wraps artifacts in an outer ZIP; extract it before selecting release assets.
+Download and inspect `release-assets-v<version>`, the final saved output from
+GitHub Actions (called an artifact). GitHub wraps it in an outer ZIP. Extract that
+ZIP, then attach each platform ZIP inside it and the single `SHA256SUMS.txt` to the
+GitHub Release. This combined checksum file lets users check every download.
+Keep the separate checksum files from individual builds for local checks only;
+do not publish or combine those files yourself.
 
-The collector (`scripts/collect_release_assets.py`) requires an explicit version
-and expected target list. It rejects missing, duplicate, unexpected, linked, or
-invalid ZIPs and refuses to overwrite an existing publication directory. Before
-adding a platform, add its successful build job to `collect-release-assets.needs`
-and its target to the collector command. For PR #28, add `build-macos-aarch64` and
-`--target aarch64-darwin`; keep `merge-multiple: false` so job-local checksum files
-cannot overwrite one another. A future third platform adds a target and checksum
-line rather than replacing existing entries. The bundle must include `INSTALL.md` and
-`VERSION.txt` and be suitable for clean-machine installation.
+The collection script, `scripts/collect_release_assets.py`, requires the release
+version and a list of expected platforms, supplied with `--target`. It stops if a
+ZIP is missing, duplicated, unexpected, invalid, or reached through a filesystem
+link. It also refuses to overwrite an existing output directory.
+
+When adding a platform:
+
+1. Add its build job to `collect-release-assets.needs`. This makes collection wait
+   for that build to succeed.
+2. Add its `--target` value to the collection command. For the macOS work in
+   PR #28, use the job `build-macos-aarch64` and `--target aarch64-darwin`.
+3. Keep `merge-multiple: false` when downloading build outputs. This keeps the
+   separate build checksum files from overwriting each other.
+
+Each extra platform adds a ZIP and a line to the final checksum file. Every
+installable bundle must include `INSTALL.md` and `VERSION.txt` and work on a
+clean machine.
 
 Create a draft at [GitHub Releases](https://github.com/leomuf/ai-software-architect/releases/new):
 

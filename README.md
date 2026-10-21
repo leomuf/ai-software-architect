@@ -342,7 +342,7 @@ short-lived executable and no persistent background process:
 | Hook | When it runs | What it does |
 |---|---|---|
 | `UserPromptSubmit` | After you submit a prompt | Recognizes the recommended structured plugin selection and the supported direct `$ai-software-architect` invocation. It adds a compact activation and safety envelope, resolves only explicitly named canonical references and can supply one trusted bundled reference inline, points an open comparison to one installed bundle containing its workflow and compact reference catalog, gives a clarification reply only the context needed to resume design, injects the generated authoring bundle path only during an approved decision continuation, resumes one bounded pending follow-up, and explains how to correct an empty `@` selection. |
-| `PreToolUse` | Before a shell command or file write runs | Allows only the exact bundled reader launch with its explicit trusted shell and disabled login profiles; arbitrary shell reads, shell composition, scripts, interpreters, test/build/package runners, mutations, and application-code patches are denied during architect turns. For approved `.ai-architect/` writes it requires a trustworthy workspace, reconstructs complete resulting content, validates ADRs and contracts, scans for likely secrets, and requires the consistent four-type bundle during record-and-handoff. Runtime validation failures deny the protected operation. It cannot grant extra filesystem or network permissions. |
+| `PreToolUse` | Before a shell command or file write runs | Allows a shell command only to start the plugin's own file reader, using a trusted shell with login profiles disabled. Blocks other shell commands, scripts, project execution, and application-code changes during architecture work. Before an approved write to `.ai-architect/`, it checks the workspace and the full proposed file contents, validates decision records and contracts, and scans for likely secrets. When saving a decision and handoff, all four required document types must be present and consistent. If validation fails, the operation is blocked. The hook cannot grant extra file or network permissions. |
 | `PostToolUse` | After an architecture artifact write | Confirms that the persisted files exactly match the pre-write validated bundle and records a typed completion checkpoint. It cannot make an unsafe operation safe or replace `PreToolUse`. |
 | `PostCompact` | After Codex compacts a long task | Restores only the minimal typed workflow phase and expected artifact kinds; it never copies the conversation or repository content into plugin state. |
 | `Stop` | Before Codex accepts an architect response | Checks stable visible comparison sections and rejects leaked internal response markers. It may request one complete corrected response, with a loop guard preventing repeated correction cycles. It does not infer the semantic workflow phase. |
@@ -591,7 +591,23 @@ The project assumes its public controls are known to an attacker and treats repo
 
 - The Codex package registers no persistent MCP server. Dependency and boundary observations use bounded host-native static inspection and disclose that dynamic or omitted behavior was not deterministically verified.
 - The recommended architecture workflow is activated by selecting AI Software Architect from the `@` picker and adding a request; literal typed display text is not activation. `$ai-software-architect` remains a supported direct/advanced entry. A bare plugin selection is blocked before model or tool execution and persists no turn state. Valid architect turns store only a hashed turn key and route classification in Codex's plugin-data directory, never the user's prompt or repository content.
-- Trusted hooks keep architect inspection static by denying repository interpreters, test/build/package runners, all arbitrary shell and Git commands, and application-code patches. The patch surface is limited to architecture artifacts under `.ai-architect/`; record-and-handoff succeeds only after the complete ADR, contract, project-context, and implementation-plan bundle is validated and its persisted content is verified. The same hooks may request one corrected option rendering when the response visibly contains an Alternatives section and reject leaked internal response markers. Architect answers contain only user-facing Markdown; the hook does not infer focused versus complete mode or `clarify`, `recommendation`, or `complete` from localized prose. It fails open with a visible warning, avoids infinite retries, and does not replace Codex's sandbox, permissions, or semantic model reasoning.
+- Hooks keep project inspection read-only. They allow a shell command only to
+  start the plugin's own file reader. They block other shell and Git commands,
+  project scripts, tests, builds, package tools, and application-code changes.
+- With your approval, the plugin can write architecture documents under
+  `.ai-architect/`. Before saving a decision and handoff, it checks the complete
+  set: decision record (ADR), contract, project context, and implementation plan.
+  It then checks that the saved files match the validated contents. If validation
+  fails before a write, the write is blocked.
+- Response checks can request one corrected answer when the visible Alternatives
+  section is incomplete. They also reject internal control markers that should
+  not appear in an answer. Answers use ordinary Markdown. The hook does not guess
+  the workflow mode or phase (`clarify`, `recommendation`, or `complete`) from the
+  language of the answer. A retry limit prevents repeated correction loops.
+  If a hook encounters an internal error, it shows a warning. An error in
+  `PreToolUse` blocks the protected operation; an error in `PostToolUse` stops the
+  workflow. Other hook errors allow the workflow to continue with the warning.
+  These checks work alongside Codex's sandbox, permissions, and model reasoning.
 
 These controls reduce risk but do not claim perfect prompt-injection prevention. See [SECURITY.md](SECURITY.md) for reporting and the [approved specification](specs/AISoftwareArchitect.md) for the complete threat model, architecture, schemas, and acceptance criteria.
 
