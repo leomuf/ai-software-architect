@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, ubuntu-latest]
+        os: [windows-latest, macos-14, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -29,12 +29,11 @@ jobs:
           version: "0.11.3"
           enable-cache: false
       - run: uv sync --locked --all-packages
-      - name: Verify shared reader safety and release collection (not native package support)
-        run: >-
-          uv run pytest -q tests/packaging/test_snapshot_shell_security.py
-          tests/packaging/test_release_asset_collection.py
+      - name: Run all shared tests (not native package support)
+        run: uv run pytest -q -m "not windows"
 
   test-and-package:
+    needs: shared-platform-checks
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -54,7 +53,8 @@ jobs:
       - run: git diff --exit-code
       - run: uv run ruff check shared/schemas tools/python-mcp adapters tests
       - run: uv run mypy
-      - run: uv run pytest -q
+      - name: Run Windows integration tests
+        run: uv run pytest -q -m windows
       - name: Render exploratory performance history
         shell: pwsh
         run: |

@@ -9,6 +9,35 @@ These PowerShell scripts make the documented Codex plugin build and release
 commands repeatable. Run them from a PowerShell terminal in the repository root.
 They require Windows PowerShell 5.1 or later, `git`, and `uv`.
 
+## Automated Tests on Windows, macOS, and Linux
+
+The Python tests use the same locked environment on all three systems. These
+commands do not require PowerShell:
+
+```sh
+uv sync --locked --all-packages
+uv run pytest -q
+```
+
+Tests that require Windows carry the `windows` marker. The root `conftest.py`
+automatically skips them on other systems, with a visible reason. Installing
+PowerShell on macOS or Linux does not cause Windows-only tests to run.
+Missing prerequisites must be reported as a skip, never as a passing test that
+returned without doing its checks.
+
+To select the same groups used by CI:
+
+```sh
+uv run pytest -q -m "not windows"
+uv run pytest -q -m windows
+```
+
+CI runs all shared tests on Windows, macOS, and Linux. A separate Windows job runs
+the Windows integration tests, builds the runtime, validates the package, and
+checks the real hook executable. Shared tests may inspect a Windows package made
+with placeholder files; that does not prove native installation or execution on
+macOS or Linux. Native packages still need their own platform release checks.
+
 ## PowerShell Execution Policy
 
 Review scripts before running them, especially when they have changed. If
@@ -184,8 +213,9 @@ smoke test:
 .\scripts\run-codex-plugin-invocation-smoke.ps1
 ```
 
-It renders `[@ai-software-architect](plugin://ai-software-architect@personal)`
-from typed activation fields and never appends its result to
+It renders the structured plugin mention using the detected marketplace identity
+(for example `personal` or `ai-software-architect-release`). It rejects duplicate
+enabled installations, checks the expected version, and never appends its result to
 `evaluation-data/exploratory-runs.jsonl`.
 
 Run the separate German-language campaign without changing the five-fixture English
@@ -243,7 +273,7 @@ comparison:
   -OutputDirectory .tmp\evaluations\release-candidate
 ```
 
-For a real run, the runner asks Codex for the installed and enabled personal
+For a real run, the runner asks Codex for the installed and enabled
 plugin version and records it automatically. `-ExpectedPluginVersion` is an
 optional release safety check: a mismatch stops the campaign before model calls.
 It never installs, disables, or switches plugin versions. The former

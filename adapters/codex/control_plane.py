@@ -175,8 +175,6 @@ def developer_context(
     continued: bool = False,
     continuation_instruction: str = "",
     continuation_interaction: str | None = None,
-    snapshot_command: str = "",
-    snapshot_shell: str = "",
     comparison_bundle_path: str = "",
     bundled_reference_content: str = "",
 ) -> str:
@@ -268,23 +266,6 @@ def developer_context(
                 "reproducing their canonical examples; do not answer from memory or browse "
                 "for bundled content."
             )
-    snapshot_hint = (
-        " If repository evidence can materially change this response, use this exact "
-        "one-shot bounded static snapshot: `"
-        + snapshot_command
-        + "`. Use exec_command with that exact cmd, shell set to `"
-        + snapshot_shell
-        + "`, login=false, and no interactive terminal or environment overrides. "
-        "Keep workdir at the active project root. Arbitrary shell reads, rg, Git, "
-        "PowerShell reads, and write_stdin are denied. If it completely covers a "
-        "small repository, reuse that evidence without "
-        "delegation or repeated reads; otherwise add only the smallest necessary "
-        "host-native static file reads. If those tools are unavailable, disclose the "
-        "missing evidence instead of inventing a shell fallback. Disclose the "
-        "snapshot's static-analysis limits."
-        if snapshot_command
-        else ""
-    )
     catalog_hint = (
         " For an open architecture or pattern selection, load this exact installed "
         "comparison bundle once: `"
@@ -320,12 +301,12 @@ def developer_context(
         "guidance offering approval, revision, or more information."
         + continuation
         + reference_hint
-        + snapshot_hint
         + catalog_hint
     )
 
 
 def repository_snapshot_command(plugin_root: Path, *, shell: str | None = None) -> str:
+    """Render the legacy maintainer command; active model shell calls stay denied."""
     executable = plugin_root.resolve(strict=False) / SNAPSHOT_RUNTIME_RELATIVE_PATH
     return quote_snapshot_command(executable, shell or default_snapshot_shell())
 
@@ -334,52 +315,6 @@ def _normalized_local_tool_name(value: object) -> str | None:
     if not isinstance(value, str):
         return None
     return value.rsplit(".", 1)[-1].casefold()
-
-
-def _shell_denial_reason(
-    tool_input: object,
-    *,
-    plugin_root: Path | None = None,
-    workspace: Path | None = None,
-) -> str | None:
-    denial = (
-        "AI Software Architect shell inspection is fail-closed: use only the exact "
-        "bundled repository snapshot command with its trusted absolute shell, "
-        "login=false, and the active workspace. Shell overrides, interactive input, "
-        "extra arguments, and arbitrary shell reads are denied. Use separately "
-        "controlled host-native file tools for additional static evidence."
-    )
-    if plugin_root is None or workspace is None or not isinstance(tool_input, dict):
-        return denial
-    command_keys = {"cmd", "command"} & tool_input.keys()
-    allowed_keys = {
-        "cmd", "command", "shell", "login", "tty", "workdir", "cwd",
-        "yield_time_ms", "max_output_tokens", "timeout_ms", "description",
-        "sandbox_permissions",
-    }
-    if len(command_keys) != 1 or tool_input.keys() - allowed_keys:
-        return denial
-    shell = tool_input.get("shell")
-    if not isinstance(shell, str) or tool_input.get("login") is not False:
-        return denial
-    if tool_input.get("tty", False) is not False:
-        return denial
-    if tool_input.get("sandbox_permissions", "use_default") != "use_default":
-        return denial
-    directories = {"workdir", "cwd"} & tool_input.keys()
-    if len(directories) > 1:
-        return denial
-    try:
-        for key in directories:
-            directory = tool_input[key]
-            if not isinstance(directory, str) or not Path(directory).is_absolute():
-                return denial
-            if Path(directory).resolve(strict=True) != workspace.resolve(strict=True):
-                return denial
-        expected = repository_snapshot_command(plugin_root, shell=shell)
-    except (OSError, ValueError):
-        return denial
-    return None if tool_input[next(iter(command_keys))] == expected else denial
 
 
 def _patch_text_from_tool_input(value: object) -> str | None:
@@ -446,17 +381,10 @@ def tool_denial_reason(
             "reference paths supplied by the active skill context."
         )
     if local_tool_name in SHELL_TOOL_NAMES:
-        if local_tool_name != "exec_command":
-            return (
-                "AI Software Architect shell inspection is fail-closed: use exec_command "
-                "with the exact bundled reader command and explicit trusted shell options, "
-                "or native file tools. Other shell tools and interactive input are denied."
-            )
-        reason = _shell_denial_reason(
-            tool_input, plugin_root=plugin_root, workspace=workspace,
+        return (
+            "AI Software Architect denies all shell execution during the architecture "
+            "workflow. Use the hook's exact static read requests or host-native file tools."
         )
-        if reason is not None:
-            return reason
     if local_tool_name in PATCH_TOOL_NAMES:
         if not _patch_is_limited_to_architecture_artifacts(tool_input, workspace):
             return (

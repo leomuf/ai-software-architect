@@ -35,6 +35,9 @@ ai-architect-schemas = { workspace = true }
 addopts = "--strict-config --strict-markers -ra"
 pythonpath = ["."]
 testpaths = ["shared/schemas/tests", "tools/python-mcp/tests", "tests"]
+markers = [
+  "windows: integration test requiring Windows; automatically skipped on other platforms",
+]
 
 [tool.ruff]
 line-length = 100

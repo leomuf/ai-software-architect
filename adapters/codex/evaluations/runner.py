@@ -35,6 +35,7 @@ from adapters.codex.evaluations.models import (
     FixtureResult,
     PhaseResult,
     PhaseTelemetry,
+    StructuredPluginMentionActivation,
     ToolTimelineEvent,
     VerificationPolicy,
     load_fixture,
@@ -755,13 +756,6 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
     else:
         codex_version = _codex_version(args.codex_command)
         installed_plugin = _installed_plugin_identity(args.codex_command)
-        if args.release_gate_smoke and installed_plugin.marketplace != "personal":
-            raise ValueError(
-                "The exact structured smoke mention targets "
-                "ai-software-architect@personal, but the enabled plugin is "
-                f"{installed_plugin.plugin_id}. Install the exact candidate in the "
-                "personal marketplace before running this gate."
-            )
         if (
             args.expected_plugin_version is not None
             and installed_plugin.version != args.expected_plugin_version
@@ -806,7 +800,13 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
             continue
         try:
             _prepare_workspace(fixture, workspace)
-            initial_prompt = f"{fixture.activation.render()} {fixture.prompt}"
+            activation = fixture.activation
+            if isinstance(activation, StructuredPluginMentionActivation):
+                assert installed_plugin is not None
+                activation = StructuredPluginMentionActivation.model_validate({
+                    **activation.model_dump(), "marketplace": installed_plugin.marketplace,
+                })
+            initial_prompt = f"{activation.render()} {fixture.prompt}"
             print(f"{progress}: running initial phase...", flush=True)
             initial = _run_phase(
                 name="initial",

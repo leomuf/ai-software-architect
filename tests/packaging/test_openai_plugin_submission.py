@@ -10,6 +10,7 @@ import subprocess
 import zipfile
 from pathlib import Path
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -78,12 +79,13 @@ def test_openai_package_script_preserves_plugin_root() -> None:
     assert "validate_plugin.py" in script
 
 
+@pytest.mark.windows
 def test_openai_package_has_windows_explorer_compatible_member_paths(
     tmp_path: Path,
 ) -> None:
     powershell = shutil.which("powershell") or shutil.which("pwsh")
     if powershell is None:
-        return
+        pytest.skip("PowerShell is required for the Windows submission-package integration test")
 
     plugin = tmp_path / "plugin"
     required_files = {

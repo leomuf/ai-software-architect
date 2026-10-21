@@ -14,13 +14,13 @@ import tempfile
 from pathlib import Path
 
 try:
-    from adapters.codex.snapshot_launch import quote_snapshot_command, snapshot_shells
+    from adapters.codex.inspection import EVIDENCE_PREFIX, SNAPSHOT_REQUEST
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
-    from snapshot_launch import (  # type: ignore[import-not-found, no-redef]
-        quote_snapshot_command,
-        snapshot_shells,
+    from inspection import (  # type: ignore[import-not-found, no-redef]
+        EVIDENCE_PREFIX,
+        SNAPSHOT_REQUEST,
     )
 
 
@@ -35,43 +35,25 @@ def _smoke_snapshot_gate(
     (workspace / "--pre=sh").write_bytes(b"")
     (workspace / "payload.py").write_bytes(b"touch EXECUTED\n")
     (workspace / ".env").write_bytes(b"SECRET=not-evidence\n")
-    for shell, kind in snapshot_shells().items():
-        command = quote_snapshot_command(executable.resolve(), shell)
-        tool_input = {"cmd": command, "shell": shell, "login": False, "workdir": str(workspace)}
-        payload = {
-            **base, "hook_event_name": "PreToolUse", "tool_name": "exec_command",
-            "tool_input": tool_input,
-        }
-        response = _run_hook(powershell, hook_command, payload, environment)
-        if response != {}:
-            raise RuntimeError(f"trusted snapshot launch was denied: {response}")
-        arguments = (
-            [shell, "-NoProfile", "-NonInteractive", "-Command", command]
-            if kind == "powershell"
-            else [shell, "--noprofile", "--norc", "-c", command]
-        )
-        result = subprocess.run(  # noqa: S603
-            arguments, cwd=workspace, capture_output=True, text=True, timeout=10, check=True,
-        )
-        snapshot = json.loads(result.stdout)
-        paths = {item["path"] for item in snapshot["files"]}
-        if "sample.py" not in paths or ".env" in paths:
-            raise RuntimeError("trusted snapshot did not preserve static-read boundaries")
-        for change in (
-            {"cmd": "rg needle *"},
-            {"cmd": "git show HEAD"},
-            {"cmd": "Get-Content sample.py"},
-            {"cmd": command + "; echo unsafe"},
-            {"cmd": command + " --root .."},
-            {"shell": "bash"},
-            {"login": True},
-        ):
-            denied = _run_hook(
-                powershell, hook_command,
-                {**payload, "tool_input": {**tool_input, **change}}, environment,
-            )
-            if _hook_output(denied).get("permissionDecision") != "deny":
-                raise RuntimeError(f"unsafe snapshot launch was accepted: {change}")
+    payload = {
+        **base, "hook_event_name": "PreToolUse", "tool_name": "Bash",
+        "tool_input": {"command": SNAPSHOT_REQUEST},
+    }
+    response = _hook_output(_run_hook(powershell, hook_command, payload, environment))
+    if response.get("permissionDecision") != "deny":
+        raise RuntimeError("snapshot request allowed shell execution")
+    snapshot = json.loads(str(response["permissionDecisionReason"]).removeprefix(EVIDENCE_PREFIX))
+    paths = {item["path"] for item in snapshot["files"]}
+    if "sample.py" not in paths or ".env" in paths:
+        raise RuntimeError("hook snapshot did not preserve static-read boundaries")
+    for command in ("rg needle *", "git show HEAD", "Get-Content sample.py",
+                    SNAPSHOT_REQUEST + "; echo unsafe", str(executable)):
+        denied = _hook_output(_run_hook(
+            powershell, hook_command,
+            {**payload, "tool_input": {"command": command}}, environment,
+        ))
+        if denied.get("permissionDecision") != "deny":
+            raise RuntimeError("unsafe shell launch was accepted")
     if (workspace / "EXECUTED").exists():
         raise RuntimeError("project code ran during static inspection")
 

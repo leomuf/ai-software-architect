@@ -12,6 +12,13 @@ behavior as well as the manual gates that remain necessary before a release.
 The initial supported package is Windows x86-64. Future coding-agent adapters and
 operating-system packages require their own validated release procedures.
 
+CI runs the shared Python tests on Windows, macOS, and Linux with
+`uv run pytest -q -m "not windows"`. A separate Windows job runs
+`uv run pytest -q -m windows` before building and checking the executable.
+For a local `uv run pytest -q`, platform detection automatically skips the marked
+Windows integration tests on macOS and Linux and reports the reason. Passing the
+shared tests does not validate a native macOS or Linux package.
+
 ## PowerShell Execution Policy
 
 If PowerShell reports that running scripts is disabled, inspect the effective
@@ -382,13 +389,17 @@ After installing the exact candidate and activating all five reviewed hooks, run
   -ReasoningEffort medium
 ```
 
-This small release gate uses typed activation data to render the exact structured
-mention `[@ai-software-architect](plugin://ai-software-architect@personal)`.
-It verifies that the installed plugin enters the Composite workflow without
-repository changes. Its result is reported separately and is never added to the
-five-fixture exploratory cohort or `evaluation-data/exploratory-runs.jsonl`. Because
-the exact mention targets `@personal`, the runner fails before model use unless the
-one enabled candidate is the personal-marketplace installation prepared above.
+This small release gate renders a structured mention for the one installed and
+enabled plugin. It uses the detected marketplace name, such as `personal` or
+`ai-software-architect-release`, and still checks the expected version. Multiple
+enabled installations are rejected. The report records the installation identity
+and provenance. The gate checks activation without repository changes. Its result
+stays separate from the five-fixture campaign and its performance ledger.
+
+After hook changes, test a newly built and installed candidate. A passing simulated
+hook event does not prove that the real Codex client delivers the evidence to the
+model. Check that a static read returns evidence even though shell execution is
+denied, and that clarification and decision continuations keep the same controls.
 
 ### Gate D: Five Exploratory Fixtures
 

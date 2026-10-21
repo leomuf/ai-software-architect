@@ -60,13 +60,11 @@ def test_ci_packages_the_version_from_the_built_manifest() -> None:
     assert "package-codex-release.ps1 -PluginVersion 0.1.0" not in workflow
 
 
-@pytest.mark.skipif(
-    shutil.which("powershell.exe") is None and shutil.which("pwsh") is None,
-    reason="PowerShell is required for the Windows release-bundle integration test",
-)
+@pytest.mark.windows
 def test_release_script_builds_installable_marketplace_bundle(tmp_path: Path) -> None:
     shell = shutil.which("powershell.exe") or shutil.which("pwsh")
-    assert shell is not None
+    if shell is None:
+        pytest.skip("PowerShell is required for the Windows release-bundle integration test")
 
     plugin = tmp_path / "assembled-plugin"
     manifest = plugin / ".codex-plugin" / "plugin.json"

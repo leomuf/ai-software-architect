@@ -55,7 +55,7 @@ Evidence: `<link or concise note>`
 
 ## Gate C: Structured Plugin-Mention Smoke
 
-- exact structured mention: `[@ai-software-architect](plugin://ai-software-architect@personal)`
+- exact structured mention: record the rendered mention with the detected marketplace ID
 - result:
 - evidence path:
 - confirmed excluded from exploratory performance ledger: [ ]

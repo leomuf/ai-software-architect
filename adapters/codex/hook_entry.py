@@ -38,16 +38,15 @@ try:
         classify_prompt,
         developer_context,
         final_response_violations,
-        repository_snapshot_command,
         tool_denial_reason,
         with_reference_hints,
     )
     from adapters.codex.hook_models import HookPayload
+    from adapters.codex.inspection import inspection_context, inspection_evidence
     from adapters.codex.response_locales import (
         ComparisonSection,
         contains_comparison_section,
     )
-    from adapters.codex.snapshot_launch import default_snapshot_shell
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
@@ -73,17 +72,17 @@ except ModuleNotFoundError as exc:
         classify_prompt,
         developer_context,
         final_response_violations,
-        repository_snapshot_command,
         tool_denial_reason,
         with_reference_hints,
     )
     from hook_models import HookPayload  # type: ignore[import-not-found, no-redef]
+    from inspection import (  # type: ignore[import-not-found, no-redef]
+        inspection_context,
+        inspection_evidence,
+    )
     from response_locales import (  # type: ignore[import-not-found, no-redef]
         ComparisonSection,
         contains_comparison_section,
-    )
-    from snapshot_launch import (  # type: ignore[import-not-found, no-redef]
-        default_snapshot_shell,
     )
 
 MAX_HOOK_INPUT_BYTES = 1_000_000
@@ -307,12 +306,6 @@ def handle_user_prompt_submit(
         continuation_interaction=(
             continuation.interaction.value if continuation is not None else None
         ),
-        snapshot_command=(
-            repository_snapshot_command(plugin_root)
-            if plugin_root is not None
-            else ""
-        ),
-        snapshot_shell=default_snapshot_shell() if plugin_root is not None else "",
         comparison_bundle_path=(
             str(
                 plugin_root.resolve(strict=False)
@@ -329,6 +322,7 @@ def handle_user_prompt_submit(
             context,
         ),
     )
+    additional_context += inspection_context()
     if (
         plugin_root is not None
         and continuation is not None
@@ -338,7 +332,8 @@ def handle_user_prompt_submit(
         resource = skill_root / "assets" / "artifact-authoring-bundle.md"
         additional_context += (
             " Exact installed record-and-handoff resource path (authoritative; read "
-            "this generated bundle once with a host-native static file tool and do not "
+            "this generated bundle once with a host-native static file tool or the "
+            "bundled-resource request and do not "
             "search for or separately load its canonical source files): "
             + str(resource)
             + "."
@@ -362,6 +357,18 @@ def handle_pre_tool_use(
         if isinstance(payload.get("cwd"), str) and payload["cwd"]
         else None
     )
+    if context.active:
+        evidence = inspection_evidence(
+            payload.get("tool_name"), payload.get("tool_input"), workspace, plugin_root,
+        )
+        if evidence is not None:
+            return {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": evidence,
+                }
+            }
     reason = tool_denial_reason(
         context,
         payload.get("tool_name"),

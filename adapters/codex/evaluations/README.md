@@ -37,8 +37,10 @@ switch, trust, disable, or uninstall a plugin.
 Use the repository-level PowerShell entry described in
 [`scripts/README.md`](../../../scripts/README.md#run-codex-exploratory-evaluations).
 
-The release-gate smoke fixture uses typed activation fields to render the exact
-structured mention `[@ai-software-architect](plugin://ai-software-architect@personal)`.
+The release-gate smoke fixture uses typed activation fields and the detected
+marketplace to render the exact structured mention for the installed plugin.
+Both Personal and release marketplaces are supported; duplicate enabled
+installations and an unexpected version still fail before model use.
 Run it through `scripts/run-codex-plugin-invocation-smoke.ps1`; its report is kept
 separate from the five-fixture exploratory campaign and performance ledger.
 The default campaign retains the five established English fixtures. Pass

@@ -16,6 +16,12 @@ an explicit fallback.
 
 ## Release blockers
 
+- [ ] Validate the 0.2.4 hook-compatibility fix with a newly built and installed
+      candidate. Run the invocation smoke against its detected marketplace and all
+      five exploratory fixtures. Confirm that Codex delivers the hook's static
+      evidence despite denying shell execution, including continuation turns.
+      Simulated hook tests alone do not close this blocker.
+
 - [ ] Commit the reviewed release sources and run
       `scripts/run-release-candidate-gates.ps1 -PluginVersion 0.2.0` from that
       clean commit.

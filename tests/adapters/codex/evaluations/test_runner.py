@@ -534,10 +534,11 @@ def test_expected_plugin_version_mismatch_fails_before_evaluation(
     assert "Expected AI Software Architect 0.1.0" in capsys.readouterr().err
 
 
-def test_release_gate_smoke_requires_personal_marketplace_before_evaluation(
+@pytest.mark.parametrize("marketplace", ["personal", "ai-software-architect-release"])
+def test_release_gate_smoke_uses_installed_marketplace(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
+    marketplace: str,
 ) -> None:
     from adapters.codex.evaluations import runner
 
@@ -547,27 +548,26 @@ def test_release_gate_smoke_requires_personal_marketplace_before_evaluation(
         runner,
         "_installed_plugin_identity",
         lambda _: InstalledPluginIdentity(
-            "ai-software-architect@ai-software-architect-release",
-            "ai-software-architect-release",
+            f"ai-software-architect@{marketplace}",
+            marketplace,
             "0.2.1",
         ),
     )
 
-    exit_code = main(
-        [
-            "--manifest",
-            str(DEFAULT_MANIFEST),
-            "--output-directory",
-            str(output),
-            "--codex-command",
-            "codex",
-            "--release-gate-smoke",
-        ]
-    )
+    def capture_phase(**kwargs: object) -> None:
+        command = kwargs["command"]
+        assert isinstance(command, list)
+        assert any(f"plugin://ai-software-architect@{marketplace})" in arg for arg in command)
+        raise RuntimeError("captured correct activation")
 
-    assert exit_code == 2
-    assert not output.exists()
-    assert "targets ai-software-architect@personal" in capsys.readouterr().err
+    monkeypatch.setattr(runner, "_run_phase", capture_phase)
+    with pytest.raises(RuntimeError, match="captured correct activation"):
+        main([
+            "--manifest", str(DEFAULT_MANIFEST),
+            "--output-directory", str(output),
+            "--codex-command", "codex", "--release-gate-smoke",
+        ])
+
 
 
 def test_dry_run_plans_the_campaign_without_invoking_codex(tmp_path: Path) -> None:

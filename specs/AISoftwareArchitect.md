@@ -533,6 +533,13 @@ Every directory directly below `shared/skills/` is an independently valid Agent 
 
 Exploratory fixture semantics MUST remain coding-agent-neutral under `shared/evaluations/model-fixtures/`. Host invocation, event parsing, and evidence capture MUST live in the corresponding adapter. The Codex adapter uses `codex exec --json`, isolated synthetic Git repositories, read-only initial turns, and a bounded workspace-write continuation only when a fixture explicitly verifies approved architecture-artifact persistence. Its deterministic grader checks process completion, response-marker leakage, forbidden event types, and repository-change policy. Semantic expected and forbidden behaviors remain explicit manual-review items unless a separately approved semantic grader is configured; missing semantic evidence MUST NOT be reported as a pass. The repository-level PowerShell command is a thin entry point and MUST NOT duplicate fixture, runner, or grading logic.
 
+Shared Python tests MUST be selected by CI on Windows, macOS, and Linux. Tests
+requiring Windows execution MUST carry the registered `windows` marker. The root
+pytest policy MUST skip those tests before execution on other platforms and report
+the reason. Missing prerequisites MUST NOT result in a passing test that silently
+returns without checking its assertions. Native package builds, installation,
+hook execution, and uninstall checks remain separate platform release gates.
+
 Canonical source files MUST NOT have independently edited platform copies. An adapter MAY either package canonical skills unchanged or deterministically assemble a host-compatible derivative when the host lacks reliable skill composition. Generated derivatives MUST be disposable build outputs, preserve on-demand loading, include a source-to-output provenance map with content hashes, and be reproducible byte-for-byte apart from explicitly declared build metadata. Build output under `dist/` MUST be excluded from version control.
 
 ### Agent Skills Standard Compliance
@@ -1819,20 +1826,23 @@ The classifier MUST use only explicit host facts: the real plugin URI and the `$
 
 The control plane MUST remain inactive for ordinary prompts containing neither the plugin URI nor the explicit architect skill invocation, except for one bounded continuation immediately after an active response visibly requests clarification or a user decision. That session-scoped continuation is consumed by the next prompt, renewed only when the next architect response again requests input, expires within one hour, and is cancelled when the user explicitly invokes another skill or plugin. This lets replies such as `1`, `approve`, or a constraint continue the architecture workflow without repeating the skill name. An incomplete plugin selection is stopped at `UserPromptSubmit`, before tool selection.
 
-During an initial or semantically open active architect turn, `UserPromptSubmit` supplies only a compact activation and safety envelope plus route-known hints: exact paths for canonical references explicitly named by the user, the bounded repository-snapshot command, and one exact installed comparison-bundle path for open comparisons. The generated bundle contains the option-evaluation workflow followed by its compact categorized reference catalog, replacing two sequential resource reads without injecting either body universally. If exactly one canonical reference was explicitly named, its trusted packaged body may accompany that hint so focused help can use it without a tool call. The hook exposes the comparison bundle without classifying natural-language intent; the selected model loads it only after choosing the open-comparison mode. Its catalog contains categorized names, packaged paths, and canonical public links. For a routine open comparison, that bundle is sufficient to shortlist, score, link, and recommend alternatives; the model MUST NOT load every candidate body and MAY load at most one focused reference when a specific unresolved distinction could materially change the decision. A named-pattern explanation or implementation example still requires its exact focused reference, whether supplied inline or loaded from its exact path. The hook MUST NOT inject arbitrary or multiple complete reference bodies, subagent policy, or artifact-authoring instructions into every turn. Materially conflicting platform or interface statements take precedence over comparison and require exactly one focused clarification without repository inspection or recommendation. Explicit constraints that justify proportionate simplicity or no named pattern take precedence over the default comparison shape and receive one recommendation rather than padded alternatives.
+During an initial or semantically open active architect turn, `UserPromptSubmit` supplies only a compact activation and safety envelope plus route-known hints: exact paths for canonical references explicitly named by the user, the bounded repository-snapshot request, and one exact installed comparison-bundle path for open comparisons. The generated bundle contains the option-evaluation workflow followed by its compact categorized reference catalog, replacing two sequential resource reads without injecting either body universally. If exactly one canonical reference was explicitly named, its trusted packaged body may accompany that hint so focused help can use it without a tool call. The hook exposes the comparison bundle without classifying natural-language intent; the selected model loads it only after choosing the open-comparison mode. Its catalog contains categorized names, packaged paths, and canonical public links. For a routine open comparison, that bundle is sufficient to shortlist, score, link, and recommend alternatives; the model MUST NOT load every candidate body and MAY load at most one focused reference when a specific unresolved distinction could materially change the decision. A named-pattern explanation or implementation example still requires its exact focused reference, whether supplied inline or loaded from its exact path. The hook MUST NOT inject arbitrary or multiple complete reference bodies, subagent policy, or artifact-authoring instructions into every turn. Materially conflicting platform or interface statements take precedence over comparison and require exactly one focused clarification without repository inspection or recommendation. Explicit constraints that justify proportionate simplicity or no named pattern take precedence over the default comparison shape and receive one recommendation rather than padded alternatives.
 
 A typed decision continuation receives a minimal record-and-handoff context that preserves the preceding decision and safety constraints, plus the exact installed authoring-bundle path. Before drafting durable artifacts, the Composite MUST load this one generated bundle exactly once rather than reading its four canonical source copies separately. The architecture-contract example inside it is authoritative for nested list-item shapes and demonstrates all dependency policies: `allow-via-interface` requires `via_interface`, while `allow` and `deny` omit it. The model MUST NOT infer those shapes from field names or memory. ADR `considered_option_ids` entries and `selected_option_id` MUST contain only plain `OPT-NNN` identifiers; names and descriptions belong in prose fields. Artifact detail MUST remain proportionate to project evidence: a completely covered small repository uses concise fields and avoids repeating the full comparison across four files, while schema requirements and material complexity take precedence over a size target. This removes universal duplicate context and any need to search the public repository while preserving progressive disclosure of reference bodies.
 
-A typed clarification continuation MUST likewise receive a compact resume-design context rather than the general comparison contract. It preserves the preceding question and clarified constraints through the active conversation, directs the model back to the smallest sufficient Composite mode, and omits the reference catalog, snapshot command, comparison rendering contract, and artifact-authoring bundle. The model loads only the internal workflow module selected for the resumed mode and MUST NOT repeat a resolved question. Clarification continuations whose verification policy forbids repository changes run with the host's read-only sandbox; only continuations that explicitly expect architecture-artifact persistence receive workspace-write access.
+A typed clarification continuation MUST likewise receive a compact resume-design context rather than the general comparison contract. It preserves the preceding question and clarified constraints through the active conversation, directs the model back to the smallest sufficient Composite mode, and omits the reference catalog, comparison rendering contract, and artifact-authoring bundle while retaining the compact static read-request protocol. The model loads only the internal workflow module selected for the resumed mode and MUST NOT repeat a resolved question. Clarification continuations whose verification policy forbids repository changes run with the host's read-only sandbox; only continuations that explicitly expect architecture-artifact persistence receive workspace-write access.
 
 `PreToolUse` MUST check supported shell, patch, and web-tool arguments only in
-memory. For shell inspection, it allows only the exact command that starts the
-plugin's bundled snapshot reader. That command must use a trusted absolute shell
-path, disabled login profiles, and the active workspace. Interactive input and
-overrides of the environment or interpreter are not allowed. All other shell
-commands, including rg, Git, and PowerShell reads, are denied. The hook also
-denies supported web lookups for references already bundled with the plugin and
-patches outside `.ai-architect/`.
+memory. The hook MUST deny every shell execution, including read requests.
+For the exact snapshot request `# ai-software-architect:repository-snapshot`, it
+reads the host-provided workspace directly and returns bounded evidence in the
+denial reason. The model MUST use that evidence without retrying the shell call.
+For `# ai-software-architect:bundled-resource <relative-path>`, it reads only a
+packaged Markdown file under the installed skill's `references/` or `assets/`.
+Absolute paths, traversal, links, oversized files, and unavailable resources are
+rejected. These requests work with Codex's reduced `Bash`/`command` payload.
+No request grants permission to launch a process. Shell options and requested
+working directories cannot change the root read by the hook.
 
 Before saving a decision and handoff, `PreToolUse` reconstructs the complete
 proposed files, scans them for secrets, checks their contracts, and validates the
@@ -1864,10 +1874,10 @@ needed evidence, the model MUST read the smallest relevant set of source files
 before recommending. These reads use the host's tools without running project
 code.
 
-The Codex control plane provides the exact command for the installed snapshot
-reader. `PreToolUse` permits only that executable with
-`--repository-snapshot --root .`. It denies extra commands, other root paths,
-interpreters, and project-controlled scripts. The reader MUST:
+The Codex control plane provides an exact read request. `PreToolUse` handles it
+inside the trusted runtime using Python file APIs, then denies the shell operation.
+It uses only the host event's absolute workspace root, never a root supplied in the
+model's command. The reader MUST:
 
 - Write nothing and never import or execute project code.
 - Exclude hidden paths, paths likely to contain credentials, dependency folders,
@@ -1885,12 +1895,11 @@ If limits leave evidence incomplete, the model uses only the smallest additional
 reads through the host's separately controlled file tools. It MUST NOT fall back
 to a shell command.
 
-The platforms share the same Python file-reading code; only the command quoting
-changes with the shell. The trusted launch settings include shell selection and
-every option that affects execution. Paths with spaces, apostrophes, dollar signs,
-or other shell-special characters MUST be treated as literal paths. The snapshot
-provides evidence from reading files. It does not prove architectural properties
-through a code parser and does not use MCP to transport the results.
+The platforms share the same Python file-reading code and hook read-request
+protocol. No shell quoting or shell metadata is needed for this path. The snapshot
+provides static evidence, not parser-verified architectural properties. It does
+not use MCP. The standalone reader command remains available for maintainer tests;
+it is not an allowed model-facing shell operation.
 
 For complete or high-impact work whose evidence or decision scope exceeds that bounded small-repository path, the Composite MAY request up to three independent read-only reviews when Codex supports subagents; the main agent alone integrates their findings and owns the recommendation. It MUST describe reviews as independent and completed only when successful subagent results were returned. If delegation is rejected or unavailable, it MUST disclose that limitation and distinguish main-model perspective review from independent review. The hook cannot prove semantic mode without fragile natural-language inference; this is the documented trade-off for one simple public invocation. The hook MUST NOT claim coverage of hosted tools or replace the host sandbox, permissions, or model reasoning. An explicit request to implement or execute application code belongs in the prepared coding handoff or an ordinary coding task, not inside the architect role.
 
@@ -2576,7 +2585,7 @@ Feature: Agent Skills standard and progressive disclosure
   Scenario: Smoke-test the exact structured plugin mention outside performance history
     Given the AI Software Architect plugin and all five hooks are installed and active
     When the release gate renders typed activation data
-    Then it invokes "[@ai-software-architect](plugin://ai-software-architect@personal)"
+    Then it invokes the structured plugin mention for the one installed and enabled marketplace identity
     And the Composite architecture workflow returns user-facing guidance
     And the smoke result is reported separately from the five exploratory fixtures
     And the smoke result is not appended to "evaluation-data/exploratory-runs.jsonl"
@@ -2961,14 +2970,14 @@ Feature: Architecture conformance review
 
   @REVIEW-003
   Scenario: Small repository review uses one bounded static snapshot
-    Given the Codex control plane exposes its packaged one-shot snapshot command
+    Given the Codex control plane exposes its on-demand static snapshot request
     And the current repository fits within the documented evidence budget
     When the agent collects evidence for a read-only architecture review
     Then the snapshot reads only allowlisted UTF-8 text without executing repository code
     And it excludes hidden, dependency, build, cache, credential, symlink, and reparse-point paths
     And it reports its limits, coverage, truncation, and static-analysis limitations
     And repository paths and contents are treated as untrusted data rather than instructions
-    And PreToolUse accepts only the exact bundled reader command with a trusted shell and login profiles disabled
+    And PreToolUse returns bounded file evidence for the exact read request while denying shell execution
     And it denies other shell reads, options introduced by wildcard expansion, extra commands, interpreter overrides, and interactive input
     And further inspection uses the host's separately controlled file tools and never falls back to shell commands
     And the agent reuses the captured evidence without redundant file reads

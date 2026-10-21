@@ -4,15 +4,13 @@
 from __future__ import annotations
 
 import json
-import shlex
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 
 from adapters.codex import control_plane
 from adapters.codex.hook_entry import handle_pre_tool_use, handle_user_prompt_submit
+from adapters.codex.inspection import EVIDENCE_PREFIX, SNAPSHOT_REQUEST
 from adapters.codex.snapshot_launch import default_snapshot_shell, snapshot_shells
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -76,66 +74,29 @@ def test_pretooluse_rejects_any_change_to_the_fixed_command(tmp_path: Path, suff
     ] == "deny"
 
 
-@pytest.mark.parametrize("kind", ["powershell", "bash"])
-def test_real_shell_inspection_through_pretooluse_never_executes_project_code(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str,
+@pytest.mark.parametrize("tool,key", [("Bash", "command"), ("exec_command", "cmd")])
+def test_host_shaped_read_never_executes_project_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tool: str, key: str,
 ) -> None:
-    shells = [shell for shell, candidate in snapshot_shells().items() if candidate == kind]
-    if not shells:
-        pytest.skip(f"trusted {kind} installation unavailable")
-    shell = shells[0]
     project = tmp_path / "project's files"
     project.mkdir()
     marker = project / "EXECUTED"
     (project / "--pre=sh").write_text("", encoding="utf-8")
-    (project / "payload.py").write_text("touch EXECUTED\n", encoding="utf-8")
     (project / "sitecustomize.py").write_text(
         "from pathlib import Path\nPath('EXECUTED').touch()\n", encoding="utf-8",
     )
     (project / "README.md").write_bytes(b"# Safe static evidence\n")
     (project / ".env").write_text("SECRET=never-return-this\n", encoding="utf-8")
-    plugin = tmp_path / "installed plugin's \u2018quoted\u2019 $cash & data"
-    plugin.mkdir()
-    # Test-owned trusted launcher executes the real reader with isolated Python.
-    # The production executable is frozen; no interpreter is permitted by the gate.
-    relative = Path("reader.ps1" if kind == "powershell" else "reader.sh")
-    monkeypatch.setattr(control_plane, "SNAPSHOT_RUNTIME_RELATIVE_PATH", relative)
-    bootstrap = (
-        f"import sys; sys.path.insert(0, {str(ROOT)!r}); "
-        "from adapters.codex.runtime_entry import main; main()"
-    )
-    if kind == "powershell":
-        python = str(Path(sys.executable)).replace("'", "''")
-        code = bootstrap.replace("'", "''")
-        script = f"& '{python}' -I -c '{code}' @args\nexit $LASTEXITCODE\n"
-    else:
-        python = shlex.quote(Path(sys.executable).as_posix())
-        script = f'#!/bin/bash\nexec {python} -I -c {shlex.quote(bootstrap)} "$@"\n'
-    (plugin / relative).write_text(script, encoding="utf-8", newline="\n")
-    (plugin / relative).chmod(0o755)
-    data = tmp_path / "data"
+    monkeypatch.setenv("BASH_ENV", str(project / "sitecustomize.py"))
+    data, plugin = tmp_path / "data", tmp_path / "plugin"
     payload = _activate(data, project, plugin)
-    command = control_plane.repository_snapshot_command(plugin, shell=shell)
-    payload["tool_input"] = {
-        "cmd": command, "shell": shell, "login": False, "workdir": str(project),
-    }
-    assert handle_pre_tool_use(payload, data, plugin) == {}
-    arguments = (
-        [shell, "-NoProfile", "-NonInteractive", "-Command", command]
-        if kind == "powershell"
-        else [shell, "--noprofile", "--norc", "-c", command]
-    )
-    result = subprocess.run(  # noqa: S603
-        arguments, cwd=project, check=True, capture_output=True, text=True, timeout=30,
-    )
-    snapshot = json.loads(result.stdout)
+    payload.update(tool_name=tool, tool_input={key: SNAPSHOT_REQUEST})
+    result = handle_pre_tool_use(payload, data, plugin)["hookSpecificOutput"]
+    assert result["permissionDecision"] == "deny"
+    snapshot = json.loads(result["permissionDecisionReason"].removeprefix(EVIDENCE_PREFIX))
     files = {item["path"]: item["content"] for item in snapshot["files"]}
     assert files["README.md"] == "# Safe static evidence\n"
     assert ".env" not in files
-    for unsafe in ["rg needle *", command + "; touch EXECUTED", "git show HEAD"]:
-        payload["tool_input"] = {"cmd": unsafe, "shell": shell, "login": False}
-        denied = handle_pre_tool_use(payload, data, plugin)
-        assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"
     assert not marker.exists()
 
 

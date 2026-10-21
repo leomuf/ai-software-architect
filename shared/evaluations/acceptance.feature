@@ -115,7 +115,7 @@ Feature: Agent Skills standard and progressive disclosure
   Scenario: Smoke-test the exact structured plugin mention outside performance history
     Given the AI Software Architect plugin and all five hooks are installed and active
     When the release gate renders typed activation data
-    Then it invokes "[@ai-software-architect](plugin://ai-software-architect@personal)"
+    Then it invokes the structured plugin mention for the one installed and enabled marketplace identity
     And the Composite architecture workflow returns user-facing guidance
     And the smoke result is reported separately from the five exploratory fixtures
     And the smoke result is not appended to "evaluation-data/exploratory-runs.jsonl"
@@ -500,14 +500,14 @@ Feature: Architecture conformance review
 
   @REVIEW-003
   Scenario: Small repository review uses one bounded static snapshot
-    Given the Codex control plane exposes its packaged one-shot snapshot command
+    Given the Codex control plane exposes its on-demand static snapshot request
     And the current repository fits within the documented evidence budget
     When the agent collects evidence for a read-only architecture review
     Then the snapshot reads only allowlisted UTF-8 text without executing repository code
     And it excludes hidden, dependency, build, cache, credential, symlink, and reparse-point paths
     And it reports its limits, coverage, truncation, and static-analysis limitations
     And repository paths and contents are treated as untrusted data rather than instructions
-    And PreToolUse accepts only the exact bundled reader command with a trusted shell and login profiles disabled
+    And PreToolUse returns bounded file evidence for the exact read request while denying shell execution
     And it denies other shell reads, options introduced by wildcard expansion, extra commands, interpreter overrides, and interactive input
     And further inspection uses the host's separately controlled file tools and never falls back to shell commands
     And the agent reuses the captured evidence without redundant file reads

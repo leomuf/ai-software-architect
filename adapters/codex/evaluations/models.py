@@ -36,7 +36,7 @@ class StructuredPluginMentionActivation(StrictModel):
     type: Literal["structured-plugin-mention"]
     mention_label: Literal["ai-software-architect"]
     plugin_name: Literal["ai-software-architect"]
-    marketplace: Literal["personal"]
+    marketplace: str = Field(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$")
 
     def render(self) -> str:
         """Render the exact picker-produced mention required by the smoke gate."""

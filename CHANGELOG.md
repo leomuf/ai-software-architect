@@ -10,14 +10,16 @@ SPDX-License-Identifier: MIT
 ### Security
 
 - Fixed a security issue where a command meant to read project files could run
-  project code instead. Shell commands can now start only the reader included
-  with the plugin, using checked settings. Further file reads use the host's
-  file-reading tools.
+  project code instead. The trusted hook now reads requested files directly and
+  returns bounded evidence while blocking shell execution. This also works when
+  Codex does not supply shell settings.
 - Updated MCP to `1.30.0` and PyJWT to `2.15.0` to address all 14 open
   Dependabot alerts, including critical and high-severity PyJWT vulnerabilities.
 
 ### Changed
 
+- The invocation smoke test now supports the detected release marketplace as well
+  as Personal. It still rejects duplicate enabled installations and wrong versions.
 - Clarified how to review and enable all five bundled hooks through Codex
   Settings → Coding → Hooks or the yellow-dot Review hooks icon.
 - Updated pinned GitHub Actions: setup-uv `10.3.0`, upload-artifact `7.0.2`,
@@ -26,9 +28,10 @@ SPDX-License-Identifier: MIT
 - Added a final build step that gathers the release ZIPs and creates one
   `SHA256SUMS.txt` for all downloads. This file lets users check that their
   downloads are complete and unchanged.
-- Added automated checks for the shared file reader, shell launcher, and checksum
-  collection on macOS and Linux. Building and testing an installable macOS
-  package still requires further work.
+- Expanded CI to run all shared Python tests on Windows, macOS, and Linux.
+  Windows-only integration tests are marked and automatically skipped on other
+  systems. Missing PowerShell is reported as a skip instead of a silent pass.
+  Building and testing installable macOS and Linux packages remains separate work.
 
 ## [0.2.3] - 2026-08-30
 

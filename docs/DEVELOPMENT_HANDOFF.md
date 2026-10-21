@@ -12,48 +12,57 @@ documentation.
 
 ## Snapshot
 
-### Release 0.2.4 integration note (2026-10-21)
+### Release 0.2.4 compatibility fix (2026-10-22)
 
-Version `0.2.4` updates dependencies and fixes the security issue discussed in
-PR #28: a command meant to read project files could run project code instead.
-Shell commands can now start only the reader included with the plugin. The host's
-file-reading tools remain available when more evidence is needed.
+PR #40 updated dependencies, secured inspection, and fixed release checksums.
+The installed-candidate tests then found two blockers. Codex reports shell calls
+as `Bash` with a `command` field, without the shell settings required by the new
+security check. The invocation smoke test also required the Personal marketplace.
 
-The code separates three responsibilities:
+The compatibility change handles static reads inside the trusted hook:
 
-- `control_plane.py` checks the command and its settings. It accepts only the
-  exact `repository_snapshot_command`, a trusted shell, `login=false` to disable
-  login profiles, and the active workspace.
-- `snapshot_launch.py` selects trusted shell locations and quotes paths for
-  PowerShell or Bash. Characters in a path must stay part of the path; the shell
-  must not interpret them as commands or options.
-- `repository_snapshot.py` reads files through Python's file API. It limits how
-  much it reads and never runs the project's code.
+- `inspection.py` recognizes exact snapshot and bundled-resource requests.
+  It calls the bounded reader directly and returns evidence in the denial reason.
+  The requested shell operation is always denied, including when the read succeeds.
+- The workspace comes from the host hook event. Model-supplied shell options,
+  command arguments, and working directories never select what the hook reads.
+- Bundled resource requests accept only bounded Markdown files below the installed
+  skill's `references/` or `assets/`. No traversal or linked paths are accepted.
+- The model decides when evidence is needed. Simple pattern questions do not cause
+  automatic repository inspection. Continuations receive the same request protocol.
+- The invocation test now uses the detected enabled installation's marketplace,
+  while preserving the version guard and duplicate-installation rejection.
 
-Tests check the `PreToolUse` hook with real PowerShell and Git Bash commands on
-Windows. GitHub CI also runs the shared Bash and release-file collection tests on
-macOS and Linux. An installable package still needs separate tests on each system.
+The linked-resource test uses a real directory junction on Windows, where creating
+file symlinks may require extra privileges. On macOS and Linux it checks both file
+and directory symlinks. Each case verifies that the link reaches the external test
+file before checking that the hook blocks access. Link-creation failures fail the
+test instead of silently skipping it. Windows junction coverage does not claim a
+local Windows file-symlink test; the two link types are reported separately.
+
+All shared Python tests are now selected by the CI matrix for Windows, macOS, and
+Linux. Windows-only packaging integration tests carry the `windows` marker, which
+the root `conftest.py` automatically skips on other systems. The submission-package
+test reports missing PowerShell as a skip rather than silently returning a pass.
+The Windows build job waits for the shared matrix and runs the Windows integration
+tests before building and checking the executable. Native macOS/Linux installation
+and lifecycle checks remain separate release requirements; passing shared tests
+does not claim native package support.
+
+The Windows candidate must be rebuilt and tested in the real Codex client before
+release. Unit tests with the reduced payload are necessary but do not establish
+that the model receives and uses the evidence correctly. Run the separate invocation
+smoke and all five exploratory fixtures, then review their semantic results.
 
 For the macOS contributor:
 
-- Keep PR #28's `RuntimeTarget` for choosing package paths. Use
-  `quote_snapshot_command(executable, shell)` to quote the reader command. Keep
-  shell selection and command checks in the shared modules. Do not allow general
-  shell reads again or default to Windows on an unsupported system.
-- Make `repository_snapshot_command` use the macOS executable path on macOS.
-  Version `0.2.4` still selects the Windows path. Before enabling macOS support,
-  run the shared security tests and check that the reader works from the extracted
-  macOS package.
-- Add `build-macos-aarch64` to `collect-release-assets.needs` so collection waits
-  for the macOS build. Add `--target aarch64-darwin` to the collection command so
-  it expects the macOS ZIP. Each build may keep its own checksum file, but publish
-  only the final combined `SHA256SUMS.txt` and the platform ZIPs.
-- Put Windows-only API calls behind explicit `sys.platform == "win32"` checks.
-  Keep strict type checking enabled on both systems. Run permission tests on the
-  system they cover, and run shared data-contract tests on both systems.
-- Check that extracting the macOS ZIP preserves permission to run its executable.
-  Then test installation, approval of all five hooks, the complete workflow, and
-  successful uninstallation on the first attempt.
+- Reuse `repository_snapshot.py` and `inspection.py`; the read path needs no shell
+  quoting or platform-specific command launch. Package and test the native hook
+  executable and host event mapping on macOS.
+- Keep `scripts/collect_release_assets.py` as the single checksum collector. Add
+  the macOS build dependency and `--target aarch64-darwin` when that artifact exists.
+- Verify executable permissions after extraction, approval of all five hooks,
+  the complete workflow, and successful uninstallation on the first attempt.
 
 The snapshot below records the original handoff from July 2026. For current
 release requirements, see [RELEASING.md](RELEASING.md).
@@ -292,9 +301,9 @@ Codex permissions, and do not persist prompt or repository content. Users must
 review and activate them in the Codex plugin page. Their public source and tests are
 part of the repository so users can establish trust.
 
-The same packaged runtime also supports one explicit `--repository-snapshot
---root .` invocation for small read-only reviews. The control plane supplies the
-exact installed command and permits only that fixed executable-and-argument form.
+The packaged runtime supports a bounded snapshot reader. The control plane calls
+it directly inside the hook in response to an exact read request, while denying
+shell execution. The standalone command is retained for maintainer tests.
 It reads allowlisted UTF-8 text within fixed directory, entry, depth, file, and byte
 budgets; excludes hidden, dependency, build, cache, credential, symlink, and
 reparse-point paths; writes nothing; and exits. Its structured output is untrusted
