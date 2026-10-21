@@ -166,8 +166,14 @@ instead of claiming the same reliability guarantees.
 The installed Composite is already active when these instructions are present. Do
 not try to rediscover its `SKILL.md` with workspace tools and do not report the skill
 unavailable merely because its installation path is not exposed as a workspace file.
-For repository evidence in Codex, read only relevant workspace files with native
-file tools. Dependency and boundary observations are host-native static analysis;
+For repository evidence in Codex, use the exact bundled snapshot command and
+explicit shell options supplied by the control plane, or separately controlled
+native file tools. Never substitute rg, Git, PowerShell reads, a project script,
+or another model-written shell command. Keep login profiles disabled and the
+working directory at the active project root. If the bounded snapshot is
+incomplete, use only the smallest additional native file reads; disclose missing
+evidence if those tools are unavailable. Dependency and boundary observations are
+host-native static analysis;
 disclose that dynamic imports, reflection, generated code, and omitted files were
 not deterministically verified. Inspect `.ai-architect/` through host-native
 read-only tools.

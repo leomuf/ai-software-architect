@@ -40,8 +40,10 @@ plugin:
     XAVIER MUFFATO LTDA. This version updates MCP to 1.30.0 and PyJWT to 2.15.0
     to address dependency vulnerabilities. It clarifies how to review and enable
     all five bundled hooks in Codex through Settings → Coding → Hooks or the
-    yellow-dot Review hooks icon below the message input. The architecture
-    workflows and short-lived local runtime design are unchanged.
+    yellow-dot Review hooks icon below the message input. Shell inspection is
+    restricted to the exact bundled repository reader and validated shell options
+    to prevent shell expansion from executing project code. Additional static
+    reads use native file tools. The short-lived local runtime design is retained.
   countries_and_regions:
     selection: confirm-in-portal
     intended: broadly-available-where-openai-plugin-directory-is-supported

@@ -12,6 +12,39 @@ documentation.
 
 ## Snapshot
 
+### Release 0.2.4 integration note (2026-10-21)
+
+The next release consolidates dependency fixes and resolves the shared shell
+inspection weakness discussed in PR #28. `control_plane.py` accepts only the exact
+`repository_snapshot_command` plus explicit trusted shell, `login=false`, and the
+active workspace. Native file tools remain available for additional evidence.
+`snapshot_launch.py` owns literal PowerShell/Bash quoting and trusted shell
+locations; `repository_snapshot.py` owns the bounded Python file-API reader.
+The new regression tests run through `PreToolUse` and real PowerShell/Git Bash
+locally, with the shared Bash/collector tests also scheduled on macOS and Linux CI.
+These checks alone do not certify a native package for either platform.
+
+For the macOS contributor:
+
+- Retain the PR's `RuntimeTarget` abstraction for artifact paths. Have its snapshot
+  launcher delegate to `quote_snapshot_command(executable, shell)`; keep shell
+  selection and policy in the shared launch/gate modules. Do not restore generic
+  shell-read exceptions or silently select Windows for an unsupported host.
+- Connect the native target path to `repository_snapshot_command`; the current
+  release still selects the Windows runtime path. Run the common security tests
+  and a real extracted-runtime snapshot smoke test on macOS before enabling it.
+- Add `build-macos-aarch64` to the final release collector's `needs` and
+  `--target aarch64-darwin` to its expected inputs. Both job-local checksums can
+  remain separate; publish only the collector's combined manifest and ZIPs.
+- Use explicit `sys.platform == "win32"` branches around Windows-only APIs.
+  Keep strict typing enabled on both systems. Native permission tests should run
+  on their actual platform; shared contract tests should run on both.
+- Verify ZIP extraction preserves macOS executable permissions, then complete
+  installation, all-five-hook activation, workflow, and first-attempt uninstall
+  acceptance. Those native checks remain the contributor's platform work.
+
+The snapshot below is the original historical handoff, not current release status.
+
 ```yaml
 handoff_date: 2026-07-21
 branch: main

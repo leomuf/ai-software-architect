@@ -64,8 +64,10 @@ It currently:
 2. derives the plugin version from that tag;
 3. builds the self-contained Windows x86-64 plugin with that exact version;
 4. validates and smoke-tests the assembled package;
-5. creates an installable repository marketplace ZIP and SHA-256 checksum; and
-6. uploads them as GitHub Actions artifacts.
+5. creates an installable repository marketplace ZIP and SHA-256 checksum;
+6. uploads each platform build separately; and
+7. collects successful build ZIPs into `release-assets-v<version>` with one freshly
+   calculated `SHA256SUMS.txt` for all expected downloads.
 
 It currently does **not**:
 
@@ -524,9 +526,20 @@ and confirm that all steps pass. The workflow uploads a release candidate
 containing the installable marketplace ZIP and `SHA256SUMS.txt`; it does not
 create a GitHub Release.
 
-Download and inspect the artifact. GitHub wraps downloaded Actions artifacts in
-an outer ZIP, so attach the inner marketplace bundle and its checksum—not that
-outer ZIP—to the GitHub Release. The bundle must include `INSTALL.md` and
+Download and inspect the final `release-assets-v<version>` artifact. Its
+`SHA256SUMS.txt` is the publication manifest. Attach every inner platform ZIP and
+that single combined checksum file to the GitHub Release. Do not publish or merge
+the per-build `SHA256SUMS.txt` files: those are local verification outputs. GitHub
+wraps artifacts in an outer ZIP; extract it before selecting release assets.
+
+The collector (`scripts/collect_release_assets.py`) requires an explicit version
+and expected target list. It rejects missing, duplicate, unexpected, linked, or
+invalid ZIPs and refuses to overwrite an existing publication directory. Before
+adding a platform, add its successful build job to `collect-release-assets.needs`
+and its target to the collector command. For PR #28, add `build-macos-aarch64` and
+`--target aarch64-darwin`; keep `merge-multiple: false` so job-local checksum files
+cannot overwrite one another. A future third platform adds a target and checksum
+line rather than replacing existing entries. The bundle must include `INSTALL.md` and
 `VERSION.txt` and be suitable for clean-machine installation.
 
 Create a draft at [GitHub Releases](https://github.com/leomuf/ai-software-architect/releases/new):

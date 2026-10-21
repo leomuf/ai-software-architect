@@ -31,7 +31,8 @@ published the plugin.
 ## Next Update Preparation
 
 Version `0.2.4` is in preparation as an update from `0.2.3`. It updates MCP and
-PyJWT dependencies and clarifies hook review and approval instructions. The
+PyJWT dependencies, restricts shell inspection to the trusted bundled reader,
+and clarifies hook review and approval instructions. The
 listing contains draft update notes. The current status above remains the
 record for `0.2.3`; no `0.2.4` archive, submission, approval, or release-gate
 completion is claimed. Dependency changes require Gate D before publication.

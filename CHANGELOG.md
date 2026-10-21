@@ -9,6 +9,10 @@ SPDX-License-Identifier: MIT
 
 ### Security
 
+- Restricted shell-based architecture inspection to the exact bundled repository
+  reader launch, with literal path quoting and validated shell/options. Removed
+  general rg, Git, and PowerShell read exceptions that could execute project code
+  through shell expansion. Additional evidence uses native file tools.
 - Updated MCP to `1.30.0` and PyJWT to `2.15.0` to address all 14 open
   Dependabot alerts, including critical and high-severity PyJWT vulnerabilities.
 
@@ -19,6 +23,10 @@ SPDX-License-Identifier: MIT
 - Updated pinned GitHub Actions: setup-uv `10.3.0`, upload-artifact `7.0.2`,
   and CodeQL init/analyze `4.38.3`.
 - Aligned plugin and bundled workspace metadata for release `0.2.4`.
+- Added a platform-independent release collection step that publishes all expected
+  ZIPs alongside one freshly calculated `SHA256SUMS.txt`.
+- Added shared reader/launcher and checksum checks on macOS and Linux CI; native
+  macOS package support and installation acceptance remain separate work.
 
 ## [0.2.3] - 2026-08-30
 

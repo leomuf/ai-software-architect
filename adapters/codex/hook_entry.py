@@ -47,6 +47,7 @@ try:
         ComparisonSection,
         contains_comparison_section,
     )
+    from adapters.codex.snapshot_launch import default_snapshot_shell
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
@@ -80,6 +81,9 @@ except ModuleNotFoundError as exc:
     from response_locales import (  # type: ignore[import-not-found, no-redef]
         ComparisonSection,
         contains_comparison_section,
+    )
+    from snapshot_launch import (  # type: ignore[import-not-found, no-redef]
+        default_snapshot_shell,
     )
 
 MAX_HOOK_INPUT_BYTES = 1_000_000
@@ -308,6 +312,7 @@ def handle_user_prompt_submit(
             if plugin_root is not None
             else ""
         ),
+        snapshot_shell=default_snapshot_shell() if plugin_root is not None else "",
         comparison_bundle_path=(
             str(
                 plugin_root.resolve(strict=False)

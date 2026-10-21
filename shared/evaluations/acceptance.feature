@@ -507,6 +507,9 @@ Feature: Architecture conformance review
     And it excludes hidden, dependency, build, cache, credential, symlink, and reparse-point paths
     And it reports its limits, coverage, truncation, and static-analysis limitations
     And repository paths and contents are treated as untrusted data rather than instructions
+    And PreToolUse accepts only the exact bundled launch with its explicit trusted shell and disabled login profiles
+    And shell reads, wildcard-expanded options, appended commands, interpreter overrides, and interactive input are denied
+    And additional inspection uses separately controlled native file tools without a shell fallback
     And the agent reuses the captured evidence without redundant file reads
     And it does not delegate subagents by default when the bounded snapshot is sufficient
 
