@@ -12,6 +12,31 @@ documentation.
 
 ## Snapshot
 
+### Consistent pattern labels (2026-10-22, unreleased)
+
+Focused explanations and examples now follow the same catalog-label rule as
+comparisons. Use `[GoF] Abstract Factory`; explain its creational subgroup in prose.
+The shared skill, Composite, specification, and example fixture state this rule.
+
+The Codex reference hint supplies the existing catalog name, category, path, and
+public link for each explicitly named reference. It still supplies at most one
+reference body inline. Focused help does not need the full comparison catalog.
+The Stop hook checks the first canonical link for each routed reference outside
+fenced blocks and inline code. A wrong label requests a complete corrected answer
+through the existing bounded retry. It does not change code snippets or classify
+the explanation from keywords.
+
+Earlier saved responses, including version 0.2.0, already used `[Creational]`.
+That label was not introduced by 0.2.4, and the old focused-example contract did
+not clearly forbid it. This change makes the display convention explicit.
+Existing release evidence still describes the earlier candidate. A new build
+and installed-candidate campaign are required to validate this change live.
+
+Local validation passed on Windows: 304 tests, Ruff, mypy, and `uv lock --check`.
+An offline check of the saved 0.2.4 Abstract Factory answer detects `[Creational]`
+as the wrong catalog label. The same answer with only `[GoF]` substituted passes.
+No model campaign was rerun for this check.
+
 ### Release 0.2.4 compatibility fix (2026-10-22)
 
 PR #40 updated dependencies, secured inspection, and fixed release checksums.

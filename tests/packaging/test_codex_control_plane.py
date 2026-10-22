@@ -31,6 +31,7 @@ from adapters.codex.control_plane import (
     CodexTurnRoute,
     classify_prompt,
     developer_context,
+    final_response_violations,
     parse_option_comparison_markdown,
     with_reference_hints,
 )
@@ -44,6 +45,7 @@ from adapters.codex.hook_entry import (
     handle_user_prompt_submit,
 )
 from adapters.codex.inspection import SNAPSHOT_REQUEST
+from adapters.codex.reference_catalog import REFERENCE_CATALOG, ReferenceSpec
 from adapters.codex.renderers import render_architecture_contract
 from adapters.codex.repository_snapshot import (
     MAX_FILE_BYTES,
@@ -312,6 +314,7 @@ def test_single_named_reference_is_supplied_inline_from_the_trusted_plugin(
 
     additional_context = result["hookSpecificOutput"]["additionalContext"]  # type: ignore[index]
     assert "Canonical inline example." in additional_context
+    assert "[GoF] [Abstract Factory]" in additional_context
     assert "do not spend a tool call reading it" in additional_context
     assert "<bundled-architecture-reference>" in additional_context
 
@@ -364,6 +367,97 @@ def test_reference_hints_resolve_explicit_names_without_selecting_a_mode() -> No
     assert with_reference_hints(classify_prompt(dependency), dependency).reference_paths == (
         "references/dependency-injection.md",
     )
+
+
+@pytest.mark.parametrize("entry", REFERENCE_CATALOG.entries, ids=lambda entry: entry.filename)
+def test_routed_reference_metadata_uses_catalog_for_hints_and_rendering(
+    entry: ReferenceSpec,
+) -> None:
+    prompt = f"$ai-software-architect Explain the {entry.name} pattern."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    assert context.reference_paths == (f"references/{entry.filename}",)
+    expected = f"[{entry.category}] [{entry.name}]({CANONICAL_REFERENCE_BASE}{entry.filename})"
+
+    hint = developer_context(context)
+    assert expected in hint
+    assert f"`references/{entry.filename}`" in hint
+    assert "Use the catalog label in all answers" in hint
+    assert "Compact canonical reference catalog" not in hint
+    assert "gof-abstract-factory.md" not in hint or entry.name == "Abstract Factory"
+
+    assert final_response_violations(context, f"{expected} explains this design.") == []
+    mislabeled = expected.replace(f"[{entry.category}]", "[Other]")
+    assert final_response_violations(context, mislabeled)
+
+
+def test_multiple_reference_hints_require_each_catalog_label() -> None:
+    prompt = "$ai-software-architect Explain Abstract Factory and Dependency Injection."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    factory = f"[GoF] [Abstract Factory]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    injection = (
+        f"[Dependency] [Dependency Injection]({CANONICAL_REFERENCE_BASE}dependency-injection.md)"
+    )
+    hint = developer_context(context)
+    assert factory in hint
+    assert injection in hint
+    assert "<bundled-architecture-reference>" not in hint
+    assert "gof-builder.md" not in hint
+    assert final_response_violations(context, factory + "\n\n" + injection) == []
+    violations = final_response_violations(
+        context, factory + "\n\n" + injection.removeprefix("[Dependency] ")
+    )
+    assert len(violations) == 1
+    assert "Dependency Injection" in violations[0]
+
+
+@pytest.mark.parametrize(
+    "rendered",
+    [
+        "[Creational] {link}",
+        "{link}",
+        "[Architecture] {link}",
+        "[GoF] [Different name]({url})",
+        "[GoF] [Abstract Factory]({url}?source=other)",
+        "{url}",
+        "```markdown\n[GoF] {link}\n```",
+        "~~~markdown\n[GoF] {link}\n~~~",
+        "`[GoF] {link}`",
+        "``[GoF] {link}``",
+        "[GoF] !{link}",
+        "[GoF] \\{link}",
+        "[Creational] {link}\n\n[GoF] {link}",
+        "{link}\n\n[GoF] {link}",
+    ],
+)
+def test_focused_reference_rejects_missing_or_wrong_first_link_label(rendered: str) -> None:
+    prompt = "$ai-software-architect Show an Abstract Factory example."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    url = CANONICAL_REFERENCE_BASE + "gof-abstract-factory.md"
+    answer = rendered.format(link=f"[Abstract Factory]({url})", url=url)
+    assert final_response_violations(context, answer)
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "",
+        "```python\n# [Creational] {link}\n```\n",
+        "~~~markdown\n[Creational] {link}\n~~~\n",
+        "````markdown\n```\n[Creational] {link}\n```\n````\n",
+        "`[Creational] {link}`\n",
+        "``[Creational] {link}``\n",
+    ],
+)
+def test_focused_reference_allows_creational_prose_and_ignores_code(prefix: str) -> None:
+    prompt = "$ai-software-architect Show an Abstract Factory example."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    link = f"[Abstract Factory]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    answer = (
+        prefix.format(link=link)
+        + f"Here is a Python example of the [GoF] {link} pattern. "
+        "Abstract Factory is a creational pattern that creates related products."
+    )
+    assert final_response_violations(context, answer) == []
 
 
 def test_architecture_workflow_blocks_arbitrary_shell_reads_and_execution(
@@ -1092,9 +1186,28 @@ def test_focused_pattern_help_requires_its_routed_canonical_link(tmp_path: Path)
 
     handle_user_prompt_submit(submit, tmp_path)
     stop["last_assistant_message"] = (
-        "See [Abstract Factory]("
+        "See [GoF] [Abstract Factory]("
         f"{CANONICAL_REFERENCE_BASE}gof-abstract-factory.md) for the canonical example."
     )
+    assert handle_stop(stop, tmp_path) == {}
+
+
+def test_wrong_focused_category_uses_existing_bounded_complete_correction(tmp_path: Path) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Show an Abstract Factory example."
+    handle_user_prompt_submit(submit, tmp_path)
+    stop = _payload("Stop")
+    stop["stop_hook_active"] = False
+    stop["last_assistant_message"] = (
+        "Here is a Python example of the [Creational] [Abstract Factory]("
+        f"{CANONICAL_REFERENCE_BASE}gof-abstract-factory.md) pattern."
+    )
+    result = handle_stop(stop, tmp_path)
+    assert result["decision"] == "block"
+    assert "complete standalone replacement response" in result["reason"]
+    assert "[GoF] [Abstract Factory]" in result["reason"]
+
+    stop["stop_hook_active"] = True
     assert handle_stop(stop, tmp_path) == {}
 
 

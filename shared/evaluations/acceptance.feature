@@ -59,6 +59,10 @@ Feature: Agent Skills standard and progressive disclosure
     And the agent loads no unrelated GoF reference
     And an inline reference requires no separate reference-file tool call
     And it explains how the example participants map to the pattern
+    And the reference hint includes the catalog name, category, and canonical public link
+    And the first linked pattern mention is "[GoF] Abstract Factory" with its canonical public reference
+    And GoF subgroups may be explained in prose without replacing the catalog category
+    And the Stop hook checks the first routed canonical link outside fenced blocks and inline code
     And it calls no MCP tool for the generic example request
 
   @PLUGIN-001

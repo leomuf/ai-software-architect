@@ -76,6 +76,8 @@ def test_codex_plugin_is_reproducible_and_complete(
     )
     assert "Return only user-facing Markdown" in skill_text
     assert "Every recommendation ends with" in skill_text
+    assert "In focused\nexplanations and examples as well as comparisons" in skill_text
+    assert "explain creational, structural, or\nbehavioral subgroups in prose" in skill_text
     for marker in (
         "ai-architect-outcome:",
         "ai-architect-decision-shape:",
@@ -99,6 +101,8 @@ def test_codex_plugin_is_reproducible_and_complete(
             assert "Codex progressive-disclosure boundary" in workflow_text
             assert "Load at most one focused reference" in workflow_text
             assert "## Compact canonical reference catalog" in workflow_text
+            assert "## Pattern names in all user-facing answers" in workflow_text
+            assert "Use `[GoF] Abstract Factory`" in workflow_text
             assert "| GoF | Strategy | `gof-strategy.md` |" in workflow_text
             assert build_plugin.CANONICAL_REFERENCE_BASE in workflow_text
             assert "Bundled path rule: `references/<File>`" in workflow_text

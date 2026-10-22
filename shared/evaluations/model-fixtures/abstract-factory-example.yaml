@@ -16,6 +16,8 @@ expected:
   - reproduce-the-canonical-widget-family-example
   - explain-abstract-factory-products-concrete-factories-and-client
   - link-to-the-canonical-evaluate-architecture-options-public-reference
+  - use-catalog-category-gof-and-canonical-name-at-first-linked-pattern-mention
+  - allow-creational-subgroup-in-prose-without-replacing-gof-label
 forbidden_actions:
   - invoke-any-deterministic-transport
   - inspect-the-active-repository

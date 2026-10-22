@@ -169,6 +169,17 @@ def with_reference_hints(
     )
 
 
+def _routed_reference_specs(context: CodexTurnContext) -> tuple[ReferenceSpec, ...]:
+    """Resolve routed paths to catalog entries in their original order.
+
+    Ignore paths absent from the catalog. Read only catalog metadata, without
+    loading reference bodies or selecting a semantic workflow mode.
+    """
+
+    by_path = {f"references/{entry.filename}": entry for entry in REFERENCE_CATALOG.entries}
+    return tuple(by_path[path] for path in context.reference_paths if path in by_path)
+
+
 def developer_context(
     context: CodexTurnContext,
     *,
@@ -244,14 +255,16 @@ def developer_context(
     reference_hint = ""
     if context.reference_paths:
         rendered_paths = ", ".join(
-            f"`{path}` with canonical public URL "
-            f"`{CANONICAL_REFERENCE_BASE}{Path(path).name}`"
-            for path in context.reference_paths
+            f"`references/{entry.filename}`; link: "
+            f"`[{entry.category}] [{entry.name}]({CANONICAL_REFERENCE_BASE}{entry.filename})`"
+            for entry in _routed_reference_specs(context)
         )
+        label_guidance = " Use the catalog label in all answers; explain subgroups in prose."
         if bundled_reference_content:
             reference_hint = (
                 " Exact bundled reference explicitly named by the user: "
-                f"{rendered_paths}. Its trusted canonical content is supplied inline "
+                f"{rendered_paths}.{label_guidance} "
+                "Its trusted canonical content is supplied inline "
                 "below, so do not spend a tool call reading it and do not answer from "
                 "memory or browse for bundled content. Reproduce its canonical example "
                 "for a generic example request.\n\n"
@@ -262,7 +275,8 @@ def developer_context(
         else:
             reference_hint = (
                 " Exact bundled references explicitly named by the user: "
-                f"{rendered_paths}. Load only those references before explaining them or "
+                f"{rendered_paths}.{label_guidance} "
+                "Load only those references before explaining them or "
                 "reproducing their canonical examples; do not answer from memory or browse "
                 "for bundled content."
             )
@@ -672,21 +686,65 @@ def _architecture_workflow_violations(message: str) -> list[str]:
     return []
 
 
+def _prose_without_code(message: str) -> str:
+    """Exclude fenced blocks and inline code from checks of visible Markdown links."""
+
+    lines: list[str] = []
+    fence_character = ""
+    fence_length = 0
+    for line in message.splitlines(keepends=True):
+        fence = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
+        if fence_character:
+            if (
+                fence
+                and fence[1][0] == fence_character
+                and len(fence[1]) >= fence_length
+                and not fence[2].strip()
+            ):
+                fence_character = ""
+            lines.append("\n")
+        elif fence:
+            fence_character = fence[1][0]
+            fence_length = len(fence[1])
+            lines.append("\n")
+        else:
+            lines.append(line)
+    return re.sub(r"(`+)(?!`)(.+?)(?<!`)\1(?!`)", " ", "".join(lines), flags=re.DOTALL)
+
+
+def _routed_reference_violations(context: CodexTurnContext, message: str) -> list[str]:
+    """Check routed link metadata, without interpreting the surrounding explanation."""
+
+    prose = _prose_without_code(message)
+    violations: list[str] = []
+    for entry in _routed_reference_specs(context):
+        url = CANONICAL_REFERENCE_BASE + entry.filename
+        expected = f"[{entry.category}] [{entry.name}]({url})"
+        first_link = re.search(
+            r"(?<!!)(?<!\\)\[([^\]\n]+)\]\(" + re.escape(url) + r"\)", prose
+        )
+        if first_link is None:
+            violations.append(
+                "include the canonical public link outside code for every explicitly "
+                f"routed architecture reference, using `{expected}`"
+            )
+        elif (
+            first_link[1] != entry.name
+            or not prose[: first_link.start()].endswith(f"[{entry.category}] ")
+        ):
+            violations.append(
+                f"render the first canonical link for {entry.name} as `{expected}`; "
+                "use the catalog category, and explain any subgroup in prose"
+            )
+    return violations
+
+
 def final_response_violations(
     context: CodexTurnContext,
     message: str,
 ) -> list[str]:
     if context.route == CodexTurnRoute.ARCHITECTURE_WORKFLOW:
         violations = _architecture_workflow_violations(message)
-        missing_links = [
-            f"{CANONICAL_REFERENCE_BASE}{Path(path).name}"
-            for path in context.reference_paths
-            if f"{CANONICAL_REFERENCE_BASE}{Path(path).name}" not in message
-        ]
-        if missing_links:
-            violations.append(
-                "include the canonical public link for every explicitly routed "
-                "architecture reference: " + ", ".join(missing_links)
-            )
+        violations.extend(_routed_reference_violations(context, message))
         return violations
     return []

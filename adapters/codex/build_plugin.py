@@ -95,7 +95,13 @@ A plugin selection without a request is incomplete. This single public skill cho
 the smallest sufficient mode from the request: focused pattern help, option
 comparison, or the complete architecture lifecycle.
 Route a definition, implementation example, or named-pattern explanation to focused
-help without repository inspection, deterministic tools, or artifacts. Route an open choice among
+help without repository inspection, deterministic tools, or artifacts. In focused
+explanations and examples as well as comparisons, render the first linked pattern
+mention as `[Category] [Name](canonical public reference)` using the catalog category
+and canonical name. Use `[GoF]` for GoF patterns; explain creational, structural, or
+behavioral subgroups in prose without replacing that category. Keep labels outside
+code examples. A no-pattern recommendation needs no link.
+Route an open choice among
 architectures or patterns to option comparison. Route project analysis, approval,
 decision recording, coding handoff, and conformance review to the complete lifecycle.
 Architecture advice and repository inspection are read-only. The architect role never

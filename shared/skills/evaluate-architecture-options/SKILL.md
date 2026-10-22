@@ -80,12 +80,15 @@ Before sending the answer, perform the same deterministic rendering self-check u
 7. Keep alternative options separate from complementary supporting patterns. Do not compare an application architecture, a presentation pattern, and an object-design pattern as if they solve the same decision.
 8. Do not equate similarly named patterns across process or deployment boundaries.
 
+## Pattern names in all user-facing answers
+
+In explanations, examples, and comparisons, render the first linked pattern mention as `[Category] [Name](canonical public reference)` using the catalog category and name. Use `[GoF] Abstract Factory`; explain creational, structural, or behavioral subgroups in prose without replacing `[GoF]`. Keep labels outside code. A no-pattern option uses `[No pattern]` without a link. If the host cannot render links, use the categorized name as plain text.
+
 ## User-facing comparison contract
 
 - Present alternatives before the recommendation. For every option show a `0–100` fit score, concise rationale, main benefit, main liability, and material assumption.
 - Describe the score as an ordinal fit score for this decision, not a probability or calibrated percentage. State the criteria used to score the options.
 - In the localized evidence-and-assumptions section, distinguish static source observations from assumptions and unverified possibilities. Do not present a runtime claim unless runtime behavior was legitimately observed within the authorized mode.
-- Prefix the first mention of every named option and supporting pattern with its category: `[GoF]`, `[Architecture]`, `[Presentation]`, `[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, or `[No pattern]`.
 - Link the first user-facing pattern name to its canonical public reference under `https://github.com/leomuf/ai-software-architect/blob/main/shared/skills/evaluate-architecture-options/references/`, using the routed reference filename. Use plain text if the host cannot render Markdown links.
 - For supporting patterns, add a one-line role explaining where each applies. Do not assign them competing fit scores unless they are genuine alternatives within the same decision.
 - Apply the same category-and-link rule when mentioning a canonical pattern only to discourage or defer it. Do not end a section with a bare list such as `Avoid Repository, Unit of Work, and MVC`; either render each named pattern with its category and canonical link or describe the rejected abstraction types generically without naming catalog entries.
