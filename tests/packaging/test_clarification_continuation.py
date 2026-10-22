@@ -23,10 +23,125 @@ CAPTURED_INITIAL = (
     "using a Python framework such as FastAPI with an HTML/JavaScript frontend?\n\n"
     "No files have been created or modified."
 )
+CAPTURED_GERMAN = (
+    "### Klärung erforderlich\n\n"
+    "Tkinter erstellt eine native Desktop-Oberfläche, keine Weboberfläche im Browser. "
+    "Welche Variante möchtest du bauen?\n\n"
+    "1. **Desktop-Anwendung mit Tkinter**\n"
+    "2. **Browserbasierte Webanwendung**, beispielsweise mit FastAPI und einer Web-UI\n\n"
+    "Danach kann ich passende Architekturen vergleichen. "
+    "Ich werde dabei keine Dateien erstellen oder verändern."
+)
 
 
 def test_legacy_footer_handles_windows_line_endings() -> None:
     assert is_clarification_response(CAPTURED_INITIAL.replace("\n", "\r\n"))
+
+
+def test_unknown_heading_is_corrected_before_clarification_handoff(tmp_path: Path) -> None:
+    base = {"session_id": "german-replay", "turn_id": "initial"}
+    handle_user_prompt_submit(
+        {**base, "prompt": "$ai-software-architect Kläre die Oberfläche."}, tmp_path
+    )
+    rejected = handle_stop({**base, "last_assistant_message": CAPTURED_GERMAN}, tmp_path)
+    assert rejected["decision"] == "block"
+    assert "Rückfrage" in rejected["reason"]
+    assert "Result" in rejected["reason"]
+    corrected = CAPTURED_GERMAN.replace("### Klärung erforderlich", "### Rückfrage", 1)
+    assert (
+        handle_stop(
+            {
+                **base,
+                "last_assistant_message": corrected,
+                "stop_hook_active": True,
+            },
+            tmp_path,
+        )
+        == {}
+    )
+    resumed = handle_user_prompt_submit(
+        {
+            **base,
+            "turn_id": "followup",
+            "prompt": "Eine Desktop-Anwendung mit Tkinter.",
+        },
+        tmp_path,
+    )
+    assert "typed clarification continuation" in str(resumed)
+
+
+@pytest.mark.parametrize("level", range(1, 7))
+def test_standard_heading_levels_preserve_portuguese_clarification(level: int) -> None:
+    message = "#" * level + " Esclarecimento necessário\n\nDesktop ou navegador?\n\nSem alterações."
+    assert is_clarification_response(message)
+
+
+def test_completed_answer_can_contain_a_question_without_requesting_a_reply(tmp_path: Path) -> None:
+    base = {"session_id": "result", "turn_id": "initial"}
+    handle_user_prompt_submit({**base, "prompt": "$ai-software-architect Explain this."}, tmp_path)
+    assert (
+        handle_stop(
+            {
+                **base,
+                "last_assistant_message": "## Result\n\nAn example question is: Is this necessary?",
+            },
+            tmp_path,
+        )
+        == {}
+    )
+    assert (
+        handle_user_prompt_submit(
+            {
+                **base,
+                "turn_id": "unrelated",
+                "prompt": "Tell me the time.",
+            },
+            tmp_path,
+        )
+        == {}
+    )
+
+
+def test_ambiguous_question_is_not_automatically_treated_as_clarification(tmp_path: Path) -> None:
+    base = {"session_id": "ambiguous", "turn_id": "initial"}
+    handle_user_prompt_submit(
+        {**base, "prompt": "$ai-software-architect Explain the tradeoff."}, tmp_path
+    )
+    text = "Why add an interface? It is useful only when implementations vary."
+    assert handle_stop({**base, "last_assistant_message": text}, tmp_path)["decision"] == "block"
+    manager = ContinuationManager(tmp_path, max_age_seconds=MAX_CONTINUATION_AGE_SECONDS)
+    assert manager.peek("ambiguous") is None
+    assert (
+        handle_stop(
+            {
+                **base,
+                "last_assistant_message": "## Result\n\n" + text,
+                "stop_hook_active": True,
+            },
+            tmp_path,
+        )
+        == {}
+    )
+    assert (
+        handle_user_prompt_submit(
+            {
+                **base,
+                "turn_id": "next",
+                "prompt": "What time is it?",
+            },
+            tmp_path,
+        )
+        == {}
+    )
+
+
+def test_question_marks_in_code_do_not_require_a_response_declaration(tmp_path: Path) -> None:
+    base = {"session_id": "code-question", "turn_id": "initial"}
+    handle_user_prompt_submit(
+        {**base, "prompt": "$ai-software-architect Explain the example."}, tmp_path
+    )
+    text = "Example:\n\n```python\nlabel = 'Question?'\n```\n\nThis is a string literal."
+    assert handle_stop({**base, "last_assistant_message": text}, tmp_path) == {}
 
 
 @pytest.mark.parametrize("heading", CLARIFICATION_HEADINGS.values())

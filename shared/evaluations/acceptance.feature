@@ -114,6 +114,9 @@ Feature: Agent Skills standard and progressive disclosure
     When the user answers in the next turn without repeating the skill invocation
     Then one bounded session continuation keeps the architecture workflow active
     And a short status note after an explicitly headed clarification question does not cancel it
+    And standard Markdown heading levels preserve the clarification declaration
+    And an unclassified question receives a bounded declaration correction rather than losing its follow-up
+    And a completed-answer declaration does not open clarification continuation
     And exploratory evaluations verify pending and resumed context in actual hook state
     And invoking another explicit skill or plugin cancels that continuation
     And an approved project-bound material decision enters "record_and_handoff"

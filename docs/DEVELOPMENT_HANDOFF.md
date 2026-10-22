@@ -200,7 +200,14 @@ semantic reasoning to the selected Codex model.
 
 The Codex package uses these short-lived hooks:
 
-Clarification responses now start with a visible heading in the user's language.
+Clarification responses now start with a visible heading label in the user's language.
+Standard Markdown heading levels are accepted. If a question has no recognized
+declaration, Stop asks the model to choose the supported clarification heading or
+the completed-answer heading (`Result`, `Ergebnis`, or `Resultado`). A question
+mark in an ambiguous response requests a declaration; it does not choose the phase. This correction
+closes the silent failure found in the German pre-merge test; accepting heading
+levels also fixes the captured Portuguese response. Completed answers may contain
+rhetorical questions without keeping the architect active.
 A short note after the question no longer loses the pending clarification. The
 exact older format ending in `No files have been created or modified.` is also
 supported when the preceding paragraph ends with the question. Other question
