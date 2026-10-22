@@ -450,6 +450,12 @@ and records its plugin ID, marketplace, version, and available provenance digest
 expected-version argument fails before model calls if another version is active, while
 duplicate enabled installations fail as ambiguous before any evaluation credits are used.
 It does not install or switch plugin versions.
+For clarification and decision follow-ups, it also checks saved hook state before
+and after the reply. Missing pending context stops the follow-up. Missing proof
+that the hook resumed the workflow fails the fixture. Neither case enters the
+performance history. This check reads `$CODEX_HOME/plugins/data`, or
+`~/.codex/plugins/data` when `CODEX_HOME` is unset. For another location, pass
+`-PluginDataRoot` with the directory containing the individual plugin data folders.
 It does not perform semantic grading. A `manual-review` status requires a human to
 assess every expected and forbidden behavior before recording the gate as passed.
 

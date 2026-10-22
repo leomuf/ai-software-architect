@@ -7,6 +7,15 @@ SPDX-License-Identifier: MIT
 
 ## [0.2.4] - Unreleased
 
+### Fixed
+
+- Kept architecture guidance active after a clarification question followed by a
+  short status note. The tests now check that follow-up replies keep the hook
+  context needed for safe file reads and response checks.
+- Accepted standard Markdown heading levels for clarification. Responses with a
+  question and no recognized declaration now receive a correction request instead
+  of silently losing the follow-up. Completed answers can explicitly end the workflow.
+
 ### Security
 
 - Updated certifi from `2026.6.17` to `2026.10.19` to remove the affected emSign

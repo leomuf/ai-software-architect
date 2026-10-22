@@ -15,6 +15,12 @@ from pydantic import ValidationError
 
 try:
     from adapters.codex.artifact_paths import is_canonical_artifact_path
+    from adapters.codex.clarification import (
+        clarification_contract_guidance,
+        declares_clarification,
+        declares_completion,
+        is_clarification_response,
+    )
     from adapters.codex.reference_catalog import REFERENCE_CATALOG, ReferenceSpec
     from adapters.codex.response_locales import (
         ComparisonSection,
@@ -30,6 +36,12 @@ except ModuleNotFoundError as exc:
         raise
     from artifact_paths import (  # type: ignore[import-not-found, no-redef]
         is_canonical_artifact_path,
+    )
+    from clarification import (  # type: ignore[import-not-found, no-redef]
+        clarification_contract_guidance,
+        declares_clarification,
+        declares_completion,
+        is_clarification_response,
     )
     from reference_catalog import (  # type: ignore[import-not-found, no-redef]
         REFERENCE_CATALOG,
@@ -266,7 +278,9 @@ def developer_context(
                 f"{rendered_paths}.{label_guidance} "
                 "Trusted content follows; do not spend a tool call reading it. "
                 "For generic examples, do not answer from memory or browse. "
-                "Use only its stored snippets; 'one or two' permits one.\n\n"
+                "Use only its stored snippets; 'one or two' permits one. "
+                "Keep the canonical code block unchanged. Put any usage calls in a "
+                "separate code block after it.\n\n"
                 "<bundled-architecture-reference>\n"
                 + bundled_reference_content.rstrip()
                 + "\n</bundled-architecture-reference>"
@@ -660,6 +674,10 @@ def _architecture_workflow_violations(message: str) -> list[str]:
         return [
             "remove internal control markers or HTML comments and return only user-facing content"
         ]
+    if declares_clarification(message) and not is_clarification_response(message):
+        return [
+            "include one visible focused question under the clarification heading; omit code blocks"
+        ]
     if contains_comparison_section(message, ComparisonSection.ALTERNATIVES):
         return _option_comparison_violations(message)
     if contains_comparison_section(message, ComparisonSection.USER_DECISION):
@@ -682,6 +700,19 @@ def _architecture_workflow_violations(message: str) -> list[str]:
                 "decision`; keep that final section limited to visible decision "
                 "guidance"
             ]
+        return []
+    if (
+        "?" in _prose_without_code(message)
+        and not is_clarification_response(message)
+        and not declares_completion(message)
+    ):
+        return [
+            "declare whether this question-bearing response requests a reply. "
+            "For clarification, start with a supported clarification heading and keep "
+            "the question and useful context. For an explanation that needs no reply, "
+            "start with a supported completed-answer heading. Do not guess intent from "
+            "question marks. Supported declarations: " + clarification_contract_guidance()
+        ]
     return []
 
 

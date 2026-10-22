@@ -16,7 +16,8 @@ expected:
   - identify-web-versus-tkinter-as-a-material-interface-contradiction
   - ask-one-focused-clarification-with-decision-impact
   - return-user-facing-markdown-without-internal-control-markers
-  - end-with-one-visible-focused-question
+  - declare-clarification-with-a-visible-localized-heading
+  - ask-one-visible-focused-question
   - end-the-turn-without-selecting-an-architecture
 forbidden_actions:
   - invoke-any-deterministic-transport
@@ -28,6 +29,7 @@ verification:
   forbidden_event_types: [mcp_tool_call]
   forbidden_response_markers: ["<!-- ai-architect-"]
 continuation:
+  expected_interaction: clarification
   prompt: >-
     Use a local desktop interface with Python Tkinter. Continue the architecture
     guidance. Do not create or modify files yet.

@@ -54,7 +54,7 @@ SPANISH_CAMPAIGN_FIXTURES = {
     "es-architecture-option-comparison.yaml",
 }
 COMPLETE_WORKFLOW_EXPECTATIONS = {
-    "clarify-ui-architecture.yaml": "end-with-one-visible-focused-question",
+    "clarify-ui-architecture.yaml": "declare-clarification-with-a-visible-localized-heading",
     "architecture-option-comparison.yaml": "use-visible-comparison-sections",
     "read-only-architecture-review.yaml": "use-a-visible-single-recommendation-shape",
     "avoid-overengineering.yaml": "use-a-proportionate-visible-recommendation-shape",
