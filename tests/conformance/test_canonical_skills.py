@@ -151,7 +151,8 @@ def test_user_facing_option_comparison_contract() -> None:
     assert "ordinal fit score" in options
     assert "not a probability or measured percentage" in options
     assert "exact category and option name" in options
-    assert "[GoF]" in options
+    for category in {entry.category for entry in REFERENCE_CATALOG.entries} | {"No pattern"}:
+        assert f"`[{category}]`" in options
     assert "github.com/leomuf/ai-software-architect/blob/main/" in options
     assert "complementary supporting patterns" in options
     for heading in (

@@ -98,7 +98,10 @@ Route a definition, implementation example, or named-pattern explanation to focu
 help without repository inspection, deterministic tools, or artifacts. In focused
 explanations and examples as well as comparisons, render the first linked pattern
 mention as `[Category] [Name](canonical public reference)` using the catalog category
-and canonical name. Use `[GoF]` for GoF patterns; explain creational, structural, or
+and canonical name. Valid labels are `[GoF]`, `[Architecture]`, `[Presentation]`,
+`[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, and
+`[No pattern]`. Use `[GoF]` only for GoF patterns; keep all other catalog categories.
+Explain creational, structural, or
 behavioral subgroups in prose without replacing that category. Keep labels outside
 code examples. A no-pattern recommendation needs no link.
 Route an open choice among

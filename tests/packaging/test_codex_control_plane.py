@@ -388,6 +388,8 @@ def test_routed_reference_metadata_uses_catalog_for_hints_and_rendering(
     assert final_response_violations(context, f"{expected} explains this design.") == []
     mislabeled = expected.replace(f"[{entry.category}]", "[Other]")
     assert final_response_violations(context, mislabeled)
+    if entry.category != "GoF":
+        assert final_response_violations(context, expected.replace(f"[{entry.category}]", "[GoF]"))
 
 
 def test_multiple_reference_hints_require_each_catalog_label() -> None:
