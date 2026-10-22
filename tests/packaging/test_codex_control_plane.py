@@ -1243,7 +1243,9 @@ def test_turn_state_is_minimal_and_stale_files_are_bounded(tmp_path: Path) -> No
     submit = _payload("UserPromptSubmit")
     submit["prompt"] = "$ai-software-architect Review this project."
     handle_user_prompt_submit(submit, tmp_path)
-    state = next((tmp_path / "control-plane").glob("*.json"))
+    turn_states = list((tmp_path / "control-plane").glob("turn-*.json"))
+    assert len(turn_states) == 1
+    state = turn_states[0]
     state_text = state.read_text("utf-8")
     assert "Review this project" not in state_text
     assert "prompt" not in state_text
