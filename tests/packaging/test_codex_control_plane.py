@@ -317,6 +317,7 @@ def test_single_named_reference_is_supplied_inline_from_the_trusted_plugin(
     assert "[GoF] [Abstract Factory]" in additional_context
     assert "do not spend a tool call reading it" in additional_context
     assert "<bundled-architecture-reference>" in additional_context
+    assert "Use only its stored snippets; 'one or two' permits one." in additional_context
 
 
 def test_multiple_named_references_retain_path_only_progressive_disclosure(
@@ -460,6 +461,84 @@ def test_focused_reference_allows_creational_prose_and_ignores_code(prefix: str)
         "Abstract Factory is a creational pattern that creates related products."
     )
     assert final_response_violations(context, answer) == []
+
+
+@pytest.mark.parametrize("entry", REFERENCE_CATALOG.entries, ids=lambda entry: entry.filename)
+def test_model_introduced_pattern_links_use_each_catalog_entry(entry: ReferenceSpec) -> None:
+    context = classify_prompt("$ai-software-architect Explain suitable patterns.")
+    assert context.reference_paths == ()
+    url = CANONICAL_REFERENCE_BASE + entry.filename
+    expected = f"[{entry.category}] [{entry.name}]({url})"
+    assert final_response_violations(context, expected) == []
+
+    external = expected.replace(url, "https://example.org/pattern")
+    assert final_response_violations(context, external)
+    assert final_response_violations(context, external + "\n" + expected)
+    assert final_response_violations(context, expected + "\n" + external)
+    assert final_response_violations(context, f"[{entry.name}]({url})")
+
+
+def test_secondary_pattern_cannot_link_to_a_different_catalog_entry() -> None:
+    context = classify_prompt("$ai-software-architect Explain suitable patterns.")
+    wrong = f"[GoF] [Factory Method]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    assert final_response_violations(context, wrong)
+
+
+@pytest.mark.parametrize("spacing", [" ", "  ", "\t", " **", " _"])
+def test_category_formatting_cannot_hide_an_external_secondary_link(spacing: str) -> None:
+    context = classify_prompt("$ai-software-architect Explain suitable patterns.")
+    link = f"[GoF]{spacing}[Factory Method](https://example.org/pattern)"
+    assert final_response_violations(context, link)
+
+
+@pytest.mark.parametrize(
+    "suffix",
+    [
+        "Read [State](C:/project/state.py) or the [Repository](https://example.org/repository).",
+        "See [Python](https://docs.python.org/3/).",
+        "[Other] [Not a catalog pattern](https://example.org/topic)",
+        "`[GoF] [Factory Method](https://example.org/pattern)`",
+        "```markdown\n[GoF] [Factory Method](https://example.org/pattern)\n```",
+        "~~~markdown\n[GoF] [Factory Method](https://example.org/pattern)\n~~~",
+        "[GoF] ![Factory Method](https://example.org/image.png)",
+    ],
+)
+def test_secondary_link_checks_preserve_ordinary_links_and_code(suffix: str) -> None:
+    prompt = "$ai-software-architect Explain Abstract Factory."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    primary = f"[GoF] [Abstract Factory]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    assert final_response_violations(context, primary + "\n\n" + suffix) == []
+
+
+def test_secondary_link_check_is_inactive_without_architect_activation() -> None:
+    context = classify_prompt("Please read this page.")
+    assert final_response_violations(
+        context, "[GoF] [Factory Method](https://example.org/pattern)"
+    ) == []
+
+
+def test_secondary_factory_method_link_requests_bounded_complete_correction(tmp_path: Path) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Give an Abstract Factory example."
+    handle_user_prompt_submit(submit, tmp_path)
+    primary = f"[GoF] [Abstract Factory]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    wrong = "[GoF] [Factory Method](https://refactoring.guru/design-patterns/factory-method)"
+    correct = f"[GoF] [Factory Method]({CANONICAL_REFERENCE_BASE}gof-factory-method.md)"
+    stop = _payload("Stop")
+    stop["stop_hook_active"] = False
+    stop["last_assistant_message"] = primary + "\n\nA simpler alternative is " + wrong
+    result = handle_stop(stop, tmp_path)
+    assert result["decision"] == "block"
+    assert "complete standalone replacement response" in result["reason"]
+    assert correct in result["reason"]
+
+    stop["stop_hook_active"] = True
+    assert handle_stop(stop, tmp_path) == {}
+
+    handle_user_prompt_submit(submit, tmp_path)
+    stop["stop_hook_active"] = False
+    stop["last_assistant_message"] = primary + "\n\nA simpler alternative is " + correct
+    assert handle_stop(stop, tmp_path) == {}
 
 
 def test_architecture_workflow_blocks_arbitrary_shell_reads_and_execution(

@@ -12,6 +12,31 @@ documentation.
 
 ## Snapshot
 
+### Related-pattern links and example counts (2026-10-22, unreleased)
+
+The installed candidate from `211dd96` passed the invocation smoke and all five
+deterministic exploratory checks. Abstract Factory used `[GoF]` correctly, and the
+simplicity answer explained a concrete future trigger. However, the Abstract
+Factory answer linked a related Factory Method pattern to an external site.
+
+The Stop hook now also checks categorized catalog links introduced in an answer,
+not just references named by the user. It checks every recognized URL and the
+first category label. The existing exact-name check for routed references stays
+in place, and comparison aliases with correct canonical links remain supported.
+Code blocks, inline code, and ordinary uncategorized repository or source links
+are excluded. Invalid links use the existing bounded complete-response correction.
+The hook does not classify prose or replace model reasoning.
+
+Generic example requests use only the snippets stored in the focused reference.
+"One or two" permits one. If an exact count exceeds those snippets, explain the
+limit instead of inventing another example. Keep usage calls separate; label a
+domain adaptation when the user requests one. Shared instructions, Composite
+instructions, inline hints, and the fixture state this rule.
+
+See [the installed-candidate test record](releases/0.2.4-pattern-label-tests.md).
+It describes the earlier candidate, not live validation of these new changes.
+A full rebuild and a new installed-candidate campaign remain necessary.
+
 ### Consistent pattern labels (2026-10-22, unreleased)
 
 Focused explanations and examples now follow the same catalog-label rule as

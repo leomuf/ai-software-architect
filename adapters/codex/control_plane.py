@@ -262,12 +262,11 @@ def developer_context(
         label_guidance = " Use the catalog label in all answers; explain subgroups in prose."
         if bundled_reference_content:
             reference_hint = (
-                " Exact bundled reference explicitly named by the user: "
+                " Explicit bundled reference: "
                 f"{rendered_paths}.{label_guidance} "
-                "Its trusted canonical content is supplied inline "
-                "below, so do not spend a tool call reading it and do not answer from "
-                "memory or browse for bundled content. Reproduce its canonical example "
-                "for a generic example request.\n\n"
+                "Trusted content follows; do not spend a tool call reading it. "
+                "For generic examples, do not answer from memory or browse. "
+                "Use only its stored snippets; 'one or two' permits one.\n\n"
                 "<bundled-architecture-reference>\n"
                 + bundled_reference_content.rstrip()
                 + "\n</bundled-architecture-reference>"
@@ -712,29 +711,55 @@ def _prose_without_code(message: str) -> str:
     return re.sub(r"(`+)(?!`)(.+?)(?<!`)\1(?!`)", " ", "".join(lines), flags=re.DOTALL)
 
 
-def _routed_reference_violations(context: CodexTurnContext, message: str) -> list[str]:
-    """Check routed link metadata, without interpreting the surrounding explanation."""
+def _reference_link_violations(context: CodexTurnContext, message: str) -> list[str]:
+    """Validate routed references and explicit pattern links without classifying prose.
+
+    Resolve extra links only by a canonical URL or a categorized catalog name.
+    Unrouted, uncategorized links such as a repository named State stay ordinary
+    links. Check each recognized URL and the first label for each reference.
+    """
 
     prose = _prose_without_code(message)
     violations: list[str] = []
-    for entry in _routed_reference_specs(context):
-        url = CANONICAL_REFERENCE_BASE + entry.filename
-        expected = f"[{entry.category}] [{entry.name}]({url})"
-        first_link = re.search(
-            r"(?<!!)(?<!\\)\[([^\]\n]+)\]\(" + re.escape(url) + r"\)", prose
+    required = {entry.filename: entry for entry in _routed_reference_specs(context)}
+    by_url = {
+        CANONICAL_REFERENCE_BASE + entry.filename: entry for entry in REFERENCE_CATALOG.entries
+    }
+    seen: set[str] = set()
+    for link in re.finditer(r"(?<!!)(?<!\\)\[([^\]\n]+)\]\(([^)\n]+)\)", prose):
+        name, url = link.groups()
+        prefix = prose[: link.start()]
+        named = REFERENCE_CATALOG.named(name)
+        categorized_name = re.search(r"\[[^\]\n]+\][ \t]+(?:\*{1,2}|_{1,2})?$", prefix) is not None
+        entry = (
+            named
+            if named is not None and (named.filename in required or categorized_name)
+            else by_url.get(url)
         )
-        if first_link is None:
+        if entry is None:
+            continue
+        expected_url = CANONICAL_REFERENCE_BASE + entry.filename
+        expected = f"[{entry.category}] [{entry.name}]({expected_url})"
+        if url != expected_url:
             violations.append(
-                "include the canonical public link outside code for every explicitly "
-                f"routed architecture reference, using `{expected}`"
+                f"link {entry.name} to its canonical public reference using `{expected}`; "
+                "this also applies to patterns introduced in the answer"
             )
-        elif (
-            first_link[1] != entry.name
-            or not prose[: first_link.start()].endswith(f"[{entry.category}] ")
+        elif entry.filename not in seen and (
+            (entry.filename in required and name != entry.name)
+            or not prefix.endswith(f"[{entry.category}] ")
         ):
             violations.append(
                 f"render the first canonical link for {entry.name} as `{expected}`; "
                 "use the catalog category, and explain any subgroup in prose"
+            )
+        seen.add(entry.filename)
+    for filename, entry in required.items():
+        if filename not in seen:
+            expected = f"[{entry.category}] [{entry.name}]({CANONICAL_REFERENCE_BASE}{filename})"
+            violations.append(
+                "include the canonical public link outside code for every explicitly "
+                f"routed architecture reference, using `{expected}`"
             )
     return violations
 
@@ -745,6 +770,6 @@ def final_response_violations(
 ) -> list[str]:
     if context.route == CodexTurnRoute.ARCHITECTURE_WORKFLOW:
         violations = _architecture_workflow_violations(message)
-        violations.extend(_routed_reference_violations(context, message))
+        violations.extend(_reference_link_violations(context, message))
         return violations
     return []

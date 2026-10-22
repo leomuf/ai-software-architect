@@ -82,7 +82,7 @@ Before sending the answer, perform the same deterministic rendering self-check u
 
 ## Pattern names in all user-facing answers
 
-In explanations, examples, and comparisons, use the catalog category and name at the first linked mention: `[Category] [Name](canonical public reference)`.
+In explanations, examples, and comparisons, use the catalog category and name at the first linked mention: `[Category] [Name](canonical public reference)`. This includes related patterns introduced in the answer.
 
 Valid labels: `[GoF]`, `[Architecture]`, `[Presentation]`, `[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, and `[No pattern]`.
 
@@ -100,11 +100,11 @@ Canonical links use `https://github.com/leomuf/ai-software-architect/blob/main/s
 
 ## Implementation example requests
 
-- Treat loading the routed reference as a hard gate before answering a named-pattern explanation or implementation-example request. Do not answer from model memory. If the reference cannot be loaded, disclose that limitation instead of synthesizing an example.
-- When the user asks for a generic Python implementation example of a GoF pattern, load only that routed `gof-*.md` reference and reuse its `Python example` verbatim. Explain briefly how the example's participants map to the pattern.
-- In Codex, users invoke only `$ai-software-architect`. The Composite routes pattern explanations, implementation examples, and comparisons to this canonical module and uses its copied references without attempting sibling-skill activation.
-- Reproduce the canonical example when a generic example is sufficient. For a repository-specific request, adapt the example to the user's domain and clearly identify the adaptation instead of presenting the canonical snippet as project-ready code.
-- Do not load unrelated pattern files or synthesize additional variants unless the user asks for them or a materially different variant is necessary.
+- Load the exact routed reference before an explanation or example. Do not answer from model memory; disclose an unavailable reference instead of inventing one.
+- For a generic Python implementation example of a GoF pattern, load only its `gof-*.md` reference and reuse its `Python example` verbatim. Explain the participants and keep usage calls separate.
+- Generic requests use only stored examples. "One or two" permits one. If an exact count exceeds the stored examples, state the limit; do not invent a second example.
+- Adapt an example only when the user requests a domain-specific variant, and label the adaptation.
+- The Codex Composite routes here without sibling-skill activation. Do not load unrelated references.
 - Do not browse or search merely to verify canonical links.
 - Generic pattern explanations, implementation examples, and architecture guidance use the routed skill reference directly and need no deterministic tool call.
 

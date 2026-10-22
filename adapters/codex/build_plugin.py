@@ -104,6 +104,7 @@ and canonical name. Valid labels are `[GoF]`, `[Architecture]`, `[Presentation]`
 Explain creational, structural, or
 behavioral subgroups in prose without replacing that category. Keep labels outside
 code examples. A no-pattern recommendation needs no link.
+Related patterns introduced in the answer follow the same category-and-link rule.
 Route an open choice among
 architectures or patterns to option comparison. Route project analysis, approval,
 decision recording, coding handoff, and conformance review to the complete lifecycle.
@@ -160,7 +161,10 @@ under the evidence or alternatives sections.
 For generic architecture guidance, pattern explanations, or implementation examples,
 loading the exact routed bundled reference is a hard gate: do not answer from model
 memory, and disclose an unavailable reference instead of inventing an example.
-Reproduce the canonical example for a generic request and do not browse merely to
+Generic requests use only stored examples. "One or two" permits one; if an exact
+requested count exceeds the stored examples, state that limit. Do not invent a
+second example. Label an adaptation only when the user requests a domain-specific
+variant. Keep usage calls separate from the canonical snippet. Do not browse merely to
 discover or verify deterministic canonical links; use the bundled generated
 reference catalog and do not invoke deterministic tools for focused reference help.
 All five bundled Codex control-plane hooks must be activated before first use for

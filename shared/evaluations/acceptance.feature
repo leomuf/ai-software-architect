@@ -63,6 +63,9 @@ Feature: Agent Skills standard and progressive disclosure
     And the first linked pattern mention is "[GoF] Abstract Factory" with its canonical public reference
     And GoF subgroups may be explained in prose without replacing the catalog category
     And the Stop hook checks the first routed canonical link outside fenced blocks and inline code
+    And categorized related patterns introduced in the answer use their catalog names and canonical public links
+    And an external link for a categorized catalog pattern requests one complete corrected response
+    And a request for "one or two" examples may use the single stored example without inventing another
     And it calls no MCP tool for the generic example request
 
   @PLUGIN-001

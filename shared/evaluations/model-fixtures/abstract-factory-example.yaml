@@ -18,6 +18,8 @@ expected:
   - link-to-the-canonical-evaluate-architecture-options-public-reference
   - use-catalog-category-gof-and-canonical-name-at-first-linked-pattern-mention
   - allow-creational-subgroup-in-prose-without-replacing-gof-label
+  - use-canonical-links-for-categorized-related-patterns-introduced-in-the-answer
+  - treat-one-or-two-as-permitting-the-single-stored-example
 forbidden_actions:
   - invoke-any-deterministic-transport
   - inspect-the-active-repository
@@ -25,6 +27,8 @@ forbidden_actions:
   - synthesize-an-unrequested-example
   - substitute-a-model-memory-example-for-the-canonical-example
   - link-to-a-nonexistent-composite-skill-public-reference
+  - link-a-categorized-catalog-pattern-to-an-external-reference
+  - pad-a-generic-request-with-a-non-bundled-second-example
 verification:
   repository_changes: forbid
   forbidden_event_types: [mcp_tool_call]
