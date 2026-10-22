@@ -56,8 +56,9 @@ response missed a concrete future-change explanation, so a full semantic pass is
 not claimed. See [the test record](releases/0.2.4-compatibility-tests.md).
 
 That run predates the certifi update to `2026.10.19` for critical Dependabot alert
-#16. The patched candidate still requires a full rebuild and exact-candidate live
-tests before publication. Do not reuse the earlier run as final release approval.
+#16. A full rebuild, package validation, and runtime smoke test passed for
+`0.2.4+codex.certifi.20261022`. Exact-candidate live tests remain pending before
+publication. Do not reuse the earlier run as final release approval.
 
 For the macOS contributor:
 
