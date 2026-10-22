@@ -77,6 +77,7 @@ expected_decision:
   selected_category: No pattern
   selected_name: No pattern
 continuation:
+  expected_interaction: decision
   prompt: >-
     Aprovo a recomendação. Salve o ADR validado, o contrato de arquitetura,
     o contexto do projeto e a entrega para implementação. Não altere o código

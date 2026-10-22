@@ -593,6 +593,44 @@ def test_dry_run_plans_the_campaign_without_invoking_codex(tmp_path: Path) -> No
     assert not (output / "workspaces").exists()
 
 
+def test_campaign_stops_before_followup_when_pending_hook_state_is_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from adapters.codex.evaluations import runner
+    from adapters.codex.evaluations.models import PhaseResult
+
+    monkeypatch.setattr(runner, "_codex_version", lambda _: "codex-cli test")
+    monkeypatch.setattr(runner, "_installed_plugin_identity", lambda _: InstalledPluginIdentity(
+        "ai-software-architect@test", "test", "0.2.4",
+    ))
+    phases_called = []
+
+    def captured_initial(**kwargs: object) -> PhaseResult:
+        phases_called.append(kwargs["name"])
+        return PhaseResult(
+            name="initial", exit_code=0, duration_seconds=1.0, thread_id="new-session",
+            final_response_file="initial.response.md", event_log_file="initial.jsonl",
+            stderr_file="initial.stderr.txt", event_types=[], repository_changes=[],
+            assertions=[], manual_review=[],
+        )
+
+    monkeypatch.setattr(runner, "_run_phase", captured_initial)
+    output = tmp_path / "campaign"
+    ledger = tmp_path / "ledger.jsonl"
+    code = main([
+        "--fixture", "clarify-ui-architecture", "--output-directory", str(output),
+        "--plugin-data-root", str(tmp_path / "absent-host-data"),
+        "--performance-ledger", str(ledger),
+    ])
+    assert code == 1
+    assert phases_called == ["initial"]
+    report = json.loads((output / "report.json").read_text(encoding="utf-8"))
+    result = report["results"][0]
+    assert result["status"] == "deterministic-failure"
+    assert result["phases"][0]["assertions"][0]["name"] == "architect-continuation-pending"
+    assert not ledger.exists() or ledger.read_text(encoding="utf-8") == ""
+
+
 def test_release_gate_smoke_dry_run_is_distinct_from_performance_campaign(
     tmp_path: Path,
 ) -> None:

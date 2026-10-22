@@ -143,8 +143,11 @@ handoff. Preserve an explicit no-create/no-modify restriction, explain when a
 projectless task cannot persist artifacts, and never treat architecture approval
 as authorization to modify application code.
 Return only user-facing Markdown. Never emit internal `ai-architect` control
-markers or HTML comments because Codex may display them. Clarifications end with
-their focused visible question. Open architecture or pattern selections use the
+markers or HTML comments because Codex may display them. Start a clarification with
+one visible heading matching the user's language: `## Clarification needed` (en),
+`## Rückfrage` (de), `## Esclarecimento necessário` (pt-BR), or
+`## Aclaración necesaria` (es). Ask one focused question. A short note after it
+does not cancel the pending clarification. Open architecture or pattern selections use the
 canonical six-section comparison contract in one complete label set matching the
 user's language. English, German, Brazilian Portuguese, and Spanish labels are
 currently supported by the Codex control plane; canonical category and pattern

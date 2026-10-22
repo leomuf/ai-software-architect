@@ -56,7 +56,7 @@ On Codex, the plugin is the distribution bundle and `$ai-software-architect` is 
 
 Return only user-facing Markdown. Never emit internal `ai-architect` control markers or HTML comments.
 
-- When material input is required, end with the focused visible clarification question.
+- When material input is required, use a visible clarification heading in the user's language and ask the focused question. A short status note after the question does not end the pending clarification. Host adapters define the exact visible headings they support.
 - For an open request to choose architecture or design-pattern options, respond in the user's language, render exactly one complete localized six-section option-comparison contract, and compare genuine alternatives for one decision. Keep canonical category and pattern identities unchanged across languages.
 - When the user requests one highest-leverage improvement, or one proportionate simplicity decision is sufficient, present one recommendation rather than a comparison. Never use a single recommendation to present a stack of patterns.
 - Every recommendation ends with the localized user-decision heading and visible guidance asking the user to approve, revise, or request more information.

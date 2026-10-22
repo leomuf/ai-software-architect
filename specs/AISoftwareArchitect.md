@@ -1915,6 +1915,8 @@ complete_workflow_response:
   internal_control_markers: forbidden
   clarification:
     visible_focused_question: required
+    visible_heading: localized-clarification-heading
+    trailing_status_note: allowed
   recommendation:
     supported_shapes: [comparison, single]
     locale_catalogs:
@@ -1928,6 +1930,8 @@ complete_workflow_response:
     validates: stable-visible-structure
     semantic_outcome_classification: false
 ```
+
+A clarification declares its state with a visible first heading: `## Clarification needed` (English), `## Rückfrage` (German), `## Esclarecimento necessário` (Brazilian Portuguese), or `## Aclaración necesaria` (Spanish). It asks a focused question without a code block. A short status note after the question MUST NOT cancel the pending interaction. For compatibility, the Codex adapter also accepts the earlier final-question format, including the exact English footer `No files have been created or modified.` as a separate final paragraph after that question. It MUST NOT infer clarification from arbitrary question marks inside other prose. This is a visible structural contract, not semantic classification. The exploratory runner MUST verify the expected pending interaction in actual hook state before running a follow-up, and verify the resumed interaction in the workflow checkpoint afterward. Missing pending state prevents the follow-up; either missing-state check fails the fixture and excludes it from performance history. Observation MUST NOT consume or modify the hook state or store user text.
 
 Single-reference explanations are not semantically policed by `Stop`; exact reference hints plus the hard skill gate make the expected resource explicit without trying to judge natural-language content. For a complete workflow, the hook applies strict comparison validation when any cataloged Alternatives heading is present, requires exactly one complete ordered locale set and its exact six-column header, validates the matching visible final decision section when present, and rejects mixed locale labels or leaked internal `ai-architect` markers. It deliberately cannot prove that a semantically required recommendation was chosen or that localized prose offers the correct choices; those remain skill and host-model responsibilities. A rendering failure generates one complete replacement request whose reason presents the supported locale contracts, category/link rule, and ordinal-fit rule; `stop_hook_active` prevents an infinite retry. Valid clarification and decision responses retain only a bounded session continuation record; all turn records are removed after completion.
 
@@ -2583,6 +2587,8 @@ Feature: Agent Skills standard and progressive disclosure
     Given an active architect response visibly requests clarification or a user decision
     When the user answers in the next turn without repeating the skill invocation
     Then one bounded session continuation keeps the architecture workflow active
+    And a short status note after an explicitly headed clarification question does not cancel it
+    And exploratory evaluations verify pending and resumed context in actual hook state
     And invoking another explicit skill or plugin cancels that continuation
     And an approved project-bound material decision enters "record_and_handoff"
     But an original no-create or no-modify restriction remains effective

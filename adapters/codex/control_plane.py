@@ -15,6 +15,7 @@ from pydantic import ValidationError
 
 try:
     from adapters.codex.artifact_paths import is_canonical_artifact_path
+    from adapters.codex.clarification import CLARIFICATION_HEADINGS, is_clarification_response
     from adapters.codex.reference_catalog import REFERENCE_CATALOG, ReferenceSpec
     from adapters.codex.response_locales import (
         ComparisonSection,
@@ -30,6 +31,10 @@ except ModuleNotFoundError as exc:
         raise
     from artifact_paths import (  # type: ignore[import-not-found, no-redef]
         is_canonical_artifact_path,
+    )
+    from clarification import (  # type: ignore[import-not-found, no-redef]
+        CLARIFICATION_HEADINGS,
+        is_clarification_response,
     )
     from reference_catalog import (  # type: ignore[import-not-found, no-redef]
         REFERENCE_CATALOG,
@@ -659,6 +664,11 @@ def _architecture_workflow_violations(message: str) -> list[str]:
     if HIDDEN_HTML_COMMENT_PATTERN.search(message):
         return [
             "remove internal control markers or HTML comments and return only user-facing content"
+        ]
+    first_line = message.strip().split("\n", 1)[0].rstrip()
+    if first_line in CLARIFICATION_HEADINGS.values() and not is_clarification_response(message):
+        return [
+            "include one visible focused question under the clarification heading; omit code blocks"
         ]
     if contains_comparison_section(message, ComparisonSection.ALTERNATIVES):
         return _option_comparison_violations(message)

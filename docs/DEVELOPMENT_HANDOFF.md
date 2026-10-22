@@ -200,6 +200,20 @@ semantic reasoning to the selected Codex model.
 
 The Codex package uses these short-lived hooks:
 
+Clarification responses now start with a visible heading in the user's language.
+A short note after the question no longer loses the pending clarification. The
+exact older format ending in `No files have been created or modified.` is also
+supported when the preceding paragraph ends with the question. Other question
+marks inside ordinary prose do not activate this fallback. Continuations remain
+single-use, expire after one hour, and stop when another skill is invoked.
+
+The exploratory runner checks actual saved hook state before and after each
+clarification or decision follow-up. Missing pending state stops that follow-up;
+missing proof of resumption fails the fixture. Both cases are excluded from
+performance history. The checkpoint stores only the resumed interaction type,
+not the user's question or answer. Live evaluation of this change still requires
+a newly built and installed candidate with all five hooks approved.
+
 - `UserPromptSubmit`: activation, routing, continuation, and a compact safety
   envelope. Exact reference hints are added only for explicitly named canonical
   references; when exactly one is resolved, its trusted packaged content is supplied

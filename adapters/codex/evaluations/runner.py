@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import platform
 import shutil
 import subprocess
@@ -22,6 +23,10 @@ from typing import Any, Literal
 
 import yaml
 
+from adapters.codex.evaluations.continuation_observation import (
+    observe_pending_continuation,
+    observe_resumed_continuation,
+)
 from adapters.codex.evaluations.decision_observation import extract_decision_observation
 from adapters.codex.evaluations.grading import grade_phase
 from adapters.codex.evaluations.models import (
@@ -834,7 +839,21 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                 flush=True,
             )
             phases = [initial]
-            if fixture.continuation is not None and initial.thread_id and initial.exit_code == 0:
+            continuation_data: Path | None = None
+            pending_verified = True
+            expected_interaction = (
+                fixture.continuation.expected_interaction if fixture.continuation else None
+            )
+            if expected_interaction:
+                continuation_data, pending_assertion = observe_pending_continuation(
+                    args.plugin_data_root, initial.thread_id, expected_interaction,
+                )
+                initial.assertions.append(pending_assertion)
+                pending_verified = pending_assertion.status == AssertionStatus.PASS
+            if (
+                fixture.continuation is not None and initial.thread_id
+                and initial.exit_code == 0 and pending_verified
+            ):
                 continuation = fixture.continuation
                 continuation_sandbox = _continuation_sandbox(continuation.verification)
                 print(f"{progress}: running continuation...", flush=True)
@@ -858,6 +877,10 @@ def run_campaign(args: argparse.Namespace) -> CampaignReport:
                     timeout_seconds=args.timeout_seconds,
                 )
                 phases.append(continuation_result)
+                if expected_interaction:
+                    continuation_result.assertions.append(observe_resumed_continuation(
+                        continuation_data, initial.thread_id, expected_interaction,
+                    ))
                 print(
                     f"{progress}: continuation finished in "
                     f"{continuation_result.duration_seconds:.1f}s "
@@ -970,6 +993,13 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--fixture", action="append", help="Run one fixture ID; repeat as needed")
     parser.add_argument("--output-directory", type=Path, required=True)
     parser.add_argument("--codex-command", default="codex")
+    parser.add_argument(
+        "--plugin-data-root", type=Path,
+        default=(
+            Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "plugins" / "data"
+        ),
+        help="Host plugin-data parent used to observe actual continuation hook state (read-only).",
+    )
     parser.add_argument("--model", default="gpt-5.6-sol")
     parser.add_argument(
         "--speed",

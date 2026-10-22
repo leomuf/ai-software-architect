@@ -74,6 +74,7 @@ expected_decision:
   selected_category: No pattern
   selected_name: No pattern
 continuation:
+  expected_interaction: decision
   prompt: >-
     Approve the recommendation. Record the validated ADR, architecture contract,
     project context, and coding handoff. Do not modify application source code.

@@ -113,6 +113,8 @@ Feature: Agent Skills standard and progressive disclosure
     Given an active architect response visibly requests clarification or a user decision
     When the user answers in the next turn without repeating the skill invocation
     Then one bounded session continuation keeps the architecture workflow active
+    And a short status note after an explicitly headed clarification question does not cancel it
+    And exploratory evaluations verify pending and resumed context in actual hook state
     And invoking another explicit skill or plugin cancels that continuation
     And an approved project-bound material decision enters "record_and_handoff"
     But an original no-create or no-modify restriction remains effective

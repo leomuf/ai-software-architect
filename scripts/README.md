@@ -279,6 +279,13 @@ optional release safety check: a mismatch stops the campaign before model calls.
 It never installs, disables, or switches plugin versions. The former
 `-PluginVersion` spelling remains a backward-compatible PowerShell alias.
 
+For clarification and decision follow-ups, the runner reads actual hook state.
+It checks that a pending interaction exists before continuing and that the next
+turn resumed it. Missing context fails the fixture and excludes it from performance
+history. The runner never consumes or changes this state. It reads the plugin data
+folders under `$CODEX_HOME/plugins/data`, or `~/.codex/plugins/data` by default.
+Use `-PluginDataRoot <path>` if the CLI uses a different plugin-data parent folder.
+
 Use `-Speed fast` to request Codex Fast mode explicitly. `-Speed standard` records
 the intended standard baseline but cannot override a Fast preference already
 persisted in the user's Codex configuration; confirm `/fast off` before that run.
