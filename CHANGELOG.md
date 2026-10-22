@@ -9,6 +9,8 @@ SPDX-License-Identifier: MIT
 
 ### Security
 
+- Updated certifi from `2026.6.17` to `2026.10.19` to remove the affected emSign
+  trust roots reported by critical advisory `GHSA-6q48-6c7w-9gw2`.
 - Fixed a security issue where a command meant to read project files could run
   project code instead. The trusted hook now reads requested files directly and
   returns bounded evidence while blocking shell execution. This also works when

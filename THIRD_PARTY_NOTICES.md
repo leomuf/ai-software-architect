@@ -13,7 +13,7 @@ The Windows executable bundles the runtime dependencies below. Copyright remains
 | annotated-types | 0.7.0 | MIT License | https://github.com/annotated-types/annotated-types |
 | anyio | 4.14.2 | MIT | https://anyio.readthedocs.io/en/latest/ |
 | attrs | 26.1.0 | MIT | https://www.attrs.org/ |
-| certifi | 2026.6.17 | Mozilla Public License 2.0 (MPL 2.0) | https://github.com/certifi/python-certifi |
+| certifi | 2026.10.19 | Mozilla Public License 2.0 (MPL 2.0) | https://github.com/certifi/python-certifi |
 | click | 8.4.2 | BSD-3-Clause | https://click.palletsprojects.com/page/changes/ |
 | colorama | 0.4.6 | BSD License | https://github.com/tartley/colorama |
 | h11 | 0.16.0 | MIT License | https://github.com/python-hyper/h11 |

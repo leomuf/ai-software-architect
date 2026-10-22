@@ -49,10 +49,15 @@ tests before building and checking the executable. Native macOS/Linux installati
 and lifecycle checks remain separate release requirements; passing shared tests
 does not claim native package support.
 
-The Windows candidate must be rebuilt and tested in the real Codex client before
-release. Unit tests with the reduced payload are necessary but do not establish
-that the model receives and uses the evidence correctly. Run the separate invocation
-smoke and all five exploratory fixtures, then review their semantic results.
+The installed development build `0.2.4+codex.20261021230329` passed the invocation
+smoke and all five deterministic exploratory checks. It demonstrated the safe read
+path and approved four-artifact persistence in the real client. The simplicity
+response missed a concrete future-change explanation, so a full semantic pass is
+not claimed. See [the test record](releases/0.2.4-compatibility-tests.md).
+
+That run predates the certifi update to `2026.10.19` for critical Dependabot alert
+#16. The patched candidate still requires a full rebuild and exact-candidate live
+tests before publication. Do not reuse the earlier run as final release approval.
 
 For the macOS contributor:
 
