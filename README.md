@@ -266,14 +266,13 @@ permissions, tool execution, and the actual filesystem writes.
 
 - A Codex version that supports plugins, Agent Skills, and hooks. Subagent support is optional; the workflow falls back to the main agent when unavailable.
 - All five lifecycle hooks explicitly reviewed and activated from the plugin page before first use.
-- Windows x86-64 for the initial packaged runtime.
+- Windows x86-64 or macOS Apple Silicon for the matching packaged runtime.
 - A Codex account and model allocation.
 - No separate OpenAI API key, Python installation, `uv`, virtual environment, or first-run dependency download.
 
 #### Install a Published Release
 
-Users should download the prebuilt Windows x86-64 marketplace
-bundle from the project's GitHub Release and follow
+Users should download the prebuilt marketplace bundle matching their host from the project's GitHub Release and follow
 [`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md). The extracted
 bundle contains its own repository marketplace and complete self-contained
 plugin; users do not run the development build or personal-marketplace copy
@@ -459,6 +458,11 @@ smoke-test the packaged short-lived hook runtime:
 ```powershell
 .\scripts\build-codex-plugin.ps1
 ```
+
+For macOS Apple Silicon, follow the native build, ZIP extraction, and smoke-test
+commands in [the release guide](docs/RELEASING.md#macos-apple-silicon-build-and-validation).
+Native builds require a matching host; Linux shared-test support does not imply
+an installable Linux runtime.
 
 The assembled plugin is written to `dist/codex/ai-software-architect/`.
 The script prints the generated version and package path. To build a particular

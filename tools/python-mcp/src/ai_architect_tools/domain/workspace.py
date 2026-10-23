@@ -9,6 +9,7 @@ import ctypes
 import os
 import re
 import stat
+import sys
 from collections.abc import Iterable, Iterator
 from contextlib import closing
 from pathlib import Path, PurePosixPath
@@ -111,6 +112,8 @@ def validate_inline_python_path(path: str) -> PurePosixPath:
 
 
 def _is_reparse_point(path: Path) -> bool:
+    if sys.platform != "win32":
+        return path.is_symlink()
     try:
         attributes = path.lstat().st_file_attributes
     except AttributeError:
@@ -119,6 +122,9 @@ def _is_reparse_point(path: Path) -> bool:
 
 
 def _final_windows_path(handle: BinaryIO) -> Path:
+    if sys.platform != "win32":
+        raise RuntimeError("Windows final-path resolution is unavailable on this platform")
+
     import msvcrt
 
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -128,11 +134,17 @@ def _final_windows_path(handle: BinaryIO) -> Path:
     os_handle = msvcrt.get_osfhandle(handle.fileno())
     size = function(os_handle, None, 0, 0)
     if size == 0:
-        raise OSError(ctypes.get_last_error(), "GetFinalPathNameByHandleW failed")
+        raise OSError(
+            ctypes.get_last_error(),
+            "GetFinalPathNameByHandleW failed",
+        )
     buffer = ctypes.create_unicode_buffer(size + 1)
     written = function(os_handle, buffer, len(buffer), 0)
     if written == 0 or written >= len(buffer):
-        raise OSError(ctypes.get_last_error(), "GetFinalPathNameByHandleW failed")
+        raise OSError(
+            ctypes.get_last_error(),
+            "GetFinalPathNameByHandleW failed",
+        )
     value = buffer.value
     if value.startswith("\\\\?\\UNC\\"):
         value = "\\\\" + value[8:]
@@ -186,7 +198,7 @@ class WorkspaceReader:
         with closing(resolved.open("rb")) as handle:
             final = (
                 _final_windows_path(handle)
-                if os.name == "nt"
+                if sys.platform == "win32"
                 else resolved.resolve(strict=True)
             )
             if os.path.commonpath((str(self.root), str(final))) != str(self.root):

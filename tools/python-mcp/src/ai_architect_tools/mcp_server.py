@@ -54,7 +54,7 @@ _last_activity = time.monotonic()
 def _parent_is_alive(parent_pid: int) -> bool:
     if parent_pid <= 1:
         return False
-    if os.name == "nt":
+    if sys.platform == "win32":
         import ctypes
 
         synchronize = 0x00100000
@@ -62,7 +62,7 @@ def _parent_is_alive(parent_pid: int) -> bool:
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         handle = int(kernel32.OpenProcess(synchronize, False, parent_pid))
         if handle == 0:
-            return ctypes.get_last_error() == 5
+            return bool(ctypes.get_last_error() == 5)
         try:
             return int(kernel32.WaitForSingleObject(handle, 0)) == wait_timeout
         finally:

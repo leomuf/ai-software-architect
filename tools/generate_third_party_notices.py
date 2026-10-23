@@ -75,7 +75,7 @@ def main() -> None:
         "",
         "# Third-Party Notices",
         "",
-        "The Windows executable bundles the runtime dependencies below. Copyright remains "
+        "The bundled native runtime packages the dependencies below. Copyright remains "
         "with each package's authors. Complete license texts are provided by their respective "
         "distributions and must be included in release archives when required.",
         "",

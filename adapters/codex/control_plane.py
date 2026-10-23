@@ -24,6 +24,7 @@ try:
         locale_containing_section,
         matching_comparison_locale,
     )
+    from adapters.codex.runtime_targets import detect_packaged_target, target_for_name
     from adapters.codex.snapshot_launch import default_snapshot_shell, quote_snapshot_command
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
@@ -42,6 +43,10 @@ except ModuleNotFoundError as exc:
         contains_comparison_section,
         locale_containing_section,
         matching_comparison_locale,
+    )
+    from runtime_targets import (  # type: ignore[import-not-found, no-redef]
+        detect_packaged_target,
+        target_for_name,
     )
     from snapshot_launch import (  # type: ignore[import-not-found, no-redef]
         default_snapshot_shell,
@@ -86,12 +91,7 @@ HIDDEN_HTML_COMMENT_PATTERN = re.compile(
     r"<!--.*?-->",
     flags=re.DOTALL,
 )
-SNAPSHOT_RUNTIME_RELATIVE_PATH = (
-    Path("runtime")
-    / "windows-x86_64"
-    / "ai-architect-runtime"
-    / "ai-architect-runtime.exe"
-)
+
 
 
 class CodexTurnRoute(StrEnum):
@@ -320,7 +320,12 @@ def developer_context(
 
 def repository_snapshot_command(plugin_root: Path, *, shell: str | None = None) -> str:
     """Render the legacy maintainer command; active model shell calls stay denied."""
-    executable = plugin_root.resolve(strict=False) / SNAPSHOT_RUNTIME_RELATIVE_PATH
+    target = (
+        detect_packaged_target(plugin_root)
+        if (plugin_root / "runtime").exists()
+        else target_for_name("windows-x86_64")
+    )
+    executable = plugin_root.resolve(strict=False) / target.executable_relative_path
     return quote_snapshot_command(executable, shell or default_snapshot_shell())
 
 
