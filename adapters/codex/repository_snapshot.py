@@ -119,9 +119,11 @@ TEXT_EXTENSIONS = {
 
 
 def _is_reparse_point(path: Path) -> bool:
+    if sys.platform != "win32":
+        return path.is_symlink()
     try:
         attributes = path.lstat().st_file_attributes
-    except (AttributeError, OSError):
+    except OSError:
         return path.is_symlink()
     return bool(attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
 

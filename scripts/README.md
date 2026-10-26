@@ -77,6 +77,10 @@ ignored `.uv-cache/` directory. An explicitly configured cache is preserved.
 
 ## Build and Validate the Codex Plugin
 
+The PowerShell commands below retain the Windows flow. For macOS Apple Silicon,
+use the [native build and extraction procedure](../docs/RELEASING.md#macos-apple-silicon-build-and-validation).
+Both targets use the existing final release collector and one combined checksum file.
+
 Build a new self-contained runtime, assign an automatic cache-busted development
 version, validate the package, and smoke-test its short-lived hook runtime:
 

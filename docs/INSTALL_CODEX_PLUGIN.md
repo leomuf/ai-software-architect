@@ -7,7 +7,9 @@ SPDX-License-Identifier: MIT
 
 This prebuilt package installs AI Software Architect without Python, `uv`, a
 virtual environment, project dependencies, or a separate model API key. The
-initial release supports Codex Desktop on Windows x86-64.
+native packages support Codex Desktop on Windows x86-64 and macOS Apple Silicon.
+Choose the release ZIP matching your operating system and architecture.
+The version below is an example; use the version you downloaded.
 
 ## Requirements
 
@@ -18,26 +20,49 @@ initial release supports Codex Desktop on Windows x86-64.
 
 ## Verify the Download
 
-Download the release ZIP and `SHA256SUMS.txt` from the same GitHub Release. In
-PowerShell, run the following command from the download directory:
+Download the release ZIP and `SHA256SUMS.txt` from the same GitHub Release.
+
+### Windows
+
+In PowerShell, run the following command from the download directory:
 
 ```powershell
 Get-FileHash .\ai-software-architect-v0.1.0-windows-x86_64.zip -Algorithm SHA256
 ```
 
-Compare the displayed hash with `SHA256SUMS.txt`. Stop if they differ.
+### macOS
+
+In Terminal, run:
+
+```sh
+shasum -a 256 ai-software-architect-v0.1.0-aarch64-darwin.zip
+```
+
+Compare the displayed hash with the matching filename in `SHA256SUMS.txt`.
+Stop if they differ.
+
+On macOS, extract with Archive Utility or `ditto`, which preserves executable
+permissions (Python's `ZipFile.extractall()` does not restore them):
+
+```sh
+ditto -x -k ai-software-architect-v0.1.0-aarch64-darwin.zip .
+```
+
+If macOS blocks the runtime, review the warning through the normal system
+security controls. Do not disable Gatekeeper or apply blanket quarantine removal.
 
 ## Install
 
-1. Extract `ai-software-architect-v0.1.0-windows-x86_64.zip`.
-2. Open the extracted `ai-software-architect-v0.1.0-windows-x86_64` directory
-   as a project in Codex Desktop.
+1. Extract the matching release ZIP using your platform’s extraction method above.
+2. Open the extracted `ai-software-architect-v0.1.0-<target>` directory
+   as a project in Codex Desktop (`<target>` is `windows-x86_64` or `aarch64-darwin`).
 3. Restart Codex Desktop if the included **AI Software Architect Release**
    marketplace is not immediately visible.
 4. Open **Plugins**.
 5. Select **AI Software Architect Release** from the marketplace selector.
 6. Open **AI Software Architect** and select **Install**.
-7. Review and activate all five bundled hook definitions before first use. The hooks are
+7. Review and activate all five bundled hook definitions in **Settings → Coding → Hooks**
+   (or the yellow-dot **Review hooks** icon) before first use. The hooks are
    short-lived local checks: they make no model or network calls, start no
    persistent process, and do not bypass Codex permissions.
 8. Start a new task before using the installed skill.

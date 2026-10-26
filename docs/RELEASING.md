@@ -9,15 +9,60 @@ This is the canonical maintainer guide for preparing, validating, testing, and
 publishing the Codex plugin through GitHub. It documents the current repository
 behavior as well as the manual gates that remain necessary before a release.
 
-The initial supported package is Windows x86-64. Future coding-agent adapters and
-operating-system packages require their own validated release procedures.
+Native build targets are Windows x86-64 and macOS Apple Silicon (`aarch64-darwin`).
+Each target requires its own native build and release evidence. Other operating-system
+packages and future coding-agent adapters remain separate work.
 
 CI runs the shared Python tests on Windows, macOS, and Linux with
-`uv run pytest -q -m "not windows"`. A separate Windows job runs
+`uv run pytest -q -m "not windows"` and strict `uv run mypy`. A separate Windows job runs
 `uv run pytest -q -m windows` before building and checking the executable.
 For a local `uv run pytest -q`, platform detection automatically skips the marked
 Windows integration tests on macOS and Linux and reports the reason. Passing the
-shared tests does not validate a native macOS or Linux package.
+shared tests does not validate a native package. The macOS job also builds, packages,
+extracts with `ditto`, validates, and smoke-tests the real Apple Silicon runtime.
+
+## macOS Apple Silicon Build and Validation
+
+Run on an Apple Silicon Mac with the locked developer environment. End users do
+not need Python or `uv`. Use the exact candidate version from the plugin manifest
+(or an explicit development version); do not edit generated files after assembly.
+
+```sh
+uv sync --locked --all-packages
+uv run ruff check shared/schemas tools/python-mcp adapters tests scripts/package_codex_release.py
+uv run mypy
+uv run pytest -q
+uv run python tools/generate_third_party_notices.py
+version=$(uv run python -c 'import json; print(json.load(open("adapters/codex/templates/plugin.json"))["version"])')
+uv run python adapters/codex/build_plugin.py --build-runtime --target aarch64-darwin --plugin-version "$version"
+uv run python adapters/codex/validate_plugin.py --target aarch64-darwin dist/codex/ai-software-architect
+uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime
+uv run python scripts/package_codex_release.py --target aarch64-darwin --plugin-version "$version"
+archive="dist/release/ai-software-architect-v$version-aarch64-darwin.zip"
+extracted=$(mktemp -d)
+ditto -x -k "$archive" "$extracted"
+plugin="$extracted/ai-software-architect-v$version-aarch64-darwin/plugins/ai-software-architect"
+uv run python adapters/codex/validate_plugin.py --target aarch64-darwin "$plugin"
+uv run python adapters/codex/smoke_test_runtime.py "$plugin/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime"
+```
+
+Do not repair permissions between extraction and validation. The ZIP records regular
+file type and Unix mode so the documented macOS extractor preserves executable bits.
+Third-party notices are generated for each build host; keep the checked-in Windows
+inventory intact when preparing a macOS-only build. The runtime build is native,
+not a cross-compiler; unsupported hosts and mismatched targets are rejected.
+
+For publication, collect both successful platform artifacts with the existing
+`scripts/collect_release_assets.py`, passing `--target windows-x86_64` and
+`--target aarch64-darwin`. Publish the two inner ZIPs and the single combined
+`SHA256SUMS.txt` from `release-assets-v<version>`; job-local checksum files are
+not the publication manifest.
+
+Before advertising the macOS release, complete the existing manual Desktop and
+clean-machine gates: install the extracted candidate, enable all five hooks,
+exercise the main workflow, and uninstall. A developer Mac with `PATH` restricted
+to system tools verifies runtime independence but is not a clean-machine or
+Desktop UI acceptance result. Record any pending gates explicitly.
 
 ## PowerShell Execution Policy
 
@@ -69,8 +114,10 @@ It currently:
 
 1. starts automatically when a tag matching `v*` is pushed;
 2. derives the plugin version from that tag;
-3. builds the self-contained Windows x86-64 plugin with that exact version;
-4. validates and smoke-tests the assembled package;
+3. builds separate self-contained Windows x86-64 and macOS Apple Silicon plugins
+   with that exact version;
+4. validates and smoke-tests each assembled package, and repeats those checks
+   against the extracted macOS release ZIP;
 5. creates the installation ZIP and a SHA-256 checksum. Windows users can compare
    the result of `Get-FileHash` in PowerShell with `SHA256SUMS.txt` to check that
    their downloaded ZIP matches the release file (see
