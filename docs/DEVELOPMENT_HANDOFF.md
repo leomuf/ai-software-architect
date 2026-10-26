@@ -12,6 +12,23 @@ documentation.
 
 ## Snapshot
 
+### Release installation and directory status (2026-10-26)
+
+The maintainer confirmed that 0.2.3 is already available in the public marketplace
+with hooks included. The restriction applies to new uploads.
+The portal rejected the 0.2.4 upload because it contains hooks. Version 0.2.4 will
+therefore be distributed through GitHub, with all five required hooks retained.
+See [directory status](OPENAI_SUBMISSION_STATUS.md).
+
+The [installation guide](INSTALL_CODEX_PLUGIN.md) is the shared source for user
+instructions and the generated ZIP's `INSTALL.md`. It now recommends a personal
+marketplace with the plugin source in `~/.codex/plugins/ai-software-architect`,
+so users can discover it from their existing projects. The development copy
+helper still requires `~/plugins/ai-software-architect`; these are separate
+source layouts, and the helper must not be used for the new release-user layout.
+
+Historical build identities and evaluation records below remain unchanged.
+
 ### Related-pattern links and example counts (2026-10-22, unreleased)
 
 The installed candidate from `211dd96` passed the invocation smoke and all five
@@ -375,7 +392,7 @@ comparison.
 
 Hooks make no model or network calls, start no persistent process, do not bypass
 Codex permissions, and do not persist prompt or repository content. Users must
-review and activate them in the Codex plugin page. Their public source and tests are
+review and approve them under **Settings → Coding → Hooks**. Their public source and tests are
 part of the repository so users can establish trust.
 
 The packaged runtime supports a bounded snapshot reader. The control plane calls

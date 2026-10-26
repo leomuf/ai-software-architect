@@ -237,6 +237,11 @@ package must not be copied into a marketplace.
 
 ## Copy a Development Package to the Personal Marketplace
 
+This section describes the development helper's fixed `~/plugins/` layout.
+For release downloads, use the [installation guide](INSTALL_CODEX_PLUGIN.md),
+which places the source under `~/.codex/plugins/`. The helper rejects that newer
+source path; do not run it against a release user's personal marketplace entry.
+
 The default personal marketplace is:
 
 ```text
@@ -282,7 +287,7 @@ After copying the package:
 3. Open **AI Software Architect**.
 4. Select **Install** if it is not installed, or **Update** when Codex detects the
    new cache-busted version.
-5. Review the bundled hook definitions and activate them from the plugin page.
+5. Review and approve all five hooks under **Settings → Coding → Hooks**.
 6. Start a new task before testing the updated skill and hooks.
 7. Confirm that the displayed plugin version equals the version just built.
 
@@ -310,6 +315,11 @@ testing and publication.
 
 ## Build the OpenAI Submission Archive
 
+**0.2.4 is distributed through GitHub.** The portal currently blocks packages
+containing hooks, and the five hooks must remain enabled for the complete
+workflow. Archive creation below is a packaging operation, not an eligible
+submission. See [directory status](OPENAI_SUBMISSION_STATUS.md).
+
 After the exact plugin is built and validated, create the separate OpenAI
 plugin-directory archive:
 
@@ -332,6 +342,9 @@ developer portal. Portal submission and publication remain manual, authenticated
 actions. Confirm the exact live category and regional choices before submission.
 
 ## Update an Existing OpenAI Plugin Directory Entry
+
+These steps apply only to a future update that meets the portal's requirements.
+Do not submit 0.2.4 or remove its required hooks under the current restriction.
 
 After the `v<version>` package has passed the release gates, use the existing
 plugin entry in the OpenAI plugin submission portal; do not create a second

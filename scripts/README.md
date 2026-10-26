@@ -103,6 +103,11 @@ full build.
 
 ## Copy to the Personal Marketplace
 
+This is a development helper with a fixed `~/plugins/ai-software-architect`
+destination. It does not accept the `~/.codex/plugins/ai-software-architect`
+destination in the [release installation guide](../docs/INSTALL_CODEX_PLUGIN.md).
+People installing a release should follow that guide instead.
+
 Preview the exact destination and operation:
 
 ```powershell
@@ -124,7 +129,8 @@ installed-plugin cache. Codex resolves the built-in Personal marketplace's
 under `~/.agents/plugins/marketplace.json`.
 
 After it completes, use the Codex Desktop Plugins window to select **Install** or
-**Update**, review and activate the hooks, and start a new task. The script does
+**Update**, approve all five hooks under **Settings → Coding → Hooks**, and start
+a new task. The script does
 not automate those user-controlled actions.
 
 ## Package an Installable Release
@@ -163,6 +169,11 @@ The versioned source inputs are:
 - `scripts/package-codex-release.ps1`.
 
 ## Package an OpenAI Plugin-Directory Submission
+
+OpenAI currently blocks packages containing hooks. Version 0.2.4 will be
+distributed through GitHub with all five hooks retained. This command can prepare
+an archive for inspection, but it cannot make the package eligible for submission.
+See [directory status](../docs/OPENAI_SUBMISSION_STATUS.md).
 
 The OpenAI directory uses a dedicated archive whose ZIP root is the plugin itself,
 not the local repository-marketplace wrapper. After building the exact version,
