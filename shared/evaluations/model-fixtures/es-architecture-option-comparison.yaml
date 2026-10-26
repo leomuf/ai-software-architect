@@ -77,6 +77,7 @@ expected_decision:
   selected_category: No pattern
   selected_name: No pattern
 continuation:
+  expected_interaction: decision
   prompt: >-
     Apruebo la recomendación. Guarda el ADR validado, el contrato de
     arquitectura, el contexto del proyecto y la entrega para implementación. No

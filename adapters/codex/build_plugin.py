@@ -143,8 +143,15 @@ handoff. Preserve an explicit no-create/no-modify restriction, explain when a
 projectless task cannot persist artifacts, and never treat architecture approval
 as authorization to modify application code.
 Return only user-facing Markdown. Never emit internal `ai-architect` control
-markers or HTML comments because Codex may display them. Clarifications end with
-their focused visible question. Open architecture or pattern selections use the
+markers or HTML comments because Codex may display them. Start a clarification with
+one visible heading matching the user's language: `## Clarification needed` (en),
+`## Rückfrage` (de), `## Esclarecimento necessário` (pt-BR), or
+`## Aclaración necesaria` (es). Ask one focused question. A short note after it
+does not cancel the pending clarification. Standard Markdown heading levels are
+accepted. An informational answer containing a question without requesting a reply
+starts with `## Result` (en), `## Ergebnis` (de), or `## Resultado` (pt-BR/es).
+Do not use that completed-answer heading when waiting for the user's answer.
+Open architecture or pattern selections use the
 canonical six-section comparison contract in one complete label set matching the
 user's language. English, German, Brazilian Portuguese, and Spanish labels are
 currently supported by the Codex control plane; canonical category and pattern
@@ -164,7 +171,8 @@ memory, and disclose an unavailable reference instead of inventing an example.
 Generic requests use only stored examples. "One or two" permits one; if an exact
 requested count exceeds the stored examples, state that limit. Do not invent a
 second example. Label an adaptation only when the user requests a domain-specific
-variant. Keep usage calls separate from the canonical snippet. Do not browse merely to
+variant. Keep the canonical code block unchanged. Put any usage calls in a separate
+code block after it. Do not browse merely to
 discover or verify deterministic canonical links; use the bundled generated
 reference catalog and do not invoke deterministic tools for focused reference help.
 All five bundled Codex control-plane hooks must be activated before first use for

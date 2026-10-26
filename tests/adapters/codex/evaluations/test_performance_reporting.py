@@ -166,6 +166,27 @@ def _write_report(
     path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
 
 
+def test_lost_continuation_context_is_excluded_from_performance_history(tmp_path: Path) -> None:
+    report_path = tmp_path / "lost-context" / "report.json"
+    _write_report(report_path)
+    report = CampaignReport.model_validate_json(report_path.read_text(encoding="utf-8"))
+    comparison = report.results[0]
+    comparison.status = EvaluationStatus.DETERMINISTIC_FAILURE
+    comparison.phases[1].assertions.append(DeterministicAssertion(
+        name="architect-continuation-resumed", status=AssertionStatus.FAIL,
+        evidence="The follow-up hook did not resume the expected context.",
+    ))
+    report_path.write_text(report.model_dump_json(), encoding="utf-8")
+    preview = import_reports(
+        reports=[report_path], ledger=tmp_path / "ledger.jsonl",
+        overrides_path=tmp_path / "missing.yaml", default_speed=SpeedMode.STANDARD,
+        default_git_commit="commit-1", default_host="test-host", apply=False,
+    )
+    assert len(preview.accepted) == 1
+    assert preview.accepted[0].test.fixture_id == "avoid-overengineering"
+    assert any("context was not verified" in item.reason for item in preview.exclusions)
+
+
 def test_report_import_preview_and_apply_are_idempotent(tmp_path: Path) -> None:
     report_path = tmp_path / "Run20" / "report.json"
     ledger = tmp_path / "history.jsonl"

@@ -11,6 +11,7 @@ import yaml
 from pytest import MonkeyPatch, raises
 
 from adapters.codex import build_plugin, validate_plugin
+from adapters.codex.clarification import CLARIFICATION_HEADINGS
 from adapters.codex.reference_catalog import REFERENCE_CATALOG
 
 
@@ -77,6 +78,7 @@ def test_codex_plugin_is_reproducible_and_complete(
     )
     assert "Return only user-facing Markdown" in skill_text
     assert "Every recommendation ends with" in skill_text
+    assert all(heading in skill_text for heading in CLARIFICATION_HEADINGS.values())
     assert "In focused\nexplanations and examples as well as comparisons" in skill_text
     assert "Explain creational, structural, or\nbehavioral subgroups in prose" in skill_text
     assert 'Generic requests use only stored examples. "One or two" permits one' in skill_text

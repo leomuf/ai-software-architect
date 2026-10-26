@@ -57,6 +57,7 @@ class WorkflowCheckpoint(BaseModel):
     phase: CheckpointPhase
     expected_artifacts: list[str] = Field(default_factory=list, max_length=4)
     artifact_bundle_validated: bool = False
+    resumed_interaction: PendingInteraction | None = None
 
 
 @dataclass(frozen=True)
@@ -87,7 +88,9 @@ class ContinuationManager:
         )
         temporary.replace(path)
 
-    def consume(self, session_id: str) -> SessionContinuation | None:
+    def peek(self, session_id: str) -> SessionContinuation | None:
+        """Read unexpired pending state without consuming it (also used by evaluations)."""
+
         path = self._path(session_id)
         try:
             raw = json.loads(path.read_text("utf-8"))
@@ -106,8 +109,12 @@ class ContinuationManager:
             )
         except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
             return None
+
+    def consume(self, session_id: str) -> SessionContinuation | None:
+        try:
+            return self.peek(session_id)
         finally:
-            path.unlink(missing_ok=True)
+            self._path(session_id).unlink(missing_ok=True)
 
     def cancel(self, session_id: str) -> None:
         self._path(session_id).unlink(missing_ok=True)

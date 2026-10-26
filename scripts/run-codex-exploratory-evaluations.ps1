@@ -32,6 +32,7 @@ param(
     [int]$TimeoutSeconds = 600,
     [string]$OutputDirectory,
     [string]$CodexCommand,
+    [string]$PluginDataRoot,
     [switch]$ContinueOnFailure,
     [switch]$ReleaseGateSmoke,
     [switch]$DryRun
@@ -177,6 +178,9 @@ if (-not $env:UV_CACHE_DIR) {
 }
 if ($ExpectedPluginVersion) {
     $arguments += @("--expected-plugin-version", $ExpectedPluginVersion)
+}
+if ($PluginDataRoot) {
+    $arguments += @("--plugin-data-root", $PluginDataRoot)
 }
 foreach ($fixtureId in $Fixture) {
     $arguments += @("--fixture", $fixtureId)

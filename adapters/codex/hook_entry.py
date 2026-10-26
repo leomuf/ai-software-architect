@@ -21,6 +21,7 @@ try:
         proposed_artifact_candidates,
         validate_artifact_bundle_candidates,
     )
+    from adapters.codex.clarification import is_clarification_response
     from adapters.codex.continuation import (
         ApprovalTransition,
         CheckpointPhase,
@@ -55,6 +56,7 @@ except ModuleNotFoundError as exc:
         proposed_artifact_candidates,
         validate_artifact_bundle_candidates,
     )
+    from clarification import is_clarification_response  # type: ignore[import-not-found, no-redef]
     from continuation import (  # type: ignore[import-not-found, no-redef]
         ApprovalTransition,
         CheckpointPhase,
@@ -192,7 +194,7 @@ def _pending_continuation(
             phase=WorkflowPhase.APPROVE,
             approval_transition=ApprovalTransition.RECORD_AND_HANDOFF,
         )
-    if visible.endswith("?"):
+    if is_clarification_response(visible):
         return SessionContinuation(
             context=context,
             interaction=PendingInteraction.CLARIFICATION,
@@ -290,9 +292,13 @@ def handle_user_prompt_submit(
         checkpoint = WorkflowCheckpoint(
             phase=CheckpointPhase.DECISION_RESPONSE,
             expected_artifacts=["adr", "contract", "context", "implementation-plan"],
+            resumed_interaction=continuation.interaction,
         )
     else:
-        checkpoint = WorkflowCheckpoint(phase=CheckpointPhase.ACTIVE)
+        checkpoint = WorkflowCheckpoint(
+            phase=CheckpointPhase.ACTIVE,
+            resumed_interaction=continuation.interaction,
+        )
     checkpoints.save(_session_id(payload), checkpoint)
     _write_context(payload, context, plugin_data)
     additional_context = developer_context(
@@ -453,12 +459,15 @@ def handle_post_tool_use(
         }
     if bundle is None:
         return {}
-    WorkflowCheckpointManager(plugin_data).save(
+    checkpoints = WorkflowCheckpointManager(plugin_data)
+    checkpoint = checkpoints.load(_session_id(payload))
+    checkpoints.save(
         _session_id(payload),
         WorkflowCheckpoint(
             phase=CheckpointPhase.COMPLETE,
             expected_artifacts=["adr", "contract", "context", "implementation-plan"],
             artifact_bundle_validated=True,
+            resumed_interaction=checkpoint.resumed_interaction if checkpoint else None,
         ),
     )
     return {
@@ -510,6 +519,8 @@ def handle_stop(
         plugin_data,
         max_age_seconds=MAX_CONTINUATION_AGE_SECONDS,
     )
+    checkpoints = WorkflowCheckpointManager(plugin_data)
+    checkpoint = checkpoints.load(_session_id(payload))
     if payload.get("stop_hook_active") is True:
         pending = _pending_continuation(message_text, context)
         if pending is not None:
@@ -521,7 +532,8 @@ def handle_stop(
                         CheckpointPhase.AWAIT_DECISION
                         if pending.interaction == PendingInteraction.DECISION
                         else CheckpointPhase.CLARIFY
-                    )
+                    ),
+                    resumed_interaction=(checkpoint.resumed_interaction if checkpoint else None),
                 ),
             )
         else:
@@ -544,7 +556,8 @@ def handle_stop(
                         CheckpointPhase.AWAIT_DECISION
                         if pending.interaction == PendingInteraction.DECISION
                         else CheckpointPhase.CLARIFY
-                    )
+                    ),
+                    resumed_interaction=(checkpoint.resumed_interaction if checkpoint else None),
                 ),
             )
         else:

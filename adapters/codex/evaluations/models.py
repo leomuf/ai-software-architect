@@ -60,6 +60,7 @@ class VerificationPolicy(StrictModel):
 
 
 class Continuation(StrictModel):
+    expected_interaction: Literal["clarification", "decision"]
     prompt: str = Field(min_length=1)
     expected: list[str] = Field(min_length=1)
     forbidden_actions: list[str] = Field(default_factory=list)

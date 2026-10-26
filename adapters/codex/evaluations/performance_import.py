@@ -18,6 +18,7 @@ import yaml
 from pydantic import Field
 
 from adapters.codex.evaluations.models import (
+    AssertionStatus,
     CampaignReport,
     EvaluationStatus,
     FixtureResult,
@@ -148,6 +149,16 @@ def _report_observations(
     exclusions: list[ImportExclusion] = []
 
     for result in report.results:
+        if any(
+            assertion.name.startswith("architect-continuation-")
+            and assertion.status == AssertionStatus.FAIL
+            for phase in result.phases for assertion in phase.assertions
+        ):
+            exclusions.append(ImportExclusion(
+                report=_display_path(report_path), fixture_id=result.fixture_id,
+                reason="architect continuation context was not verified",
+            ))
+            continue
         if result.status in {EvaluationStatus.PLANNED, EvaluationStatus.INFRASTRUCTURE_ERROR}:
             exclusions.append(
                 ImportExclusion(

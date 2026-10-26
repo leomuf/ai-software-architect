@@ -101,7 +101,7 @@ Canonical links use `https://github.com/leomuf/ai-software-architect/blob/main/s
 ## Implementation example requests
 
 - Load the exact routed reference before an explanation or example. Do not answer from model memory; disclose an unavailable reference instead of inventing one.
-- For a generic Python implementation example of a GoF pattern, load only its `gof-*.md` reference and reuse its `Python example` verbatim. Explain the participants and keep usage calls separate.
+- For a generic Python implementation example of a GoF pattern, load only its `gof-*.md` reference and reuse its `Python example` verbatim. Keep that canonical code block unchanged. Explain the participants and put any usage calls in a separate code block after it.
 - Generic requests use only stored examples. "One or two" permits one. If an exact count exceeds the stored examples, state the limit; do not invent a second example.
 - Adapt an example only when the user requests a domain-specific variant, and label the adaptation.
 - The Codex Composite routes here without sibling-skill activation. Do not load unrelated references.
