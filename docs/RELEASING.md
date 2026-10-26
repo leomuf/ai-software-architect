@@ -237,10 +237,15 @@ package must not be copied into a marketplace.
 
 ## Copy a Development Package to the Personal Marketplace
 
-This section describes the development helper's fixed `~/plugins/` layout.
-For release downloads, use the [installation guide](INSTALL_CODEX_PLUGIN.md),
-which places the source under `~/.codex/plugins/`. The helper rejects that newer
-source path; do not run it against a release user's personal marketplace entry.
+The recommended user-account layout places the plugin source at
+`%USERPROFILE%\.codex\plugins\ai-software-architect` and registers it in
+`%USERPROFILE%\.agents\plugins\marketplace.json`. Follow the
+[installation guide](INSTALL_CODEX_PLUGIN.md) to use it across existing projects.
+
+The development helper has not yet been migrated to that layout. The commands
+below describe its existing, fixed `~/plugins/` destination. It rejects the
+recommended source path; do not run it against that marketplace entry. This
+restriction is enforced by the helper, not by Codex.
 
 The default personal marketplace is:
 

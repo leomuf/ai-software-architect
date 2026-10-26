@@ -493,10 +493,14 @@ are intended for a GitHub Release, not source control.
 
 ### Copy a Development Build to the Personal Marketplace
 
-This maintainer helper uses the older `~/plugins/ai-software-architect` source
-location. It does not accept the `~/.codex/plugins/ai-software-architect` location
-used in the [release installation guide](docs/INSTALL_CODEX_PLUGIN.md). Release
-users should follow that guide instead of running this helper.
+The recommended location for use across your Codex projects is
+`%USERPROFILE%\.codex\plugins\ai-software-architect`, registered in your personal
+marketplace. Follow the [installation guide](docs/INSTALL_CODEX_PLUGIN.md).
+
+The maintainer helper below has not yet been updated to that location. It still
+requires `~/plugins/ai-software-architect`. Its commands apply only to an existing
+development setup using that older location; the restriction belongs to the
+helper, not Codex.
 
 Preview the validated destination without changing it:
 

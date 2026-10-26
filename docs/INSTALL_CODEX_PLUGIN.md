@@ -51,6 +51,17 @@ This personal installation makes the plugin available across Codex projects on
 your Windows account. Project or organization settings can still disable plugins.
 You do not need to open the extracted download as a Codex project.
 
+Both locations below belong to your Windows account, outside your project folders:
+
+| Purpose | Location |
+| --- | --- |
+| Plugin source files | `%USERPROFILE%\.codex\plugins\ai-software-architect` |
+| Personal marketplace catalog | `%USERPROFILE%\.agents\plugins\marketplace.json` |
+
+`%USERPROFILE%` means your Windows user folder, usually `C:\Users\YourName`.
+Register the source folder once, install the plugin through Codex, and approve
+its five hooks. You do not need a separate copy in each project.
+
 ### 1. Copy the Plugin
 
 Extract the verified ZIP. Inside the extracted bundle, open `plugins` and copy
