@@ -20,6 +20,7 @@
     "category": "Developer Tools",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/leomuf/ai-software-architect",
+    "supportURL": "https://github.com/leomuf/ai-software-architect/blob/main/SUPPORT.md",
     "privacyPolicyURL": "https://github.com/leomuf/ai-software-architect/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/leomuf/ai-software-architect/blob/main/TERMS.md",
     "defaultPrompt": [

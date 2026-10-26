@@ -34,6 +34,8 @@ published release artifact.
   archive from an already built and validated plugin.
 
 The OpenAI submission archive is different from the GitHub marketplace bundle.
+The manifest includes the Support URL under `interface.supportURL`, alongside
+the website, privacy policy, and terms links, so the portal can import it.
 Its ZIP root is the actual plugin root, including `.codex-plugin/plugin.json`,
 `skills/`, `hooks/`, and the self-contained runtime. It contains no outer
 marketplace catalog and requires no Python or `uv` installation. The packaging

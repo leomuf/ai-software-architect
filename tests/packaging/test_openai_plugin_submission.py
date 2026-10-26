@@ -31,8 +31,10 @@ def test_manifest_identifies_company_publisher_and_public_policies() -> None:
     assert "eligible exploratory observations" not in (
         manifest["interface"]["longDescription"]
     )
-    for field in ("websiteURL", "privacyPolicyURL", "termsOfServiceURL"):
+    for field in ("websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"):
         assert manifest["interface"][field].startswith("https://")
+    listing = yaml.safe_load((SUBMISSION_ROOT / "listing.yaml").read_text("utf-8"))
+    assert manifest["interface"]["supportURL"] == listing["publisher"]["support_url"]
 
 
 def test_submission_listing_has_three_realistic_starter_prompts() -> None:
