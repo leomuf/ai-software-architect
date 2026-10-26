@@ -103,7 +103,7 @@ full build.
 
 ## Copy to the Personal Marketplace
 
-For a release download, use the tested prompt in the
+For a release download, use the installation prompt in the
 [installation guide](../docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
 
 The helper below is for maintainers testing development builds. It uses the fixed

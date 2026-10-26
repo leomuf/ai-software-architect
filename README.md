@@ -274,12 +274,13 @@ permissions, tool execution, and the actual filesystem writes.
 
 #### Install a Published Release
 
-Users should download the prebuilt Windows x86-64 marketplace
-bundle from the project's GitHub Release and follow the
+Download the release archive for your operating system and CPU architecture,
+then follow the
 [installation guide](docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
-Paste its tested prompt into Codex and provide the downloaded ZIP's path. Codex
+Paste its installation prompt into Codex and provide the downloaded archive's path. Codex
 handles setup and explains any remaining installation clicks. Review and approve
 all five hooks yourself. No manual JSON editing or development scripts are needed.
+Version 0.2.4 provides a Windows x86-64 package; macOS and Linux packages are planned.
 
 #### Quick Start
 
@@ -494,7 +495,7 @@ are intended for a GitHub Release, not source control.
 
 ### Copy a Development Build to the Personal Marketplace
 
-For a release download, use the tested prompt in the
+For a release download, use the installation prompt in the
 [installation guide](docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
 
 The helper below is for maintainers testing development builds. It uses the fixed

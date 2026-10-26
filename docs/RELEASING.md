@@ -237,7 +237,7 @@ package must not be copied into a marketplace.
 
 ## Copy a Development Package to the Personal Marketplace
 
-Release users should use the tested prompt in the
+Release users should use the installation prompt in the
 [installation guide](INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
 
 The helper below is for maintainers testing development builds. It uses the fixed

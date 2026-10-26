@@ -28,6 +28,13 @@ register its marketplace for use across existing projects. The user still review
 and approves all five hooks. Manual JSON setup is retained only in Troubleshooting.
 This is a maintainer-reported result, not a new automated installation test.
 
+The guide now separates package availability from shared instructions. Its prompt
+uses an archive-path placeholder and asks Codex to check the operating system and
+CPU architecture before installation. This revised prompt has not yet had a live
+installation test. Only the Windows x86-64 package is included in 0.2.4; macOS and
+Linux packages and their installation tests remain future work. OS-specific
+recovery paths appear only in Troubleshooting.
+
 The development copy helper uses the fixed `~/plugins/ai-software-architect`
 source folder and its matching personal marketplace entry. It serves development
 build testing and is not part of the release-user installation flow.
