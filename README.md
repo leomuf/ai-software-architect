@@ -276,9 +276,10 @@ permissions, tool execution, and the actual filesystem writes.
 
 Users should download the prebuilt Windows x86-64 marketplace
 bundle from the project's GitHub Release and follow the
-[installation guide](docs/INSTALL_CODEX_PLUGIN.md). It explains how to copy the
-plugin into the Windows user folder, register it in a personal marketplace, and
-install it for use across existing projects. No development scripts are needed.
+[installation guide](docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
+Paste its tested prompt into Codex and provide the downloaded ZIP's path. Codex
+handles setup and explains any remaining installation clicks. Review and approve
+all five hooks yourself. No manual JSON editing or development scripts are needed.
 
 #### Quick Start
 
@@ -493,14 +494,13 @@ are intended for a GitHub Release, not source control.
 
 ### Copy a Development Build to the Personal Marketplace
 
-The recommended location for use across your Codex projects is
-`%USERPROFILE%\.codex\plugins\ai-software-architect`, registered in your personal
-marketplace. Follow the [installation guide](docs/INSTALL_CODEX_PLUGIN.md).
+For a release download, use the tested prompt in the
+[installation guide](docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
 
-The maintainer helper below has not yet been updated to that location. It still
-requires `~/plugins/ai-software-architect`. Its commands apply only to an existing
-development setup using that older location; the restriction belongs to the
-helper, not Codex.
+The helper below is for maintainers testing development builds. It uses the fixed
+source folder `~/plugins/ai-software-architect` and an existing personal marketplace
+entry for that folder. It is not needed to install a release download. Here, `~`
+means your Windows user folder.
 
 Preview the validated destination without changing it:
 

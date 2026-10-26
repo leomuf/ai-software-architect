@@ -21,11 +21,16 @@ therefore be distributed through GitHub, with all five required hooks retained.
 See [directory status](OPENAI_SUBMISSION_STATUS.md).
 
 The [installation guide](INSTALL_CODEX_PLUGIN.md) is the shared source for user
-instructions and the generated ZIP's `INSTALL.md`. It now recommends a personal
-marketplace with the plugin source in `~/.codex/plugins/ai-software-architect`,
-so users can discover it from their existing projects. The development copy
-helper still requires `~/plugins/ai-software-architect`; these are separate
-source layouts, and the helper must not be used for the new release-user layout.
+instructions and the generated ZIP's `INSTALL.md`. The maintainer successfully
+tested the installation prompt on Windows. That prompt is now the sole normal
+installation route for release downloads; it asks Codex to verify the archive and
+register its marketplace for use across existing projects. The user still reviews
+and approves all five hooks. Manual JSON setup is retained only in Troubleshooting.
+This is a maintainer-reported result, not a new automated installation test.
+
+The development copy helper uses the fixed `~/plugins/ai-software-architect`
+source folder and its matching personal marketplace entry. It serves development
+build testing and is not part of the release-user installation flow.
 
 Historical build identities and evaluation records below remain unchanged.
 

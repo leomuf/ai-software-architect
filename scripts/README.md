@@ -103,17 +103,13 @@ full build.
 
 ## Copy to the Personal Marketplace
 
-For use across existing Codex projects, the recommended plugin source location is
-`%USERPROFILE%\.codex\plugins\ai-software-architect`. Register it in your account's
-`%USERPROFILE%\.agents\plugins\marketplace.json`, with `source.path` set to
-`./.codex/plugins/ai-software-architect`. Follow the
-[installation guide](../docs/INSTALL_CODEX_PLUGIN.md) for that setup.
+For a release download, use the tested prompt in the
+[installation guide](../docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
 
-The copy helper below has not yet been updated to use this location. It still
-requires `~/plugins/ai-software-architect` and rejects the recommended path.
-This is a limitation of our helper, not Codex. Use the guide for the recommended
-layout; the commands below apply only to an existing development setup using
-the helper's older location. Here, `~` means your Windows user folder.
+The helper below is for maintainers testing development builds. It uses the fixed
+source folder `~/plugins/ai-software-architect` and an existing personal marketplace
+entry for that folder. It is not needed to install a release download. Here, `~`
+means your Windows user folder. The helper rejects other source paths.
 
 Preview the exact destination and operation:
 
