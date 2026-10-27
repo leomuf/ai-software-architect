@@ -55,28 +55,24 @@ for updates.
 3. Let Codex perform the setup, then follow its instructions for any remaining
    installation clicks. Review and approve all five hooks yourself.
 
-This prompt is based on the installation flow the maintainer successfully tested
-on Windows. It now also asks Codex to check the operating system and CPU before
-installation. The revised prompt and future macOS/Linux packages still need live
-installation tests. It asks Codex to set up the plugin for your user account,
-so you can use it across existing projects.
-You do not need to create or edit a JSON file as part of normal installation.
+The clean Windows Sandbox test found that Smart App Control blocks the current
+unsigned runtime even after hook approval. A signed package and a successful
+runtime check are required before this installation can be considered ready.
+See [Windows release signing](https://github.com/leomuf/ai-software-architect/blob/main/docs/WINDOWS_CODE_SIGNING.md).
+The prompt below includes that check; its revised flow still needs a live test
+with a signed package. Normal installation does not require manual JSON editing.
 
 ```text
-Please install AI Software Architect from this local release archive:
+Please install AI Software Architect in Codex Desktop for use across my projects:
 <full path to the downloaded archive>
 
-Detect my operating system and CPU architecture. Confirm that the archive supports both. If it does not, stop and explain which package I need.
+Check OS/CPU compatibility and verify the archive against SHA256SUMS.txt. Preserve existing plugins and settings.
 
-Set up the plugin for my user account so I can use it across my existing Codex projects.
+Guide me through installation, folder trust, and restarting Codex. Leave folder trust and hook approval to me.
 
-Verify the archive against SHA256SUMS.txt in the same folder. Extract it to a permanent location under my user folder. Inspect the included marketplace and use Codex's supported marketplace registration command if available.
+Run the installed runtime's --self-test. Report any operating-system security block without disabling protection.
 
-Preserve existing plugins and settings. Do not overwrite an existing marketplace catalog, edit Codex's installed-plugin cache, or change my project files. Avoid creating a duplicate active installation.
-
-Complete the setup you can perform, then tell me exactly what I need to click in Codex to install or enable the plugin and review all five hooks. Do not approve hooks on my behalf.
-
-Finally, explain how I can verify that the plugin is available in a different existing project.
+Before reporting success, ask me to confirm that all five hooks are visible and a plugin request works in another project.
 ```
 
 Keep the permanent folder that Codex uses for the plugin source. If Codex reports
@@ -129,6 +125,15 @@ AI Software Architect process should remain running while the plugin is idle.
 ## Troubleshooting
 
 ### Check the Setup Report First
+
+- **Application control blocks the runtime (Windows error 4551):** setup is
+  incomplete, even if all hooks appear enabled. Use a publisher-signed package
+  validated with Smart App Control enabled. Folder trust does not override this
+  Windows policy. Do not disable Windows protection or move hooks outside the
+  plugin. See the Windows signing document linked above.
+- **Runtime check:** the installed executable's `--self-test` must return
+  `{"status":"ok","runtime":"ai-architect-runtime"}` with exit code zero.
+  Older archives may not support this check; ask for the updated package.
 
 Codex may register the marketplace already included in the extracted archive, rather
 than create a personal `marketplace.json`. Use the source folder and marketplace

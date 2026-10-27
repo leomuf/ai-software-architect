@@ -281,6 +281,8 @@ Paste its installation prompt into Codex and provide the downloaded archive's pa
 handles setup and explains any remaining installation clicks. Review and approve
 all five hooks yourself. No manual JSON editing or development scripts are needed.
 Version 0.2.4 provides a Windows x86-64 package; macOS and Linux packages are planned.
+The current unsigned Windows candidate is blocked by Smart App Control on the clean
+test machine. Public release requires the [signing and startup checks](docs/WINDOWS_CODE_SIGNING.md).
 
 #### Quick Start
 

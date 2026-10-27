@@ -103,6 +103,11 @@ full build.
 
 ## Copy to the Personal Marketplace
 
+For public Windows releases, see [Windows signing](../docs/WINDOWS_CODE_SIGNING.md).
+`sign-windows-runtime.ps1` uses an existing Code Signing certificate and SignTool;
+`check-windows-runtime-signatures.ps1` lists unsigned files or verifies the signed
+runtime. Run these before assembly. They never change Windows trust settings.
+
 For a release download, use the installation prompt in the
 [installation guide](../docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
 

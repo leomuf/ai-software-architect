@@ -50,6 +50,12 @@ Evidence or workflow URL: `<link or concise note>`
 - [ ] fixed bundled short-lived hook-runtime command is present
 - [ ] no persistent MCP registration or startup command is packaged
 - [ ] no first-run dependency download is required
+- [ ] Windows executable signatures verified before assembly; expected publisher recorded
+- [ ] installed runtime `--self-test` returns `status: ok`
+- [ ] real Desktop invocation works with Smart App Control enabled on clean Windows
+
+Windows publisher certificate subject and timestamp evidence: `<identity / evidence>`
+Smart App Control enforcement state and clean-machine test evidence: `<state / evidence>`
 
 Evidence: `<link or concise note>`
 

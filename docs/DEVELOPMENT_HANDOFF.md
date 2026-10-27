@@ -12,6 +12,20 @@ documentation.
 
 ## Snapshot
 
+### Smart App Control release blocker (2026-10-27)
+
+The clean Windows Sandbox blocked both 0.2.4 and 0.2.3 runtimes with Win32 error
+4551. Code Integrity event 3077 identified Smart App Control's
+`VerifiedAndReputableDesktop` policy. The executables are unsigned. All five Codex
+hooks were approved; those approvals do not override OS execution policy.
+
+The runtime now provides a read-only `--self-test`; signing helpers and the tag
+workflow verify signatures before assembly/provenance. No trusted signing identity
+is configured yet. The maintainer currently has S/MIME certificates only. A signed
+package and successful Desktop invocation under Smart App Control are still release
+blockers. See [Windows signing](WINDOWS_CODE_SIGNING.md). No security protections
+were disabled during diagnosis.
+
 ### Release installation and directory status (2026-10-26)
 
 The maintainer confirmed that 0.2.3 is already available in the public marketplace

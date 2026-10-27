@@ -316,6 +316,14 @@ Use the intended public version without development build metadata:
 Use this exact package for every remaining release gate. Do not rebuild between
 testing and publication.
 
+## Sign Windows Release Binaries
+
+Before packaging a public Windows release, follow
+[Windows release signing](WINDOWS_CODE_SIGNING.md). Sign runtime binaries before
+assembly and provenance generation. The tag workflow now stops if the publisher
+identity is missing or executable signatures are invalid. The approved signing
+provider still needs to be configured; S/MIME certificates cannot fill this role.
+
 ## Build the OpenAI Submission Archive
 
 **0.2.4 is distributed through GitHub.** The portal currently blocks packages
