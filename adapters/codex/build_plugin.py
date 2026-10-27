@@ -519,11 +519,20 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime", type=Path)
     parser.add_argument("--build-runtime", action="store_true")
+    parser.add_argument(
+        "--build-runtime-only", action="store_true",
+        help="build the runtime for signing before assembling the plugin",
+    )
     parser.add_argument("--plugin-version")
     args = parser.parse_args()
-    selected_modes = sum((args.runtime is not None, args.build_runtime))
+    selected_modes = sum((args.runtime is not None, args.build_runtime, args.build_runtime_only))
     if selected_modes != 1:
-        parser.error("use exactly one of --runtime or --build-runtime")
+        parser.error("use exactly one of --runtime, --build-runtime, or --build-runtime-only")
+    if args.build_runtime_only:
+        if args.plugin_version is not None:
+            parser.error("--plugin-version applies to assembly, not --build-runtime-only")
+        print(_build_runtime())
+        return
     runtime = _build_runtime() if args.build_runtime else args.runtime
     if runtime is None or not runtime.resolve().is_dir():
         parser.error("provide --runtime <reviewed one-directory runtime> or --build-runtime")

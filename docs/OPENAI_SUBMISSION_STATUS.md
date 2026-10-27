@@ -14,35 +14,46 @@ documentation-only pull request without publishing another GitHub Release.
 
 | Field | Value |
 | --- | --- |
-| Status | **Ready for submission** |
+| Status | **Available in the public marketplace — maintainer confirmed** |
 | Plugin version | `0.2.3` |
 | Publisher brand | AUTOSOFT Engineering |
 | Verified legal publisher | XAVIER MUFFATO LTDA |
-| Candidate prepared | 2026-08-30 |
-| Submission date | Not yet confirmed |
-| Approval date | Not yet applicable |
-| Public directory URL | Not yet available |
-| OpenAI submission ZIP SHA-256 | Record from the final tagged build before submission |
+| Availability confirmed by maintainer | 2026-10-26 |
+| Submission date | Not recorded here |
+| Approval date | Not recorded here |
+| Public directory URL | Not recorded here; find AI Software Architect in the public marketplace |
+| Submitted ZIP SHA-256 | Not recorded here |
 
-“Ready for submission” means that the repository contains a validated candidate;
-it does not claim that OpenAI has received, reviewed, approved, endorsed, or
-published the plugin.
+The maintainer confirmed that the already published 0.2.3 package includes hooks.
+The current rejection of new uploads does not mean that this existing package
+lacks hook support.
 
-## Next Update Preparation
+The availability statement is based on the maintainer's confirmation. It does not
+invent a submission date, approval date, archive identity, or endorsement.
 
-Version `0.2.4` is being prepared as an update from `0.2.3`. It updates the MCP
-and PyJWT dependencies, fixes a file-reading security issue, and explains how to
-review and enable all five hooks. Shell commands can start only the reader
-included with the plugin.
+## Version 0.2.4: GitHub Distribution
 
-The listing contains draft update notes. The status above still applies to
-`0.2.3`. The `0.2.4` submission archive, submission, approval, and release checks
-are still pending. Because dependencies changed, Gate D's five exploratory tests
-must run before publication; this check cannot be skipped.
+On 2026-10-26, the maintainer reported that the OpenAI portal blocked the upload
+with this message: "Plugins containing hooks cannot be submitted. Remove the
+hooks and upload a new ZIP."
+
+All five hooks are essential to the plugin's routing, continuation, safety checks,
+artifact validation, and complete responses. They will remain in the package.
+Version `0.2.4` will be distributed through GitHub for local installation and will
+not be submitted to OpenAI under the current restriction. The GitHub release is
+still a draft at the time of this update.
+
+Users who prefer the public marketplace can install `0.2.3`. Users who want the
+improvements in `0.2.4` should use its GitHub Windows ZIP when published and follow
+the [installation guide](INSTALL_CODEX_PLUGIN.md) for use across existing projects.
+
+OpenAI's [submission documentation](https://developers.openai.com/plugins/deploy/submission)
+also describes the restriction on lifecycle hooks. The prepared submission ZIP
+and draft listing text are not evidence of an accepted submission.
 
 ## How to Update This Record
 
-After the portal confirms receipt, change the status to **Submitted — awaiting
+For a future eligible update, after the portal confirms receipt, record **Submitted — awaiting
 review**, record the submission date, and retain the exact submitted version and
 SHA-256 from the immutable release asset. Do not present a provisional candidate
 hash as final: the authoritative value is calculated from the exact archive that
@@ -60,16 +71,5 @@ release instead of silently replacing the submitted archive. Pure portal wording
 or repository status updates that do not change the package can remain
 documentation-only changes.
 
-## Suggested Public Wording
-
-### After Submission
-
-> **OpenAI Plugin Directory status: Submitted — awaiting review.** AI Software
-> Architect v0.2.3 was submitted on `YYYY-MM-DD`. Submission does not imply
-> approval or endorsement by OpenAI.
-
-### After Approval
-
-> **OpenAI Plugin Directory status: Approved and available.** AI Software
-> Architect v0.2.3 was approved on `YYYY-MM-DD` and is available at
-> `[official directory URL]`.
+Keep `0.2.3`'s availability separate from the status of any later update. Do not
+remove required hooks merely to make an archive pass the upload checks.

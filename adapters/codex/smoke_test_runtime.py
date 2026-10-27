@@ -101,6 +101,14 @@ def smoke_test_hook(executable: Path) -> None:
     powershell = shutil.which("powershell.exe")
     if powershell is None:
         raise RuntimeError("PowerShell is required to test the Windows hook command")
+    self_test = subprocess.run(  # noqa: S603
+        [str(executable), "--self-test"],
+        text=True, capture_output=True, timeout=10, check=True,
+    )
+    if self_test.stderr or json.loads(self_test.stdout) != {
+        "status": "ok", "runtime": "ai-architect-runtime",
+    }:
+        raise RuntimeError("packaged runtime self-test failed")
     commands = _windows_hook_commands(executable)
     with tempfile.TemporaryDirectory() as plugin_data, tempfile.TemporaryDirectory() as workspace:
         sample = Path(workspace) / "sample.py"

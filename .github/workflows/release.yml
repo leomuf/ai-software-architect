@@ -25,11 +25,23 @@ jobs:
           enable-cache: false
       - run: uv sync --locked --all-packages
       - run: uv run python tools/generate_third_party_notices.py
-      - name: Build exact tagged plugin
+      - name: Build runtime before signing and assembly
+        run: uv run python adapters/codex/build_plugin.py --build-runtime-only
+      # A verified signing identity must be configured before publication.
+      # Keep this gate closed until the chosen signing provider is integrated.
+      - name: Require signed release binaries before recording provenance
+        shell: pwsh
+        env:
+          EXPECTED_PUBLISHER: ${{ vars.WINDOWS_SIGNING_PUBLISHER_SUBJECT }}
+        run: |
+          .\scripts\check-windows-runtime-signatures.ps1 `
+            -RuntimePath build/runtime/ai-architect-runtime `
+            -ExpectedPublisherSubject $env:EXPECTED_PUBLISHER
+      - name: Assemble exact tagged plugin from signed runtime
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}" -replace '^v', ''
-          uv run python adapters/codex/build_plugin.py --build-runtime --plugin-version $version
+          uv run python adapters/codex/build_plugin.py --runtime build/runtime/ai-architect-runtime --plugin-version $version
       - run: uv run python adapters/codex/validate_plugin.py dist/codex/ai-software-architect
       - name: Smoke-test packaged runtime
         run: uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/windows-x86_64/ai-architect-runtime/ai-architect-runtime.exe

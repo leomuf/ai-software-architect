@@ -13,11 +13,13 @@ Maintained by Leonardo Muffato at [AUTOSOFT Engineering](https://www.autosoft-en
 
 ## OpenAI Plugin Directory Status
 
-**Current status: Ready for submission.** The validated AI Software Architect
-v0.2.3 candidate has been prepared, but submission and approval have not yet been
-confirmed. See the canonical
-[`OpenAI Plugin Directory status`](docs/OPENAI_SUBMISSION_STATUS.md) for the
-submitted package identity and future review or availability updates.
+**Version 0.2.3 is available in the public marketplace and includes hooks**, as
+confirmed by the maintainer. **Version 0.2.4 will be distributed through GitHub for local
+installation.** OpenAI currently rejects new submissions containing hooks, and
+all five hooks remain included and essential in 0.2.4. This restriction concerns
+new uploads; it does not change the already published 0.2.3 package. See the
+[installation guide](docs/INSTALL_CODEX_PLUGIN.md) for use across existing Codex
+projects and the [directory status](docs/OPENAI_SUBMISSION_STATUS.md) for details.
 
 ## Why AI Software Architect?
 
@@ -265,19 +267,22 @@ permissions, tool execution, and the actual filesystem writes.
 #### Requirements
 
 - A Codex version that supports plugins, Agent Skills, and hooks. Subagent support is optional; the workflow falls back to the main agent when unavailable.
-- All five lifecycle hooks explicitly reviewed and activated from the plugin page before first use.
+- All five lifecycle hooks reviewed and approved under **Settings → Coding → Hooks** before first use.
 - Windows x86-64 for the initial packaged runtime.
 - A Codex account and model allocation.
 - No separate OpenAI API key, Python installation, `uv`, virtual environment, or first-run dependency download.
 
 #### Install a Published Release
 
-Users should download the prebuilt Windows x86-64 marketplace
-bundle from the project's GitHub Release and follow
-[`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md). The extracted
-bundle contains its own repository marketplace and complete self-contained
-plugin; users do not run the development build or personal-marketplace copy
-scripts.
+Download the release archive for your operating system and CPU architecture,
+then follow the
+[installation guide](docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
+Paste its installation prompt into Codex and provide the downloaded archive's path. Codex
+handles setup and explains any remaining installation clicks. Review and approve
+all five hooks yourself. No manual JSON editing or development scripts are needed.
+Version 0.2.4 provides a Windows x86-64 package; macOS and Linux packages are planned.
+The current unsigned Windows candidate is blocked by Smart App Control on the clean
+test machine. Public release requires the [signing and startup checks](docs/WINDOWS_CODE_SIGNING.md).
 
 #### Quick Start
 
@@ -307,7 +312,7 @@ The selected Codex model decides whether the request needs a focused explanation
 an option comparison, or the complete workflow. Implicit invocation is
 intentionally disabled so ordinary coding requests do not silently become
 architecture sessions. New or changed plugin hooks are skipped until you review
-their definitions and activate them from the plugin page. Codex may show them as
+their definitions under **Settings → Coding → Hooks**. Codex may show them as
 disabled rather than opening a separate approval prompt. The skill remains usable
 only as a degraded fallback without hooks, but the complete supported workflow is
 not ready: reliable routing, continuation, safety checks, validated
@@ -490,7 +495,15 @@ release package:
 The generated ZIP and `SHA256SUMS.txt` are written under `dist/release/` and
 are intended for a GitHub Release, not source control.
 
-### Copy to the Personal Marketplace
+### Copy a Development Build to the Personal Marketplace
+
+For a release download, use the installation prompt in the
+[installation guide](docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
+
+The helper below is for maintainers testing development builds. It uses the fixed
+source folder `~/plugins/ai-software-architect` and an existing personal marketplace
+entry for that folder. It is not needed to install a release download. Here, `~`
+means your Windows user folder.
 
 Preview the validated destination without changing it:
 
@@ -519,7 +532,7 @@ After copying the package:
 1. Open **Plugins** in Codex Desktop.
 2. Select the **Personal** marketplace and open **AI Software Architect**.
 3. Select **Install**, or **Update** if an older development build is installed.
-4. Review the bundled hook definitions and activate them from the plugin page.
+4. Review and approve all five hooks under **Settings → Coding → Hooks**.
 5. Confirm that the displayed version matches the version printed by the build
    script.
 6. Start a new task before testing the updated skill and hooks.

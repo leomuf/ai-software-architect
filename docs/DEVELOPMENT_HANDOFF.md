@@ -12,6 +12,49 @@ documentation.
 
 ## Snapshot
 
+### Smart App Control release blocker (2026-10-27)
+
+The clean Windows Sandbox blocked both 0.2.4 and 0.2.3 runtimes with Win32 error
+4551. Code Integrity event 3077 identified Smart App Control's
+`VerifiedAndReputableDesktop` policy. The executables are unsigned. All five Codex
+hooks were approved; those approvals do not override OS execution policy.
+
+The runtime now provides a read-only `--self-test`; signing helpers and the tag
+workflow verify signatures before assembly/provenance. No trusted signing identity
+is configured yet. The maintainer currently has S/MIME certificates only. A signed
+package and successful Desktop invocation under Smart App Control are still release
+blockers. See [Windows signing](WINDOWS_CODE_SIGNING.md). No security protections
+were disabled during diagnosis.
+
+### Release installation and directory status (2026-10-26)
+
+The maintainer confirmed that 0.2.3 is already available in the public marketplace
+with hooks included. The restriction applies to new uploads.
+The portal rejected the 0.2.4 upload because it contains hooks. Version 0.2.4 will
+therefore be distributed through GitHub, with all five required hooks retained.
+See [directory status](OPENAI_SUBMISSION_STATUS.md).
+
+The [installation guide](INSTALL_CODEX_PLUGIN.md) is the shared source for user
+instructions and the generated ZIP's `INSTALL.md`. The maintainer successfully
+tested the installation prompt on Windows. That prompt is now the sole normal
+installation route for release downloads; it asks Codex to verify the archive and
+register its marketplace for use across existing projects. The user still reviews
+and approves all five hooks. Manual JSON setup is retained only in Troubleshooting.
+This is a maintainer-reported result, not a new automated installation test.
+
+The guide now separates package availability from shared instructions. Its prompt
+uses an archive-path placeholder and asks Codex to check the operating system and
+CPU architecture before installation. This revised prompt has not yet had a live
+installation test. Only the Windows x86-64 package is included in 0.2.4; macOS and
+Linux packages and their installation tests remain future work. OS-specific
+recovery paths appear only in Troubleshooting.
+
+The development copy helper uses the fixed `~/plugins/ai-software-architect`
+source folder and its matching personal marketplace entry. It serves development
+build testing and is not part of the release-user installation flow.
+
+Historical build identities and evaluation records below remain unchanged.
+
 ### Related-pattern links and example counts (2026-10-22, unreleased)
 
 The installed candidate from `211dd96` passed the invocation smoke and all five
@@ -375,7 +418,7 @@ comparison.
 
 Hooks make no model or network calls, start no persistent process, do not bypass
 Codex permissions, and do not persist prompt or repository content. Users must
-review and activate them in the Codex plugin page. Their public source and tests are
+review and approve them under **Settings → Coding → Hooks**. Their public source and tests are
 part of the repository so users can establish trust.
 
 The packaged runtime supports a bounded snapshot reader. The control plane calls

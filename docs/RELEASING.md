@@ -237,6 +237,14 @@ package must not be copied into a marketplace.
 
 ## Copy a Development Package to the Personal Marketplace
 
+Release users should use the installation prompt in the
+[installation guide](INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
+
+The helper below is for maintainers testing development builds. It uses the fixed
+source folder `~/plugins/ai-software-architect` and an existing personal marketplace
+entry for that folder. It is not needed to install a release download. The helper
+rejects other source paths, so check its expected entry before running it.
+
 The default personal marketplace is:
 
 ```text
@@ -282,7 +290,7 @@ After copying the package:
 3. Open **AI Software Architect**.
 4. Select **Install** if it is not installed, or **Update** when Codex detects the
    new cache-busted version.
-5. Review the bundled hook definitions and activate them from the plugin page.
+5. Review and approve all five hooks under **Settings → Coding → Hooks**.
 6. Start a new task before testing the updated skill and hooks.
 7. Confirm that the displayed plugin version equals the version just built.
 
@@ -308,7 +316,20 @@ Use the intended public version without development build metadata:
 Use this exact package for every remaining release gate. Do not rebuild between
 testing and publication.
 
+## Sign Windows Release Binaries
+
+Before packaging a public Windows release, follow
+[Windows release signing](WINDOWS_CODE_SIGNING.md). Sign runtime binaries before
+assembly and provenance generation. The tag workflow now stops if the publisher
+identity is missing or executable signatures are invalid. The approved signing
+provider still needs to be configured; S/MIME certificates cannot fill this role.
+
 ## Build the OpenAI Submission Archive
+
+**0.2.4 is distributed through GitHub.** The portal currently blocks packages
+containing hooks, and the five hooks must remain enabled for the complete
+workflow. Archive creation below is a packaging operation, not an eligible
+submission. See [directory status](OPENAI_SUBMISSION_STATUS.md).
 
 After the exact plugin is built and validated, create the separate OpenAI
 plugin-directory archive:
@@ -332,6 +353,9 @@ developer portal. Portal submission and publication remain manual, authenticated
 actions. Confirm the exact live category and regional choices before submission.
 
 ## Update an Existing OpenAI Plugin Directory Entry
+
+These steps apply only to a future update that meets the portal's requirements.
+Do not submit 0.2.4 or remove its required hooks under the current restriction.
 
 After the `v<version>` package has passed the release gates, use the existing
 plugin entry in the OpenAI plugin submission portal; do not create a second

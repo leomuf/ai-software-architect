@@ -16,6 +16,13 @@ an explicit fallback.
 
 ## Release blockers
 
+- [ ] Configure a publicly trusted Code Signing identity and its approved signing
+      integration before the tag workflow's signature gate. S/MIME certificates
+      do not qualify. Sign executable dependencies before provenance generation,
+      then test the signed package and Desktop invocation with Smart App Control
+      enabled. Both unsigned 0.2.3 and 0.2.4 runtimes were blocked in the current
+      clean Sandbox; see [Windows signing](docs/WINDOWS_CODE_SIGNING.md).
+
 - [ ] Validate the new certifi-containing 0.2.4 candidate with the invocation
       smoke and all five exploratory fixtures after a full rebuild and installation.
       The earlier development build demonstrated the hook fix but predates certifi

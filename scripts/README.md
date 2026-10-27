@@ -103,6 +103,19 @@ full build.
 
 ## Copy to the Personal Marketplace
 
+For public Windows releases, see [Windows signing](../docs/WINDOWS_CODE_SIGNING.md).
+`sign-windows-runtime.ps1` uses an existing Code Signing certificate and SignTool;
+`check-windows-runtime-signatures.ps1` lists unsigned files or verifies the signed
+runtime. Run these before assembly. They never change Windows trust settings.
+
+For a release download, use the installation prompt in the
+[installation guide](../docs/INSTALL_CODEX_PLUGIN.md#install-with-a-codex-prompt).
+
+The helper below is for maintainers testing development builds. It uses the fixed
+source folder `~/plugins/ai-software-architect` and an existing personal marketplace
+entry for that folder. It is not needed to install a release download. Here, `~`
+means your Windows user folder. The helper rejects other source paths.
+
 Preview the exact destination and operation:
 
 ```powershell
@@ -124,7 +137,8 @@ installed-plugin cache. Codex resolves the built-in Personal marketplace's
 under `~/.agents/plugins/marketplace.json`.
 
 After it completes, use the Codex Desktop Plugins window to select **Install** or
-**Update**, review and activate the hooks, and start a new task. The script does
+**Update**, approve all five hooks under **Settings → Coding → Hooks**, and start
+a new task. The script does
 not automate those user-controlled actions.
 
 ## Package an Installable Release
@@ -163,6 +177,11 @@ The versioned source inputs are:
 - `scripts/package-codex-release.ps1`.
 
 ## Package an OpenAI Plugin-Directory Submission
+
+OpenAI currently blocks packages containing hooks. Version 0.2.4 will be
+distributed through GitHub with all five hooks retained. This command can prepare
+an archive for inspection, but it cannot make the package eligible for submission.
+See [directory status](../docs/OPENAI_SUBMISSION_STATUS.md).
 
 The OpenAI directory uses a dedicated archive whose ZIP root is the plugin itself,
 not the local repository-marketplace wrapper. After building the exact version,

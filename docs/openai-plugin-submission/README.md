@@ -11,6 +11,16 @@ LTDA** is the registered legal publisher and the business identity that must be
 verified and selected. The files support manual entry in the OpenAI developer
 portal; they do not submit or publish anything.
 
+**0.2.4 will not be submitted under the current portal rules.** The maintainer
+reported that OpenAI blocked its upload because the package contains hooks.
+All five hooks remain required, so this version will be distributed through
+GitHub. Version 0.2.3 remains available in the public marketplace with hooks
+included; the current restriction concerns new uploads. See the
+[installation guide](../INSTALL_CODEX_PLUGIN.md) and
+[directory status](../OPENAI_SUBMISSION_STATUS.md). The materials here are retained
+for reference and possible future submissions; building a ZIP does not establish
+that the portal will accept it.
+
 The public lifecycle state is maintained separately in
 [`docs/OPENAI_SUBMISSION_STATUS.md`](../OPENAI_SUBMISSION_STATUS.md). Update that
 record after confirmed submission or approval without changing an already
@@ -24,6 +34,8 @@ published release artifact.
   archive from an already built and validated plugin.
 
 The OpenAI submission archive is different from the GitHub marketplace bundle.
+The manifest includes the Support URL under `interface.supportURL`, alongside
+the website, privacy policy, and terms links, so the portal can import it.
 Its ZIP root is the actual plugin root, including `.codex-plugin/plugin.json`,
 `skills/`, `hooks/`, and the self-contained runtime. It contains no outer
 marketplace catalog and requires no Python or `uv` installation. The packaging
@@ -41,7 +53,8 @@ claim that more than 350 tests passed. The source observations and reproducible
 reporting instructions are versioned under
 [`evaluation-data/`](../../evaluation-data/README.md).
 
-Before copying values into the portal:
+Before preparing a future submission, first confirm that OpenAI accepts all
+required package features. Then:
 
 1. review every statement against the exact release candidate;
 2. confirm the repository, privacy, terms, support, and security URLs are public;
@@ -51,9 +64,10 @@ Before copying values into the portal:
    permission; and
 5. confirm the live portal's available category and region choices.
 
-Hooks are part of the submitted Codex experience. Users review and activate them
-in Codex. They are not described as providing identical enforcement on hosts that
-do not support Codex lifecycle hooks.
+Hooks are part of the complete local Codex experience. Users review and approve
+all five under **Settings → Coding → Hooks**. Do not remove them to bypass the
+current submission restriction. Hosts without Codex lifecycle hooks do not offer
+the same checks.
 
 In the portal's **Developer Identity** field, select the exact verified value
 `XAVIER MUFFATO LTDA`. Do not replace it with the brand name or the combined

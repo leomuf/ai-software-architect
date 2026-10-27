@@ -42,7 +42,7 @@ def validate(root: Path) -> None:
     interface = manifest["interface"]
     if interface.get("developerName") != "AUTOSOFT Engineering":
         raise ValueError("the interface publisher must be AUTOSOFT Engineering")
-    for field in ("websiteURL", "privacyPolicyURL", "termsOfServiceURL"):
+    for field in ("websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"):
         value = interface.get(field)
         if not isinstance(value, str) or not value.startswith("https://"):
             raise ValueError(f"manifest {field} must be an absolute HTTPS URL")
