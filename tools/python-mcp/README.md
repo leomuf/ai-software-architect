@@ -5,6 +5,14 @@ SPDX-License-Identifier: MIT
 
 # AI Software Architect MCP Server
 
+An isolated [phase 0 HTTP prototype](../../docs/MCP_PROTOTYPE.md) now implements
+anonymous reference retrieval, complete proposed-bundle validation and exact-byte
+draft export for synthetic experiments. Workflow and checkpoints stay client-local;
+the service stores no reviews or candidates. Its separate
+`ai-architect-mcp-prototype` entry point uses TLS (or explicit loopback HTTP tests)
+without accounts or tokens. It is not registered in the released Codex
+plugin and does not replace the four read-only STDIO tools described below.
+
 This package contains `ai-software-architect-mcp`, an optional local Python STDIO
 Model Context Protocol (MCP) adapter for AI Software Architect, plus related
 command-line tools. It can give a compatible coding assistant bounded, deterministic

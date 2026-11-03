@@ -1,0 +1,415 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de); SPDX-License-Identifier: MIT",
+  "$defs": {
+    "ArchitectureOptionComparison": {
+      "additionalProperties": false,
+      "properties": {
+        "alternatives": {
+          "items": {
+            "$ref": "#/$defs/ComparedArchitectureOption"
+          },
+          "maxItems": 5,
+          "minItems": 2,
+          "title": "Alternatives",
+          "type": "array"
+        },
+        "decision_scope": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Decision Scope",
+          "type": "string"
+        },
+        "evidence_and_assumptions": {
+          "items": {
+            "$ref": "#/$defs/EvidenceClaim"
+          },
+          "maxItems": 50,
+          "title": "Evidence And Assumptions",
+          "type": "array"
+        },
+        "fewer_than_three_rationale": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fewer Than Three Rationale"
+        },
+        "offered_actions": {
+          "items": {
+            "enum": [
+              "approve",
+              "revise",
+              "more-information"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Offered Actions",
+          "type": "array"
+        },
+        "recommendation_rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Recommendation Rationale",
+          "type": "string"
+        },
+        "recommended_option_id": {
+          "pattern": "^OPT-[0-9]{3}$",
+          "title": "Recommended Option Id",
+          "type": "string"
+        },
+        "scoring_criteria": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Scoring Criteria",
+          "type": "array"
+        },
+        "supporting_patterns": {
+          "items": {
+            "$ref": "#/$defs/SupportingPattern"
+          },
+          "maxItems": 10,
+          "title": "Supporting Patterns",
+          "type": "array"
+        },
+        "user_decision_prompt": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "User Decision Prompt",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision_scope",
+        "scoring_criteria",
+        "alternatives",
+        "recommended_option_id",
+        "recommendation_rationale",
+        "user_decision_prompt",
+        "offered_actions"
+      ],
+      "title": "ArchitectureOptionComparison",
+      "type": "object"
+    },
+    "ComparedArchitectureOption": {
+      "additionalProperties": false,
+      "properties": {
+        "canonical_reference": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Reference"
+        },
+        "category": {
+          "enum": [
+            "GoF",
+            "Architecture",
+            "Presentation",
+            "Dependency",
+            "Data",
+            "Integration",
+            "Resilience",
+            "Modernization",
+            "No pattern"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "fit_rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Fit Rationale",
+          "type": "string"
+        },
+        "fit_score": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Fit Score",
+          "type": "integer"
+        },
+        "id": {
+          "pattern": "^OPT-[0-9]{3}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "main_benefit": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Main Benefit",
+          "type": "string"
+        },
+        "main_liability": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Main Liability",
+          "type": "string"
+        },
+        "material_assumption": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Material Assumption",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "category",
+        "name",
+        "fit_score",
+        "fit_rationale",
+        "main_benefit",
+        "main_liability",
+        "material_assumption"
+      ],
+      "title": "ComparedArchitectureOption",
+      "type": "object"
+    },
+    "EvidenceClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Claim",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "confirmed-fact",
+            "static-indication",
+            "runtime-observation",
+            "assumption",
+            "unverified-possibility"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "claim"
+      ],
+      "title": "EvidenceClaim",
+      "type": "object"
+    },
+    "SupportingPattern": {
+      "additionalProperties": false,
+      "properties": {
+        "canonical_reference": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Canonical Reference",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "GoF",
+            "Architecture",
+            "Presentation",
+            "Dependency",
+            "Data",
+            "Integration",
+            "Resilience",
+            "Modernization",
+            "No pattern"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "role": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "name",
+        "canonical_reference",
+        "role"
+      ],
+      "title": "SupportingPattern",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Client-owned state only. Never accepted as an MCP request or approval authority.",
+  "properties": {
+    "acceptance": {
+      "const": "unverified",
+      "default": "unverified",
+      "title": "Acceptance",
+      "type": "string"
+    },
+    "candidate_digest": {
+      "default": "",
+      "pattern": "^(?:[a-f0-9]{64})?$",
+      "title": "Candidate Digest",
+      "type": "string"
+    },
+    "comparison": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ArchitectureOptionComparison"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "constraints": {
+      "items": {
+        "maxLength": 2000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Constraints",
+      "type": "array"
+    },
+    "context": {
+      "default": "",
+      "maxLength": 2000,
+      "title": "Context",
+      "type": "string"
+    },
+    "contract_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "evidence_limits": {
+      "items": {
+        "maxLength": 2000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "title": "Evidence Limits",
+      "type": "array"
+    },
+    "evidence_provenance": {
+      "items": {
+        "maxLength": 2000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Evidence Provenance",
+      "type": "array"
+    },
+    "local_persistence": {
+      "const": "host-managed-unverified",
+      "default": "host-managed-unverified",
+      "title": "Local Persistence",
+      "type": "string"
+    },
+    "local_review_id": {
+      "pattern": "^[0-9a-f-]{36}$",
+      "title": "Local Review Id",
+      "type": "string"
+    },
+    "phase": {
+      "enum": [
+        "active",
+        "clarification",
+        "analysis",
+        "prepared",
+        "exported",
+        "cancelled"
+      ],
+      "title": "Phase",
+      "type": "string"
+    },
+    "question_rounds": {
+      "default": 0,
+      "maximum": 3,
+      "minimum": 0,
+      "title": "Question Rounds",
+      "type": "integer"
+    },
+    "reference_version": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Reference Version",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "scope": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Scope",
+      "type": "string"
+    },
+    "unresolved_questions": {
+      "items": {
+        "maxLength": 2000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Unresolved Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "local_review_id",
+    "revision",
+    "phase",
+    "reference_version",
+    "scope",
+    "evidence_limits"
+  ],
+  "title": "LocalWorkflowCheckpoint",
+  "type": "object"
+}

@@ -24,3 +24,14 @@ Artifact creation requires a trustworthy host-supplied workspace root. ADRs and 
 `tools/python-mcp/` is an optional read-only Python STDIO MCP implementation for other hosts and development use; it is not registered by the Codex package. It makes no model or network calls and executes no shell commands. MCP filesystem reads require one host-confirmed workspace root. When a host does not forward MCP roots, bounded source supplied through host-native permissions can be analyzed without filesystem access. Dynamic imports, reflection, generated code, and omitted files are not deterministically covered.
 
 Repository content is untrusted data. These controls reduce impact but do not guarantee that a probabilistic host model cannot be influenced by malicious text, and they are not an operating-system sandbox. Host sandboxing, permissions, and user review remain required.
+
+The separate, unreleased `ai-architect-mcp-prototype` entry point implements an
+anonymous stateless HTTP reference and complete proposed-bundle validation/export
+profile. It has no accounts, stored project state, server-side approvals or local
+write capability. HTTPS, exact Host/Origin checks, bounded parsing/results,
+sanitized errors, no-store responses and per-IP in-memory limits protect the
+prototype's own operations. Workflow/checkpoint behavior stays client-local and
+instruction-guided. This service cannot intercept independent host tools, attest
+human acceptance, or verify customer-local persistence. Public ingress/abuse
+controls and real-host reliability must pass separate deployment gates before
+customer data is accepted. See [the prototype contract](docs/MCP_PROTOTYPE.md).

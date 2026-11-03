@@ -5,6 +5,12 @@ SPDX-License-Identifier: MIT
 
 # Maintainer Scripts
 
+The experimental MCP draft workflow has a separate deterministic entry point:
+`./scripts/run-mcp-prototype-evaluations.ps1`. It writes synthetic protocol/security
+evidence under `.tmp/mcp-prototype/`, generates the hook-free instruction package,
+and never updates the legacy exploratory performance ledger. See
+[the prototype contract and setup](../docs/MCP_PROTOTYPE.md).
+
 These PowerShell scripts make the documented Codex plugin build and release
 commands repeatable. Run them from a PowerShell terminal in the repository root.
 They require Windows PowerShell 5.1 or later, `git`, and `uv`.

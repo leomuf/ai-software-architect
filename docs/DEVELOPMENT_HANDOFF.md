@@ -12,6 +12,24 @@ documentation.
 
 ## Snapshot
 
+### Experimental MCP phase 0 (2026-11-03, unreleased)
+
+The isolated draft-export prototype is documented in [MCP_PROTOTYPE.md](MCP_PROTOTYPE.md).
+Following the user's updated direction, it uses the locked SDK and an anonymous,
+stateless HTTP boundary. There are no accounts/tokens, server reviews, candidate
+storage or checkpoint APIs. Workflow and checkpoints remain client-local. Portable
+complete-bundle rules are extracted from the hook adapter. The existing
+accepted-bundle contract and released hook workflow remain supported. The new
+draft envelope requires proposed ADRs, and no MCP operation can attest approval
+or apply customer-local files. Experimental instructions are generated from the
+six canonical modules plus the opt-in protocol reference.
+
+Run `scripts/run-mcp-prototype-evaluations.ps1` for its separate deterministic
+cohort; do not enter it in `evaluation-data/exploratory-runs.jsonl`. Real isolated
+Codex/Claude model cohorts, Foundry probing and a numerical model-latency budget
+remain prerequisites for a migration go decision. Production hosting,
+trusted human confirmation and broad distribution are outside the bounded spike.
+
 ### Related-pattern links and example counts (2026-10-22, unreleased)
 
 The installed candidate from `211dd96` passed the invocation smoke and all five

@@ -1,0 +1,150 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de); SPDX-License-Identifier: MIT",
+  "$defs": {
+    "ArtifactFile": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "maxLength": 65536,
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ],
+      "title": "ArtifactFile",
+      "type": "object"
+    },
+    "EmptyRequest": {
+      "additionalProperties": false,
+      "properties": {},
+      "title": "EmptyRequest",
+      "type": "object"
+    },
+    "PrepareRequest": {
+      "additionalProperties": false,
+      "description": "A self-contained validation/export request, with no workflow or identity fields.",
+      "properties": {
+        "contract_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "files": {
+          "items": {
+            "$ref": "#/$defs/ArtifactFile"
+          },
+          "maxItems": 8,
+          "minItems": 4,
+          "title": "Files",
+          "type": "array"
+        }
+      },
+      "required": [
+        "files"
+      ],
+      "title": "PrepareRequest",
+      "type": "object"
+    },
+    "ResourceRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "reference_version": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Reference Version",
+          "type": "string"
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "reference_version"
+      ],
+      "title": "ResourceRequest",
+      "type": "object"
+    },
+    "WorkflowError": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "repair_hint": {
+          "default": "",
+          "title": "Repair Hint",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "title": "WorkflowError",
+      "type": "object"
+    },
+    "WorkflowResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "additionalProperties": true,
+          "title": "Data",
+          "type": "object"
+        },
+        "error": {
+          "$ref": "#/$defs/WorkflowError"
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ok"
+      ],
+      "title": "WorkflowResponse",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "capabilities": {
+      "$ref": "#/$defs/EmptyRequest"
+    },
+    "prepare": {
+      "$ref": "#/$defs/PrepareRequest"
+    },
+    "resource": {
+      "$ref": "#/$defs/ResourceRequest"
+    },
+    "response": {
+      "$ref": "#/$defs/WorkflowResponse"
+    }
+  },
+  "required": [
+    "capabilities",
+    "resource",
+    "prepare",
+    "response"
+  ],
+  "title": "WorkflowWireContracts",
+  "type": "object"
+}

@@ -6,16 +6,21 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
 from ai_architect_schemas import (
-    ArchitectureArtifactBundle,
-    ArchitectureContract,
-    ArchitectureDecisionArtifact,
     ArtifactSecretScanInput,
     ContractValidationInput,
+)
+from ai_architect_tools.domain.artifacts import (
+    ArtifactCandidate as ArtifactCandidate,
+)
+from ai_architect_tools.domain.artifacts import (
+    _adr_frontmatter,
+)
+from ai_architect_tools.domain.artifacts import (
+    validate_artifact_bundle_candidates as validate_artifact_bundle_candidates,
 )
 from ai_architect_tools.domain.contracts import (
     scan_generated_artifact,
@@ -24,12 +29,11 @@ from ai_architect_tools.domain.contracts import (
 from pydantic import ValidationError
 
 try:
-    from adapters.codex.artifact_paths import ArtifactKind, canonical_artifact_path
+    from adapters.codex.artifact_paths import canonical_artifact_path
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
     from artifact_paths import (  # type: ignore[import-not-found, no-redef]
-        ArtifactKind,
         canonical_artifact_path,
     )
 
@@ -38,14 +42,6 @@ FILE_SECTION_PATTERN = re.compile(
     flags=re.MULTILINE,
 )
 HUNK_PATTERN = re.compile(r"^@@.*$", flags=re.MULTILINE)
-
-
-@dataclass(frozen=True)
-class ArtifactCandidate:
-    path: Path
-    content: str
-    kind: ArtifactKind
-    operation: str = "Update"
 
 
 def _relative_target(target: str, workspace: Path) -> Path:
@@ -116,8 +112,10 @@ def _patch_candidates(patch: str, workspace: Path) -> tuple[ArtifactCandidate, .
             raise ValueError(f"patch contains duplicate artifact target: {relative.as_posix()}")
         seen.add(relative)
         start = match.end()
-        end = matches[index + 1].start() if index + 1 < len(matches) else patch.find(
-            "*** End Patch", start
+        end = (
+            matches[index + 1].start()
+            if index + 1 < len(matches)
+            else patch.find("*** End Patch", start)
         )
         if end < 0:
             raise ValueError("patch terminator is missing")
@@ -153,11 +151,7 @@ def _structured_write_candidate(
         None,
     )
     content = next(
-        (
-            tool_input[key]
-            for key in ("content", "text")
-            if isinstance(tool_input.get(key), str)
-        ),
+        (tool_input[key] for key in ("content", "text") if isinstance(tool_input.get(key), str)),
         None,
     )
     if target is None:
@@ -205,68 +199,6 @@ def proposed_artifact_candidates(
     if patch is not None:
         return _patch_candidates(patch, workspace)
     return _structured_write_candidate(tool_input, workspace)
-
-
-def _yaml_mapping(content: str, *, label: str) -> dict[str, object]:
-    raw = yaml.safe_load(content)
-    if not isinstance(raw, dict):
-        raise ValueError(f"{label} must contain one YAML mapping")
-    return raw
-
-
-def _adr_frontmatter(content: str) -> ArchitectureDecisionArtifact:
-    lines = content.splitlines()
-    if not lines or lines[0].strip() != "---":
-        raise ValueError("ADR must begin with YAML frontmatter")
-    try:
-        end = next(index for index, line in enumerate(lines[1:], start=1) if line.strip() == "---")
-    except StopIteration as exc:
-        raise ValueError("ADR YAML frontmatter is not terminated") from exc
-    return ArchitectureDecisionArtifact.model_validate(
-        _yaml_mapping("\n".join(lines[1:end]), label="ADR frontmatter")
-    )
-
-
-def validate_artifact_bundle_candidates(
-    candidates: tuple[ArtifactCandidate, ...],
-    *,
-    require_complete: bool = False,
-) -> ArchitectureArtifactBundle | None:
-    """Validate a complete multi-file record-and-handoff write atomically."""
-
-    kinds = {candidate.kind for candidate in candidates}
-    bundle_kinds = {"adr", "contract", "context", "implementation-plan"}
-    if not require_complete and not ("contract" in kinds and len(kinds & bundle_kinds) > 1):
-        return None
-    missing = sorted(bundle_kinds - kinds)
-    if missing:
-        raise ValueError(
-            "record-and-handoff must write one complete artifact bundle; missing "
-            + ", ".join(missing)
-        )
-    contracts = [candidate for candidate in candidates if candidate.kind == "contract"]
-    contexts = [candidate for candidate in candidates if candidate.kind == "context"]
-    handoffs = [
-        candidate for candidate in candidates if candidate.kind == "implementation-plan"
-    ]
-    if len(contracts) != 1 or len(contexts) != 1 or len(handoffs) != 1:
-        raise ValueError(
-            "record-and-handoff requires exactly one contract, project context, and coding handoff"
-        )
-    return ArchitectureArtifactBundle.model_validate(
-        {
-            "contract": ArchitectureContract.model_validate(
-                _yaml_mapping(contracts[0].content, label="architecture contract")
-            ),
-            "decisions": [
-                _adr_frontmatter(candidate.content)
-                for candidate in candidates
-                if candidate.kind == "adr"
-            ],
-            "project_context": contexts[0].content,
-            "coding_handoff": handoffs[0].content,
-        }
-    )
 
 
 def architecture_artifact_denial_reason(

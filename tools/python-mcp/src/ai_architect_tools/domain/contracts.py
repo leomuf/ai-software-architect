@@ -32,7 +32,14 @@ class SafeArchitectureLoader(yaml.SafeLoader):
     def compose_node(self, parent: Node | None, index: int) -> Node | None:
         if self.check_event(AliasEvent):  # type: ignore[no-untyped-call]
             raise yaml.constructor.ConstructorError(None, None, "YAML aliases are not allowed")
-        return super().compose_node(parent, index)
+        depth = getattr(self, "_architecture_depth", 0)
+        if depth >= MAX_NESTING_DEPTH:
+            raise ValueError("YAML nesting limit exceeded")
+        self._architecture_depth = depth + 1
+        try:
+            return super().compose_node(parent, index)
+        finally:
+            self._architecture_depth = depth
 
     def construct_mapping(self, node: MappingNode, deep: bool = False) -> dict[Any, Any]:
         self.flatten_mapping(node)

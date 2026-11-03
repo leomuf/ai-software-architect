@@ -8,7 +8,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ai_architect_schemas import ArchitectureArtifactBundle, ArchitectureContract
+from ai_architect_schemas import (
+    ArchitectureArtifactBundle,
+    ArchitectureContract,
+    DraftArchitectureArtifactBundle,
+)
+from ai_architect_schemas.mcp_workflow import LocalWorkflowCheckpoint, WorkflowWireContracts
 
 
 def generate_schemas(output_directory: Path) -> None:
@@ -16,6 +21,9 @@ def generate_schemas(output_directory: Path) -> None:
     models = {
         "architecture-contract.schema.json": ArchitectureContract,
         "architecture-artifact-bundle.schema.json": ArchitectureArtifactBundle,
+        "draft-architecture-artifact-bundle.schema.json": DraftArchitectureArtifactBundle,
+        "mcp-workflow.schema.json": WorkflowWireContracts,
+        "local-workflow-checkpoint.schema.json": LocalWorkflowCheckpoint,
     }
     for filename, model in models.items():
         schema = model.model_json_schema()

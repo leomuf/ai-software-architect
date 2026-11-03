@@ -53,6 +53,27 @@ implementation_readiness_gates:
 
 ## Specification Conventions
 
+### Experimental anonymous MCP profile (2026-11-03)
+
+The opt-in phase 0 prototype uses an anonymous, stateless HTTPS MCP service with
+capability discovery, versioned reference retrieval and complete proposed-bundle
+validation/export. It requires no account or token and MUST NOT store project
+payloads, reviews, candidates, checkpoints or approvals. Workflow, architectural
+reasoning and checkpoints remain client-local through the host's native tools.
+The service MUST NOT claim to verify workflow order, human acceptance or local
+persistence. Artifact transmission requires user permission and transient processing
+must be distinguished from storage; reference-only use needs no project data.
+
+This experimental profile is separate from the released Codex hook adapter and
+the existing four-tool local STDIO surface. Its draft envelope preserves the
+accepted-bundle contract. Public hosting, live host-model continuation and broad
+OS/client compatibility remain unverified gates. The user's anonymous/client-local
+direction supersedes the original plan's server-review/identity assumptions for
+this profile. See [the implemented contract](../docs/MCP_PROTOTYPE.md) and the
+MCPX acceptance scenarios below.
+
+### General conventions
+
 This specification is intended to be both human-readable and suitable as input to an AI coding model.
 
 - Markdown defines product intent, context, architecture, design principles, and explanatory requirements.
@@ -2998,6 +3019,33 @@ Feature: Architecture conformance review
     And further inspection uses the host's separately controlled file tools and never falls back to shell commands
     And the agent reuses the captured evidence without redundant file reads
     And it does not delegate subagents by default when the bounded snapshot is sufficient
+
+Feature: Experimental MCP draft-export profile
+
+  @MCPX-001
+  Scenario: A synthetic review exports a validated draft without hooks
+    Given the anonymous stateless experimental phase 0 profile without an account or token
+    When the host submits one complete proposed artifact bundle with data-transfer permission
+    Then the server validates the portable complete-bundle invariants
+    And exports exactly the prepared bytes with hashes and draft status
+    And human acceptance and customer-local persistence remain unverified
+    And the server stores no reviews, checkpoints, candidates or project payloads
+    And the released hook-based workflow remains unchanged
+
+  @MCPX-002
+  Scenario: Continuation remains client-local and calls remain self-contained
+    Given workflow and checkpoints are kept locally by the user's host
+    When the same complete draft request is retried after a server restart
+    Then the same validation and exact-byte export result is returned
+    And no server review ID, revision, session or idempotency key is required
+    And the server cannot retrieve a checkpoint or attest workflow ordering
+
+  @MCPX-003
+  Scenario: Fabricated approval cannot enable persistence
+    Given the prototype has no independent human confirmation channel
+    When a model submits approval claims or requests a commit
+    Then no verified approval or local persistence capability is available
+    And only a validated proposed draft may be exported
 
 Feature: Exploratory recommendation consistency
 

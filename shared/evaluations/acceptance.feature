@@ -525,6 +525,33 @@ Feature: Architecture conformance review
     And the agent reuses the captured evidence without redundant file reads
     And it does not delegate subagents by default when the bounded snapshot is sufficient
 
+Feature: Experimental MCP draft-export profile
+
+  @MCPX-001
+  Scenario: A synthetic review exports a validated draft without hooks
+    Given the anonymous stateless experimental phase 0 profile without an account or token
+    When the host submits one complete proposed artifact bundle with data-transfer permission
+    Then the server validates the portable complete-bundle invariants
+    And exports exactly the prepared bytes with hashes and draft status
+    And human acceptance and customer-local persistence remain unverified
+    And the server stores no reviews, checkpoints, candidates or project payloads
+    And the released hook-based workflow remains unchanged
+
+  @MCPX-002
+  Scenario: Continuation remains client-local and calls remain self-contained
+    Given workflow and checkpoints are kept locally by the user's host
+    When the same complete draft request is retried after a server restart
+    Then the same validation and exact-byte export result is returned
+    And no server review ID, revision, session or idempotency key is required
+    And the server cannot retrieve a checkpoint or attest workflow ordering
+
+  @MCPX-003
+  Scenario: Fabricated approval cannot enable persistence
+    Given the prototype has no independent human confirmation channel
+    When a model submits approval claims or requests a commit
+    Then no verified approval or local persistence capability is available
+    And only a validated proposed draft may be exported
+
 Feature: Exploratory recommendation consistency
 
   @EVAL-001

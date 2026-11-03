@@ -91,7 +91,8 @@ def test_codex_plugin_is_reproducible_and_complete(
         "ai-architect-actions:",
     ):
         assert marker not in skill_text
-    assert len(list((skill / "references").iterdir())) == 57
+    assert len(list((skill / "references").iterdir())) == 58
+    assert (skill / "references" / "mcp-workflow-protocol.md").is_file()
     assert len(list((skill / "assets").iterdir())) == 4
     assert {path.name for path in (second / "skills").iterdir() if path.is_dir()} == {
         "ai-software-architect"
@@ -177,7 +178,7 @@ def test_codex_plugin_is_reproducible_and_complete(
 
     provenance = json.loads((second / "provenance.json").read_text("utf-8"))
     assert provenance["generator"] == "adapters/codex/build_plugin.py"
-    assert len(provenance["source_to_output"]) == 60
+    assert len(provenance["source_to_output"]) == 61
     assert len(provenance["additional_source_to_output"]) == 5
     assert set(provenance["additional_source_to_output"].values()) == {
         "skills/ai-software-architect/assets/artifact-authoring-bundle.md",

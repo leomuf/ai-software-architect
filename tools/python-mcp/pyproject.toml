@@ -20,6 +20,7 @@ license = "MIT"
 [project.scripts]
 ai-architect-tools = "ai_architect_tools.cli:main"
 ai-architect-mcp = "ai_architect_tools.mcp_server:main"
+ai-architect-mcp-prototype = "ai_architect_tools.workflow_server:main"
 
 [tool.uv.sources]
 ai-architect-schemas = { workspace = true }

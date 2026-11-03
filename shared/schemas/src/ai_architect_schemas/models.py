@@ -295,13 +295,15 @@ class ArchitectureContract(StrictModel):
         return self
 
 
-class ArchitectureArtifactBundle(StrictModel):
-    """One atomically validated architecture record-and-handoff candidate."""
-
+class _ArchitectureBundleContents(StrictModel):
     contract: ArchitectureContract
     decisions: list[ArchitectureDecisionArtifact] = Field(min_length=1, max_length=200)
     project_context: NarrativeText
     coding_handoff: NarrativeText
+
+
+class ArchitectureArtifactBundle(_ArchitectureBundleContents):
+    """One atomically validated architecture record-and-handoff candidate."""
 
     @model_validator(mode="after")
     def validate_cross_artifact_references(self) -> Self:
@@ -314,6 +316,23 @@ class ArchitectureArtifactBundle(StrictModel):
             )
         if any(artifact.decision.status != "accepted" for artifact in self.decisions):
             raise ValueError("record-and-handoff bundles require accepted decisions")
+        return self
+
+
+class DraftArchitectureArtifactBundle(_ArchitectureBundleContents):
+    """A separate, unapproved candidate; never an accepted artifact bundle."""
+
+    @model_validator(mode="after")
+    def validate_cross_artifact_references(self) -> Self:
+        decision_ids = [artifact.decision.id for artifact in self.decisions]
+        if len(decision_ids) != len(set(decision_ids)):
+            raise ValueError("bundle decision ids must be unique")
+        if set(decision_ids) != set(self.contract.decision_ids):
+            raise ValueError("bundle decisions must exactly match contract decision_ids")
+        if any(artifact.decision.status != "proposed" for artifact in self.decisions):
+            raise ValueError("draft bundles require proposed decisions")
+        if any(artifact.decision.selected_option_id is None for artifact in self.decisions):
+            raise ValueError("draft decisions require a proposed selected option")
         return self
 
 

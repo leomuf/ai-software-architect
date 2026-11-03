@@ -49,6 +49,19 @@ Codex sends prompts and permitted project context to the user-selected model as
 part of its normal service. XAVIER MUFFATO LTDA does not operate that processing
 and does not receive those prompts or model responses from the plugin.
 
+## Unreleased anonymous MCP experiment
+
+The separately invoked [phase 0 prototype](docs/MCP_PROTOTYPE.md) is outside the
+distributed plugin workflow described above. Its HTTP service requires no account
+or token and stores no reviews, checkpoints, candidates or project payloads.
+Workflow checkpoints remain user-owned local files. Reference-only calls need no
+project context; draft validation transmits the complete submitted artifact text
+for transient server processing and requires the user's permission to transfer it.
+No storage must not be described as no transmission. The application disables
+payload/access logging and response caching; it keeps only bounded, one-minute
+in-memory IP rate counters. Public deployment and its proxy/logging/retention
+policies remain unverified; only synthetic test use is currently documented.
+
 ## Support and Security Reports
 
 Information is sent to XAVIER MUFFATO LTDA, operating under the AUTOSOFT
