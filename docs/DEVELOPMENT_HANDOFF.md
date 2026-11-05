@@ -12,6 +12,45 @@ documentation.
 
 ## Snapshot
 
+### MCP local recovery diagnostics (2026-11-05, unreleased)
+
+The separate Codex runner now supports `-Scenario context-loss` and
+`-Scenario two-active-reviews`, alongside the default short-reply scenario. Both
+recovery scenarios start a new chat; the latter freezes a runner-seeded independent
+CSV-import checkpoint and requires its bytes to stay unchanged. Twenty-four
+runner tests cover orchestration, wrong-review changes and local-ID disclosure
+inside otherwise valid exports. The full suite passes 452 tests; Ruff and strict
+Mypy pass.
+
+The first real context-loss diagnostic passed all 15 checks. The first two-review
+attempt selected the right review and preserved the other checkpoint but failed
+because the host cited a local review UUID in the transmitted project context.
+The shared protocol explicitly excludes local checkpoint metadata from outgoing
+artifact text and source citations; this is instruction guidance, not server
+pre-transfer enforcement. The failed report remains unchanged and a new bounded
+run under the updated reference version passed all 16 checks, including no local
+IDs in outgoing artifacts and an unchanged CSV checkpoint. Both successful runs
+have separate agent semantic-review records; they are not human approval. See the
+[recovery diagnostic record](mcp-prototype/codex-recovery-diagnostics-2026-11-05.md).
+Phase 0's repeated multi-host migration gate remains open.
+
+### Real Codex MCP host diagnostic (2026-11-03, unreleased)
+
+`scripts/run-codex-mcp-host-evaluation.ps1` now runs a separate, synthetic two-turn
+Codex CLI fixture with a private temporary profile, disabled legacy hooks/plugins,
+client-local checkpoints and actual MCP result/export-byte checks. A completed
+diagnostic used CLI 0.156.1 / `gpt-6-sol` / `xhigh` / standard after the CLI/provider
+rejected the desktop-configured `gpt-6.1-sol`. Initial and continuation phases took
+139.569 s and 288.117 s; all 12 captured deterministic checks passed. Agent semantic
+review found no critical failure in that one run; `manual-review` remains distinct
+from human approval and the migration gate stays open.
+
+The first real handshake exposed an overly strict initialization check. The
+service now negotiates its pinned MCP version before enforcing subsequent explicit
+version headers, preserving anonymous/stateless behavior and exact tool bytes.
+The full suite passes 440 tests; the MCP adapter is included in strict Mypy checks.
+See [the durable diagnostic record](mcp-prototype/codex-host-diagnostic-2026-11-03.md).
+
 ### Experimental MCP phase 0 (2026-11-03, unreleased)
 
 The isolated draft-export prototype is documented in [MCP_PROTOTYPE.md](MCP_PROTOTYPE.md).

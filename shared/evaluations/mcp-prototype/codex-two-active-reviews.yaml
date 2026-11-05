@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
+# SPDX-License-Identifier: MIT
+
+id: codex-two-active-reviews
+revision: 1
+cohort: mcp-phase-0-anonymous-stateless-codex-diagnostic
+data: synthetic-only
+activation: $ai-software-architect-mcp-prototype
+continuation_context: fresh-chat
+initial_prompt: 'Vergleiche passende Architekturvarianten für eine rein synthetische kleine Python-Desktop-App
+  zur privaten Ausgabenverwaltung: eine Person, etwa 20 Datensätze pro Tag, ausschließlich lokale
+  Speicherung, ein Maintainer. Es geht um die Trennung von UI und Fachlogik; einfache Funktionen
+  oder ein separates Modul sollen als glaubwürdige Optionen berücksichtigt werden. Verwende nur diese
+  Beschreibung und lies keinen Anwendungscode. Halte den Review-Fortschritt in einem lokalen Checkpoint
+  fest. Präsentiere zunächst den Vergleich und deine Empfehlung und warte auf meine kurze Bestätigung,
+  bevor du den Draft exportierst. Nach meiner Bestätigung darfst du die synthetischen Architekturartefakte
+  zur transienten Prüfung an den anonymen MCP-Dienst senden und den vollständigen unveränderten JSON-Export
+  mit files und manifest als draft-export.json im Arbeitsverzeichnis speichern. Installiere keine
+  Architekturartefakte unter ihren kanonischen Zielpfaden und ändere keinen Anwendungscode.'
+continuation_prompt: '$ai-software-architect-mcp-prototype
+
+
+  Dies ist ein neuer Chat ohne den bisherigen Gesprächsverlauf. Setze den lokalen Architekturreview
+  zur Trennung von UI und Fachlogik der synthetischen Ausgabenverwaltung aus seinem Checkpoint fort.
+  Ja, bitte die dort vorgeschlagene Empfehlung als Draft exportieren. Die synthetischen Architekturartefakte
+  dürfen zur transienten Prüfung an den anonymen MCP-Dienst gesendet werden. Speichere den vollständigen
+  unveränderten JSON-Export mit files und manifest als draft-export.json im Arbeitsverzeichnis; installiere
+  keine kanonischen Architekturartefakte und ändere keinen Anwendungscode. Es gibt außerdem einen
+  unabhängigen Review zum CSV-Import. Lass dessen Checkpoint unverändert und führe ausschließlich
+  den Review zur Trennung von UI und Fachlogik weiter.'
+expected:
+- initial-comparison-with-proposed-recommendation
+- valid-client-local-checkpoint-before-continuation
+- native-read-of-the-local-checkpoint-on-continuation
+- successful-real-mcp-preparation-call
+- exact-response-export-in-draft-export-json
+- same-local-review-id-with-increased-revision-and-export-digest
+- no-canonical-artifact-installation
+- no-hook-or-other-plugin-assistance
+- new-chat-without-resume-or-original-transcript
+- native-discovery-and-read-of-selected-checkpoint
+- unselected-review-unchanged-byte-for-byte
+- exactly-two-local-reviews-after-continuation
+semantic_review_required:
+- six-section-proportionate-comparison-and-credible-alternatives
+- ordinal-scores-and-explicit-evidence-limits
+- no-fabricated-verified-approval-or-local-installation-claim
+- no-application-code-execution-or-secret-disclosure
+- export-concerns-ui-domain-boundary-not-csv-import
+additional_checkpoint:
+  local_review_id: f83f914c-54b7-4fa9-a570-8452078c30ed
+  revision: 4
+  phase: analysis
+  scope: 'Separater Review: CSV-Import für die synthetische Ausgabenverwaltung'
+  constraints:
+  - Nur lokaler Import; keine Cloud-Anbindung.
+  context: 'Unabhängige offene Entscheidung: Streaming-Import oder vollständiges Einlesen einer CSV-Datei.'
+  question_rounds: 1
+  unresolved_questions:
+  - Wie groß ist eine CSV-Datei maximal?
+  evidence_provenance:
+  - Vom Test-Runner synthetisch gesetzter Ablenkungs-Checkpoint.
+  evidence_limits:
+  - Nur synthetische Beschreibung; kein Anwendungscode untersucht.

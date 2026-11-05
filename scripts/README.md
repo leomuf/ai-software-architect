@@ -11,6 +11,16 @@ evidence under `.tmp/mcp-prototype/`, generates the hook-free instruction packag
 and never updates the legacy exploratory performance ledger. See
 [the prototype contract and setup](../docs/MCP_PROTOTYPE.md).
 
+`./scripts/run-codex-mcp-host-evaluation.ps1 -Model <available-cli-model>` runs the
+separate, synthetic real Codex diagnostic: comparison/checkpoint followed by a
+natural short-reply continuation and draft export. Select `-Scenario context-loss`
+for a new-chat recovery diagnostic or `-Scenario two-active-reviews` for topic-based
+selection with an unchanged runner-seeded distractor checkpoint. The default is
+`local-review-export`. It uses an isolated temporary
+host profile, no legacy hooks, and the existing Codex login. Evidence stays under
+`.tmp/mcp-host/`; it never writes the legacy performance ledger. See the prototype
+guide for model selection, budgets and the separate semantic-review requirement.
+
 These PowerShell scripts make the documented Codex plugin build and release
 commands repeatable. Run them from a PowerShell terminal in the repository root.
 They require Windows PowerShell 5.1 or later, `git`, and `uv`.

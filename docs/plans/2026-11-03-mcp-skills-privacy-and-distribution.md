@@ -41,6 +41,11 @@ public hosting must exclude payloads from logs, caches, traces and crash dumps.
 The implemented prototype contract and evidence limits are recorded in
 [MCP_PROTOTYPE.md](../MCP_PROTOTYPE.md). Its separate deterministic cohort passed
 25 checks, including loopback HTTPS; the full regression suite passed 425 tests.
+The later [Codex host diagnostic](../mcp-prototype/codex-host-diagnostic-2026-11-03.md)
+records one completed real workflow and the extended 440-test regression result.
+The [2026-11-05 recovery diagnostics](../mcp-prototype/codex-recovery-diagnostics-2026-11-05.md)
+extend the runner to new-chat recovery and two local reviews, with 452 regression
+tests and preserved evidence of a host disclosing a local review ID in an artifact.
 These results do not establish public availability, live host-model reliability,
 Foundry compatibility, verified human acceptance or customer-local persistence.
 
@@ -758,6 +763,13 @@ six host targets and three OS targets in the later delivery matrix.
       `mcp-phase-0-anonymous-stateless-deterministic` cohort, where hook inactivity
       is expected. Preserve the legacy campaign/ledger. Real-host diagnostics and
       their unscored rubric are in `shared/evaluations/mcp-prototype/scenarios.yaml`.
+- [x] Extend the separate Codex diagnostic entry point with `context-loss` and
+      `two-active-reviews` scenarios. Start a new chat without resuming the original
+      transcript; require native checkpoint reads and distinct chat IDs. Freeze
+      the second scenario's runner-seeded CSV-import checkpoint before model
+      execution, then require its bytes to remain unchanged while only the
+      topic-selected review advances. Keep these unscored diagnostics distinct
+      from forced compaction, service restart and repeated reliability cohorts.
 - [ ] Freeze models, versions, prompts, evidence rubric, latency/call budgets, and
       success criteria before scoring. Use at least five independent repetitions
       per diagnostic scenario per host. For the go/no-go cohort, require at least
@@ -774,8 +786,25 @@ six host targets and three OS targets in the later delivery matrix.
       block advertising that host/profile until its scope or controls are revised.
 
 Current evidence: 25 dedicated deterministic checks and the 425-test regression
-suite passed. Live host cohorts, numerical host-latency budget, Foundry probing
-and public deployment remain unverified; phase 0 is not complete.
+suite passed in the original prototype. The extended suite now passes 452 tests.
+A separate real Codex CLI diagnostic completed comparison, a client-local
+checkpoint, natural short-reply resume and exact-byte draft export without legacy
+hooks; its 12 captured deterministic checks passed. Initial/continuation phases
+took 139.569/288.117 seconds on CLI 0.156.1, `gpt-6-sol`, `xhigh`, standard speed.
+The agent semantic review and preserved startup/API failures are recorded in
+[the diagnostic evidence](../mcp-prototype/codex-host-diagnostic-2026-11-03.md).
+The maintained entry point is `scripts/run-codex-mcp-host-evaluation.ps1`.
+Its new-chat recovery diagnostic passes all 15 checks. The first two-review
+diagnostic correctly selected the review and preserved the other checkpoint,
+but failed because the host cited a local review UUID in the outgoing project
+context. The shared protocol now explicitly excludes checkpoint metadata from
+artifact text and source citations; this is host guidance, not pre-transfer
+server enforcement. The new two-review run passes all 16 checks under its changed
+reference version, including unchanged distractor bytes and absence of local IDs
+from submitted artifacts. Preserve the failed attempt separately; see the
+[recovery evidence](../mcp-prototype/codex-recovery-diagnostics-2026-11-05.md).
+Repeated host cohorts, an agreed numerical cohort latency budget, the second
+host, Foundry and public deployment remain unverified; phase 0 is not complete.
 
 Checkpoint: a written go/no-go decision with reproducible evidence and a list of
 capabilities actually demonstrated. Passing allows the full design/build below;

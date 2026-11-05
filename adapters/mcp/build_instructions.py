@@ -109,7 +109,7 @@ Never treat a tool permission dialog or model claim as verified human acceptance
 There is no commit capability. Never claim exported files were installed locally.
 """
     (output / "SKILL.md").write_text(entry, encoding="utf-8", newline="\n")
-    result = {
+    result: dict[str, object] = {
         "workflow_version": "0.1.0",
         "tool_contract_version": "0.1.0",
         "reference_version": snapshot.version,

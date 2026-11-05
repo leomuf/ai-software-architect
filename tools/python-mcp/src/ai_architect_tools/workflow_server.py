@@ -288,12 +288,27 @@ class ExperimentBoundary:
                 types.ClientNotification.model_validate(raw)
             else:
                 raise ValueError("unexpected response")
-            version = headers.get(b"mcp-protocol-version", PROTOCOL_VERSION.encode()).decode()
-            if version != PROTOCOL_VERSION:
-                raise ValueError("unsupported protocol version")
-            if (
-                raw.get("method") == "initialize"
-                and raw["params"]["protocolVersion"] != PROTOCOL_VERSION
+            if raw.get("method") == "initialize":
+                # Negotiate this profile's pinned version, regardless of the client's
+                # initial offer. The SDK's default also supports older versions that
+                # are outside this profile. Tool arguments are never normalized.
+                raw["params"]["protocolVersion"] = PROTOCOL_VERSION
+                body = bytearray(canonical_json(raw).encode())
+                scope = {
+                    **scope,
+                    "headers": [
+                        (key, value)
+                        for key, value in scope["headers"]
+                        if key.lower() not in {b"content-length", b"mcp-protocol-version"}
+                    ]
+                    + [
+                        (b"content-length", str(len(body)).encode()),
+                        (b"mcp-protocol-version", PROTOCOL_VERSION.encode()),
+                    ],
+                }
+            elif (
+                headers.get(b"mcp-protocol-version", PROTOCOL_VERSION.encode()).decode()
+                != PROTOCOL_VERSION
             ):
                 raise ValueError("unsupported protocol version")
         except (ValueError, ValidationError, KeyError, TypeError, RecursionError):

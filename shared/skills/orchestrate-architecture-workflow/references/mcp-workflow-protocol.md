@@ -48,6 +48,17 @@ artifact installation and application-source writes require separate authority.
 If the host cannot save/read local state, disclose that durable resume is absent;
 do not send the checkpoint to the public service as a workaround.
 
+Keep checkpoint metadata local even when drafting the artifacts that will be
+submitted: never copy local review IDs, checkpoint filenames/paths, local phase
+or revision history, question rounds or internal workflow records into artifact
+text or other MCP arguments. Cite the user-provided design description and its
+evidence limits in the project context; a local checkpoint is not a remote-facing
+source citation. Artifact/ADR identifiers, artifact schema revisions and the
+reference version are separate public contract fields and remain permitted.
+Before calling `prepare_architecture_bundle`, inspect the complete outgoing
+artifact text for these local-only details and remove them. This is a host-side
+instruction, not a guarantee that the server prevents disclosure before receipt.
+
 Record scope, constraints, evidence provenance/limits, current phase, question
 round, comparison, candidate digest, reference version and increasing local
 revision. Read the latest local revision before updating; do not overwrite an

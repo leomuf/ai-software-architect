@@ -552,6 +552,14 @@ Feature: Experimental MCP draft-export profile
     Then no verified approval or local persistence capability is available
     And only a validated proposed draft may be exported
 
+  @MCPX-004
+  Scenario: A client offers another protocol version during initialization
+    Given the anonymous stateless profile supports MCP version 2025-11-25
+    When a client initializes with a different protocol version
+    Then the server negotiates its supported version 2025-11-25
+    And subsequent explicit protocol headers must match that version
+    And no persistent transport session or project state is created
+
 Feature: Exploratory recommendation consistency
 
   @EVAL-001

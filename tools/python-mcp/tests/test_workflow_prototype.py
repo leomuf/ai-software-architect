@@ -353,6 +353,35 @@ def test_actual_tools_list_has_simple_object_schemas_and_no_accounts(client: Any
     )
 
 
+@pytest.mark.parametrize("offered_version", ["2025-11-25", "2026-01-01", "2025-03-26"])
+def test_initialization_negotiates_pinned_version(client: Any, offered_version: str) -> None:
+    response = client.post(
+        "/mcp",
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": offered_version,
+                "capabilities": {},
+                "clientInfo": {"name": "synthetic-version-test", "version": "1"},
+            },
+        },
+        headers={"Accept": "application/json, text/event-stream"},
+    )
+    assert response.status_code == 200
+    assert response.json()["result"]["protocolVersion"] == "2025-11-25"
+    wrong_version = client.post(
+        "/mcp",
+        json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        headers={
+            "Accept": "application/json, text/event-stream",
+            "MCP-Protocol-Version": "2025-03-26",
+        },
+    )
+    assert wrong_version.status_code == 400
+
+
 def test_rate_limit_needs_no_login(client: Any) -> None:
     for _ in range(60):
         assert call(client, "get_architecture_capabilities", {})["ok"]

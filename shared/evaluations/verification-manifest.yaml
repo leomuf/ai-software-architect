@@ -23,6 +23,9 @@ additional_exploratory_campaigns:
     - shared/evaluations/model-fixtures/project-variety-single-file-cli.yaml
     - shared/evaluations/model-fixtures/project-variety-src-service.yaml
 scenarios:
+  MCPX-004:
+    mode: deterministic-test
+    test: tools/python-mcp/tests/test_workflow_prototype.py::test_initialization_negotiates_pinned_version
   MCPX-001:
     mode: deterministic-test
     test: tools/python-mcp/tests/test_workflow_prototype.py::test_real_https_initialize_and_nested_export

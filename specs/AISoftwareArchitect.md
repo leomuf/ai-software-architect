@@ -60,13 +60,17 @@ capability discovery, versioned reference retrieval and complete proposed-bundle
 validation/export. It requires no account or token and MUST NOT store project
 payloads, reviews, candidates, checkpoints or approvals. Workflow, architectural
 reasoning and checkpoints remain client-local through the host's native tools.
+Host instructions MUST exclude local checkpoint IDs/paths and internal workflow
+history from outgoing artifact text, including source citations. This is
+instruction-guided minimization; server validation cannot prevent disclosure
+before receipt of arbitrary host-supplied text.
 The service MUST NOT claim to verify workflow order, human acceptance or local
 persistence. Artifact transmission requires user permission and transient processing
 must be distinguished from storage; reference-only use needs no project data.
 
 This experimental profile is separate from the released Codex hook adapter and
 the existing four-tool local STDIO surface. Its draft envelope preserves the
-accepted-bundle contract. Public hosting, live host-model continuation and broad
+accepted-bundle contract. Public hosting, repeated host-model continuation and broad
 OS/client compatibility remain unverified gates. The user's anonymous/client-local
 direction supersedes the original plan's server-review/identity assumptions for
 this profile. See [the implemented contract](../docs/MCP_PROTOTYPE.md) and the
@@ -3046,6 +3050,14 @@ Feature: Experimental MCP draft-export profile
     When a model submits approval claims or requests a commit
     Then no verified approval or local persistence capability is available
     And only a validated proposed draft may be exported
+
+  @MCPX-004
+  Scenario: A client offers another protocol version during initialization
+    Given the anonymous stateless profile supports MCP version 2025-11-25
+    When a client initializes with a different protocol version
+    Then the server negotiates its supported version 2025-11-25
+    And subsequent explicit protocol headers must match that version
+    And no persistent transport session or project state is created
 
 Feature: Exploratory recommendation consistency
 

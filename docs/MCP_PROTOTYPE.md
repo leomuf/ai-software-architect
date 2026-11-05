@@ -150,6 +150,91 @@ and [Claude HTTP setup](https://code.claude.com/docs/en/mcp).
 
 ## Evidence and migration gate
 
+### Isolated real Codex host diagnostic
+
+Use the separate entry point for the synthetic two-phase host fixtures:
+
+```powershell
+.\scripts\run-codex-mcp-host-evaluation.ps1 -Model <available-cli-model> -ReasoningEffort xhigh -Speed standard
+.\scripts\run-codex-mcp-host-evaluation.ps1 -Model <available-cli-model> -ReasoningEffort xhigh -Scenario context-loss
+.\scripts\run-codex-mcp-host-evaluation.ps1 -Model <available-cli-model> -ReasoningEffort xhigh -Scenario two-active-reviews
+```
+
+Select an explicit model from the installed CLI's `codex debug models` catalog;
+the desktop configuration and an older standalone CLI can expose different
+catalogs. A catalog entry is not proof of account entitlement: the real inference
+call must succeed. The runner never substitutes a model silently. The exact CLI,
+model, effort, speed, fixture, instructions, reference snapshot and per-phase
+budgets are frozen before the first model call. Defaults are 600 seconds and 50
+observed tool calls per phase; the runner stops a process after an observed budget
+violation. This is a diagnostic, not an agreed statistical latency budget.
+
+The runner creates a temporary Codex home, disables hooks, plugins, apps,
+subagents, bundled skills and discovered external skills, and configures only the
+anonymous loopback MCP endpoint. It builds the Composite into the synthetic
+workspace's native skill directory. It reuses the existing Codex host login in
+the private OS temporary directory and removes that copy afterward; no credential
+is placed in prompts or the evidence directory. The MCP endpoint still needs no
+account or token. Normal user configuration and the installed plugin are unchanged.
+
+The first phase compares the supplied synthetic design and saves a local
+checkpoint. The default `local-review-export` scenario resumes the exact CLI chat
+with a natural short reply without another skill mention or corrective operator
+prompt. `context-loss` starts a new CLI chat, with the same local files but no
+resumed transcript, and explicitly activates the skill again. This simulates loss
+of conversation context; it does not force the client's compaction mechanism or
+restart the service. `two-active-reviews` also uses a new chat and adds a separate
+CSV-import checkpoint before continuation. That distractor is explicitly
+runner-seeded, validated against the canonical schema and frozen before the first
+model call; it is not evidence that the model created a second review. The user
+prompt selects the UI/domain review by topic, without supplying its local ID.
+
+Deterministic checks inspect the
+native checkpoint read, actual MCP validation result, exact delivered JSON file,
+checkpoint revision/digest and workspace changes. Recovery scenarios require
+distinct chat IDs. Two-review checks require exactly the expected checkpoint set,
+the selected review's updated revision/digest and the other review's unchanged
+bytes. Semantic review must also confirm that the exported decision concerns the
+selected topic. Model prose alone cannot pass.
+Local checkpoint IDs/paths and internal workflow history must also be excluded
+from outgoing artifact text, including evidence citations. This rule is host
+guidance; the service cannot prevent transmission of arbitrary free text before
+receipt. The ID-absence check is a narrow diagnostic signal requiring separate
+semantic review.
+Failed/aborted attempts remain separate evidence; API/startup failures are not
+semantic workflow failures or successful legacy runs.
+
+Evidence under `.tmp/mcp-host/<timestamp>/` includes `frozen-run.json`, `report.json`,
+`SUMMARY.md`, the generated workspace/skill, client JSONL, phase timings and
+sanitized-profile/model-catalog metadata. These synthetic client-side test records
+are distinct from the service, which does not store project content or log payloads.
+The diagnostic uses loopback HTTP; it does not establish remote HTTPS compatibility.
+
+A successful deterministic result is `manual-review`: architectural quality,
+report completeness, evidence limits and absence of false approval/persistence
+claims still need semantic review. It cannot complete the repeated multi-host
+migration gate or enter `evaluation-data/exploratory-runs.jsonl`. The maintained
+legacy exploratory entry point remains unchanged.
+
+The server negotiates the profile's fixed MCP version `2025-11-25` during
+initialization, even when a newer client offers another version. Subsequent
+explicit protocol headers must match the selected version. This normalizes only
+handshake metadata, never artifact/tool arguments. See
+[MCP version negotiation](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)
+and the official [Codex CLI](https://learn.chatgpt.com/docs/cli/reference) and
+[configuration](https://learn.chatgpt.com/docs/config-file/config-reference) references.
+
+### Broader migration evidence
+
+One real Codex CLI comparison/checkpoint/short-reply/export diagnostic now passes
+its deterministic checks. The separate agent semantic review, measurements and
+preserved startup/API failures are recorded in
+[the 2026-11-03 diagnostic](mcp-prototype/codex-host-diagnostic-2026-11-03.md).
+This does not mark the repeated host-reliability cohort as passed.
+New-chat recovery and two-review diagnostics, including a preserved local-ID
+disclosure failure and the resulting instruction clarification, are recorded in
+[the 2026-11-05 recovery record](mcp-prototype/codex-recovery-diagnostics-2026-11-05.md).
+
 The cohort `mcp-phase-0-anonymous-stateless-deterministic` tests actual tools/list,
 call envelopes, HTTPS, no-login usage, retry/restart equivalence, exact bytes,
 invalid candidates, malformed/deep/oversized input, sanitized errors, poisoned
